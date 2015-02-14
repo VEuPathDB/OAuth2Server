@@ -1,0 +1,20 @@
+{
+  "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
+  "authenticatorConfig": {
+    "login": "db_login",
+    "password": "db_password",
+    "connectionUrl": "jdbc:oracle:oci:@apicommDevN",
+    "platform": "Oracle",
+    "poolSize": 10,
+    "userSchema": "userlogins5."
+  },
+  "allowedClients": [
+    {
+      "clientId": "apiComponentSite",
+      "clientSecret": "12345"
+    },{
+      "clientId": "globusGenomics",
+      "clientSecret": "12345"
+    }
+  ]
+}

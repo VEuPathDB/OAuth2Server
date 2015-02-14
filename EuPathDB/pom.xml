@@ -1,0 +1,73 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.gusdb</groupId>
+    <artifactId>oauth2</artifactId>
+    <version>1.0.0</version>
+  </parent>
+
+  <name>OAuth2 - EuPathDB Server</name>
+  <artifactId>oauth2-eupathdb</artifactId>
+  <packaging>war</packaging>
+
+  <!-- Expect this property to be passed in -->
+  <properties>
+    <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.gusdb</groupId>
+      <artifactId>oauth2-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.gusdb</groupId>
+      <artifactId>fgputil-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.json</groupId>
+      <artifactId>javax.json-api</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <finalName>oauth</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <webResources>
+            <resource>
+              <filtering>true</filtering>
+              <directory>src/main/webapp</directory>
+              <includes>
+                <include>**/web.xml</include>
+              </includes>
+            </resource>
+          </webResources>
+          <warSourceDirectory>src/main/webapp</warSourceDirectory>
+          <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
