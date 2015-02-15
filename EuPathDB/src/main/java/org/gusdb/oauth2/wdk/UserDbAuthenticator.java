@@ -47,7 +47,7 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   protected void initialize(ConnectionPoolConfig dbConfig, String userSchema) {
-    _userDb = new DatabaseInstance(dbConfig);
+    _userDb = new DatabaseInstance(dbConfig, "USER", true);
     _userSchema = userSchema;
   }
 
@@ -67,7 +67,7 @@ public class UserDbAuthenticator implements Authenticator {
 
   protected Long getUserId(String username, String password, boolean checkPassword) {
     String sql = "select user_id from " + _userSchema + "users where email = ?";
-    if (checkPassword) sql += " and password = ?";
+    if (checkPassword) sql += " and passwd = ?";
     Object[] params = { username, encrypt(password) };
     final TwoTuple<Boolean, Long> result = new TwoTuple<>(false, null);
     new SQLRunner(_userDb.getDataSource(), sql )
