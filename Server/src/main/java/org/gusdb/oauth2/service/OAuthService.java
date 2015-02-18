@@ -12,13 +12,14 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Variant;
 
+import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.OAuthServlet;
 import org.gusdb.oauth2.assets.StaticResource;
@@ -31,13 +32,10 @@ public class OAuthService {
   private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
 
   @Context
-  private HttpServletRequest _request;
-
-  @Context
-  private UriInfo _uriInfo;
-
-  @Context
   private ServletContext _servletContext;
+
+  @Context
+  private HttpServletRequest _request;
 
   @GET
   @Path("assets/{name:.+}")
@@ -74,4 +72,35 @@ public class OAuthService {
     return new URI("assets/login.html?status=failed" + redirectUrlParam);
   }
 
+  @GET
+  @Path("/logout")
+  public Response logOut() throws URISyntaxException {
+    StateCache.logOut(_request);
+    return Response.seeOther(new URI("assets/login.html")).build();
+  }
+
+  @GET
+  @Path("/authorize")
+  public Response authorize() throws URISyntaxException, OAuthSystemException {
+    LOG.info("Handling authorize request");
+    return OAuthRequestHandler.handleAuthorizationRequest(_request);
+  }
+
+  @POST
+  @Path("/token")
+  @Consumes("application/x-www-form-urlencoded")
+  @Produces("application/json")
+  public Response getToken() throws OAuthSystemException {
+    return OAuthRequestHandler.handleTokenRequest(_request,
+        OAuthServlet.getApplicationConfig(_servletContext),
+        OAuthServlet.getAuthenticator(_servletContext),
+        new OAuthResponseFactory());
+  }
+
+  @GET
+  @Path("/user")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getUserInfo() throws OAuthSystemException {
+    return OAuthRequestHandler.handleUserInfoRequest(_request);
+  }
 }

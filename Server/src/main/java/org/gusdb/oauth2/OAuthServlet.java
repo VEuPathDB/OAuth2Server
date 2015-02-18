@@ -9,6 +9,7 @@ import javax.servlet.ServletException;
 
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.glassfish.jersey.servlet.ServletProperties;
+import org.gusdb.oauth2.config.ApplicationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

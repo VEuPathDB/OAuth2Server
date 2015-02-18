@@ -24,9 +24,22 @@
       <artifactId>jersey-container-servlet</artifactId>
     </dependency>
 
+    <!-- OAuth dependencies -->
+    <dependency>
+      <groupId>org.apache.oltu.oauth2</groupId>
+      <artifactId>org.apache.oltu.oauth2.common</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.apache.oltu.oauth2</groupId>
       <artifactId>org.apache.oltu.oauth2.authzserver</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.oltu.oauth2</groupId>
+      <artifactId>org.apache.oltu.oauth2.resourceserver</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.oltu.oauth2</groupId>
+      <artifactId>org.apache.oltu.oauth2.client</artifactId>
     </dependency>
 
     <dependency>

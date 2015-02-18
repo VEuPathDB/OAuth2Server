@@ -1,4 +1,5 @@
 {
+  "validateDomains": true,
   "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
   "authenticatorConfig": {
     "login": "db_login",
@@ -11,10 +12,12 @@
   "allowedClients": [
     {
       "clientId": "apiComponentSite",
-      "clientSecret": "12345"
+      "clientSecret": "12345",
+      "clientDomains": [ "localhost" ]
     },{
       "clientId": "globusGenomics",
-      "clientSecret": "12345"
+      "clientSecret": "12345",
+      "clientDomains": [ "localhost" ]
     }
   ]
 }
