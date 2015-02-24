@@ -1,5 +1,24 @@
 #!/bin/bash
+##################################################################
+##
+##  Builds EuPathDB-configured OAuth2 server using custom config
+##  file and custom local Maven repo.  Note that use of this
+##  script generally requires an internet connection.
+##
+##  Usage: build.sh [configFile [localMvnRepo]]
+##
+##  configFile (optional): configuration file for OAuth2 server;
+##    if none specified, uses sample config file at
+##    EuPathDb/src/main/webapp/WEB-INF/OAuthSampleConfig.json
+##
+##  localMvnRepo: local maven repository to use instead of the
+##    default.  Can only be specified if configuration file is
+##    also specified (2-arg execution).  Uses ~/.m2/repository
+##    if not specified.
+##
+##################################################################
 
+# change to 'false' to have Maven run unit tests
 skipJavaUnitTests=true
 
 # define die for easy exits
@@ -18,8 +37,10 @@ if [ "$#" == "1" ]; then
   configFileOption="\"-DoauthConfigFile=$configFile\""
 elif [ "$#" == "2" ]; then
   configFile=$(myreadlink $1)
+  echo "Config file absolute path: $configFile"
   configFileOption="\"-DoauthConfigFile=$configFile\""
   altMavenRepo=$(myreadlink $2)
+  echo "Custom local Maven repo absolute path: $altMavenRepo"
   altMavenRepoOption="\"-Dmaven.repo.local=$altMavenRepo\""
 fi
 

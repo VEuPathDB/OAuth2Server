@@ -14,7 +14,7 @@
 
   <!-- Expect this property to be passed in -->
   <properties>
-    <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
+    <oauthConfigFile>${project.basedir}/src/main/webapp/WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
   </properties>
 
   <dependencies>

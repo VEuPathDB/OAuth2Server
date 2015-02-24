@@ -52,7 +52,8 @@ public class OAuthServlet extends ServletContainer {
     }
     Path configFile = Paths.get(configFileName);
     if (!Files.isReadable(configFile)) {
-      throw new InitializationException("Unable to read OAuth configuration file: " + configFileName);
+      throw new InitializationException("Unable to read OAuth configuration file: " + configFileName +
+          " (attempted full path: " + configFile.toAbsolutePath() + ")");
     }
     try {
       ServletContext context = getServletContext();
