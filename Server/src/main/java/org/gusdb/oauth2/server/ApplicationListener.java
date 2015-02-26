@@ -1,4 +1,4 @@
-package org.gusdb.oauth2;
+package org.gusdb.oauth2.server;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;

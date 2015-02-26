@@ -34,7 +34,7 @@ public class StaticResource {
           "success.html",
           "css/oauth.css",
           "js/lib/jquery-2.1.1.min.js",
-          "js/login.js"
+          "js/oauth.js"
       });
 
   private final String _resourceName;

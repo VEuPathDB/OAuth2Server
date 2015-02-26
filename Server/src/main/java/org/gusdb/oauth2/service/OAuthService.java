@@ -21,8 +21,8 @@ import javax.ws.rs.core.Variant;
 
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
-import org.gusdb.oauth2.OAuthServlet;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.server.OAuthServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

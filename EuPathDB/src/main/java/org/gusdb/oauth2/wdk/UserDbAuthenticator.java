@@ -62,7 +62,10 @@ public class UserDbAuthenticator implements Authenticator {
     Long id = getUserId(username, "", false);
     return (id == null ?
         Json.createObjectBuilder().add("id", JsonValue.NULL).build() :
-        Json.createObjectBuilder().add("id", id).build());
+        Json.createObjectBuilder()
+          .add("id", id)
+          .add("email", username)
+          .build());
   }
 
   protected Long getUserId(String username, String password, boolean checkPassword) {

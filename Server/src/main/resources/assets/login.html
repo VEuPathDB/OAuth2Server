@@ -5,10 +5,11 @@
     <title>Please Log In</title>
     <link rel="stylesheet" type="text/css" href="css/oauth.css"/>
     <script type="application/javascript" src="js/lib/jquery-2.1.1.min.js"></script>
-    <script type="application/javascript" src="js/login.js"></script>
+    <script type="application/javascript" src="js/oauth.js"></script>
   </head>
   <body>
-    <div>
+    <div class="header"></div>
+    <div class="form-container">
       <h2>Please Log In</h2>
       <form method="POST" action="../login">
         <input type="hidden" name="redirectUrl" value=""/>
@@ -18,5 +19,6 @@
         <input type="submit" value="Submit"/>
       </form>
     </div>
+    <div class="footer"></div>
   </body>
 </html>

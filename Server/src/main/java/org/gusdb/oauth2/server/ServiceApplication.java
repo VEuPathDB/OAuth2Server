@@ -1,4 +1,4 @@
-package org.gusdb.oauth2;
+package org.gusdb.oauth2.server;
 
 import java.util.HashSet;
 import java.util.Set;
