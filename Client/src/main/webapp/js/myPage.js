@@ -61,7 +61,8 @@ function applyToken(token) {
 
 function applyAuthCode(authCode) {
   $.ajax({
-    method: 'GET',
+    method: 'POST',
+    contentType: 'application/x-www-form-urlencoded',
     url: oauthServerBase + "token",
     data: {
       grant_type: "authorization_code",
@@ -69,6 +70,7 @@ function applyAuthCode(authCode) {
       redirect_uri: getRawUri(),
       client_id: clientId
     },
+    encode: true,
     dataType: 'json',
     success: function(data) {
       // got back token response
@@ -96,7 +98,7 @@ function getRawUri() {
 function setLoginLink() {
   var user = getSessionCookieValue();
   var loginLink = oauthServerBase + "authorize?" +
-    "response_type=code&"
+    "response_type=code&" +
     "client_id=" + clientId + "&" +
     "redirect_uri=" + getRawUri();
   $('#sessionLink').html(

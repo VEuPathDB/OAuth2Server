@@ -2,4 +2,15 @@
   background-color: blue;
   color: white;
   text-align:right;
+  margin: 0;
+  padding: 6px;
+}
+
+#header a {
+  color: white;
+  text-decoration: none;
+}
+
+#header a:hover {
+  text-decoration: underline;
 }
