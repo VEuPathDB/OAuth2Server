@@ -8,8 +8,8 @@
 
   <modules>
     <module>Server</module>
-    <module>Client</module>
     <module>EuPathDB</module>
+    <module>Client</module>
   </modules>
 
   <dependencyManagement>
