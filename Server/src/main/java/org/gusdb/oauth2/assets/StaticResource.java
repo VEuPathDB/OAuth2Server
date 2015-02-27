@@ -25,16 +25,9 @@ public class StaticResource {
           ResponseType.html,
           ResponseType.css,
           ResponseType.javascript,
-          ResponseType.jpeg
-      });
-
-  private static final List<String> VALID_RESOURCES =
-      Arrays.asList(new String[] {
-          "login.html",
-          "success.html",
-          "css/oauth.css",
-          "js/lib/jquery-2.1.1.min.js",
-          "js/oauth.js"
+          ResponseType.jpeg,
+          ResponseType.gif,
+          ResponseType.png
       });
 
   private final String _resourceName;
@@ -48,8 +41,7 @@ public class StaticResource {
     try {
       responseType = ResponseType.resolveType(Paths.get(resourceName));
       LOG.trace("Is response type '" + responseType + "' in valid types? " + VALID_TYPES.contains(responseType));
-      LOG.trace("Is name '" + name + "' in valid names? " + VALID_RESOURCES.contains(name));
-      if (VALID_TYPES.contains(responseType) && VALID_RESOURCES.contains(name)) {
+      if (VALID_TYPES.contains(responseType)) {
         // make sure we can actually access this resource
         LOG.debug("Resource type and name look valid.  Make sure system can find resource on classpath with path: " + resourceName);
         URL resource = Thread.currentThread().getContextClassLoader().getResource(resourceName);
