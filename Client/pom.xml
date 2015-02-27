@@ -10,7 +10,7 @@
 
   <name>OAuth2 - Sample Client</name>
   <artifactId>oauth2-client</artifactId>
-  <packaging>war</packaging>
+  <packaging>pom</packaging>
 
   <dependencies>
     <!--
