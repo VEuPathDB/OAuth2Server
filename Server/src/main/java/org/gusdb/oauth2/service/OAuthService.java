@@ -2,7 +2,10 @@ package org.gusdb.oauth2.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +18,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Variant;
@@ -82,19 +86,39 @@ public class OAuthService {
   @GET
   @Path("/authorize")
   public Response authorize() throws URISyntaxException, OAuthSystemException {
-    LOG.info("Handling authorize request");
+    LOG.info("Handling authorize request with the following params:" +
+        System.lineSeparator() + paramsToString(_request));
     return OAuthRequestHandler.handleAuthorizationRequest(_request);
   }
 
   @POST
   @Path("/token")
-  @Consumes("application/x-www-form-urlencoded")
-  @Produces("application/json")
-  public Response getToken() throws OAuthSystemException {
-    return OAuthRequestHandler.handleTokenRequest(_request,
+  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
+    HttpServletRequest wrapper = new JerseyHttpRequestWrapper(_request, formParams);
+    LOG.info("Can we get grant type as form param? " + formParams.getFirst("grant_type"));
+    LOG.info("Handling token request with the following params:" +
+        System.lineSeparator() + paramsToString(wrapper));
+    return OAuthRequestHandler.handleTokenRequest(wrapper,
         OAuthServlet.getApplicationConfig(_servletContext),
         OAuthServlet.getAuthenticator(_servletContext),
         new OAuthResponseFactory());
+  }
+
+  private static String paramsToString(HttpServletRequest request) {
+    @SuppressWarnings("unchecked")
+    Map<String, String[]> params = request.getParameterMap();
+    StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
+    for (Entry<String, String[]> entry : params.entrySet()) {
+      sb.append("  ").append(entry.getKey()).append(": ").append(Arrays.toString(entry.getValue()));
+      //[").append(entry.getValue()[0]);
+      //for (int i = 1; i < entry.getValue().length; i++) {
+      //  sb.append(", ").append(entry.getValue()[i]);
+      //}
+      sb./*append("]").*/append(System.lineSeparator());
+    }
+    return sb.append("}").toString();
   }
 
   @GET

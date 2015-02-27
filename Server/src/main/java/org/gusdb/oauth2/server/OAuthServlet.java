@@ -108,5 +108,4 @@ public class OAuthServlet extends ServletContainer {
     }
     return super.getInitParameter(name);
   }
-
 }

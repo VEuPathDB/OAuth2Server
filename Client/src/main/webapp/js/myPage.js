@@ -1,6 +1,7 @@
 
 var oauthServerBase = "http://localhost:8080/oauth/";
 var clientId = "apiComponentSite";
+var clientSecret = "12345";
 var sessionCookieName = "myPageUser";
 
 // creates an object with the query string params/values as properties
@@ -61,16 +62,16 @@ function applyToken(token) {
 
 function applyAuthCode(authCode) {
   $.ajax({
-    method: 'POST',
+    type: 'POST',
     contentType: 'application/x-www-form-urlencoded',
     url: oauthServerBase + "token",
     data: {
-      grant_type: "authorization_code",
-      code: authCode,
-      redirect_uri: getRawUri(),
-      client_id: clientId
+      "grant_type": "authorization_code",
+      "code": authCode,
+      "redirect_uri": getRawUri(),
+      "client_id": clientId,
+      "client_secret": clientSecret
     },
-    encode: true,
     dataType: 'json',
     success: function(data) {
       // got back token response

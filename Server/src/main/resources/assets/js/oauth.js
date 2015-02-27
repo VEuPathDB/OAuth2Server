@@ -61,7 +61,7 @@ var Pages = (function() {
   }
 
   return {
-    loadPage: loadPage;
+    loadPage: loadPage
   };
 })();
 

@@ -130,6 +130,7 @@ public class OAuthRequestHandler {
 
     }
     catch (OAuthProblemException e) {
+      LOG.error("Problem responding to token request", e);
       OAuthResponse res = OAuthASResponse
           .errorResponse(HttpServletResponse.SC_BAD_REQUEST)
           .error(e)
@@ -170,6 +171,7 @@ public class OAuthRequestHandler {
           .entity(accessToken).build();
     }
     catch (OAuthProblemException e) {
+      LOG.error("Problem responding to user info request", e);
       return Response.serverError().build();
     }
   }
