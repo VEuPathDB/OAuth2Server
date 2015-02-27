@@ -3,6 +3,9 @@ package org.gusdb.oauth2.server;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Application listener closes resources on the client-provided Authenticator class.  This
  * listener should be included in web.xml if your Authenticator opens resources during its
@@ -14,13 +17,17 @@ import javax.servlet.ServletContextListener;
  */
 public class ApplicationListener implements ServletContextListener {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ApplicationListener.class);
+
   @Override
   public void contextInitialized(ServletContextEvent event) {
+    LOG.info("Starting up OAuth Server webapp");
     // nothing to do here
   }
 
   @Override
   public void contextDestroyed(ServletContextEvent event) {
+    LOG.info("Shutting down OAuth Server webapp");
     OAuthServlet.getAuthenticator(event.getServletContext()).close();
   }
 
