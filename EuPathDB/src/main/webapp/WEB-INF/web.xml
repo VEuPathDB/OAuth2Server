@@ -6,17 +6,17 @@
 
   <!-- Need to add this so connection pool to apicomm is shut down -->
   <listener>
-    <listener-class>org.gusdb.oauth2.ApplicationListener</listener-class>
+    <listener-class>org.gusdb.oauth2.server.ApplicationListener</listener-class>
   </listener>
 
   <servlet>
     <servlet-name>OAuthService</servlet-name>
-    <servlet-class>org.gusdb.oauth2.OAuthServlet</servlet-class>
+    <servlet-class>org.gusdb.oauth2.server.OAuthServlet</servlet-class>
     <init-param>
       <param-name>oauth.config.file</param-name>
       <param-value>${oauthConfigFile}</param-value>
     </init-param>
-    <load-on-startup>0</load-on-startup> 
+    <load-on-startup>0</load-on-startup>
   </servlet>
   <servlet-mapping>
     <servlet-name>OAuthService</servlet-name>
