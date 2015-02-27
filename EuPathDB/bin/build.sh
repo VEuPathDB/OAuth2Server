@@ -21,6 +21,11 @@
 # change to 'false' to have Maven run unit tests
 skipJavaUnitTests=true
 
+# change to 'false' to update to latest
+skipSvnUpdate=true
+
+##################################################################
+
 # define die for easy exits
 die() { echo "$@" 1>&2 ; exit 1; }
 
@@ -52,13 +57,21 @@ echo "Found OAuth2Server project at $projectDir"
 
 # get latest OAuth code from subversion
 echo "Updating OAuth2Server"
-svn update || die "Unable to update OAuth2Server codebase to latest"
+if [ "$skipSvnUpdate" == "true" ]; then
+  echo "...update skipped"
+else
+  svn update || die "Unable to update OAuth2Server codebase to latest"
+fi
 
 # see if FgpUtil exists yet; check out or update, then build
 if [ -d "../FgpUtil" ]; then
   cd ../FgpUtil
   echo "Updating FgpUtil"
-  svn update || die "Unable to update FgpUtil codebase to latest"
+  if [ "$skipSvnUpdate" == "true" ]; then
+    echo "...update skipped"
+  else
+    svn update || die "Unable to update FgpUtil codebase to latest"
+  fi
 else
   cd ..
   echo "Checking out FgpUtil"
