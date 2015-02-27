@@ -34,6 +34,7 @@ public class JerseyHttpRequestWrapper extends HttpServletRequestWrapper {
   public String[] getParameterValues(String name) {
     return _formParams.get(name).toArray(new String[]{});
   }
+
   @Override
   public Map<String, String[]> getParameterMap() {
     Map<String, String[]> map = new HashMap<>();

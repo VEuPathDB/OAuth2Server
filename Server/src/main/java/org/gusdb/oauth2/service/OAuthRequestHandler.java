@@ -32,11 +32,8 @@ public class OAuthRequestHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(OAuthRequestHandler.class);
   
-  public static Response handleAuthorizationRequest(HttpServletRequest request)
+  public static Response handleAuthorizationRequest(OAuthAuthzRequest oauthRequest, String username)
       throws URISyntaxException, OAuthSystemException {
-    try {
-      OAuthAuthzRequest oauthRequest =
-          new OAuthAuthzRequest(request);
       OAuthIssuerImpl oauthIssuerImpl =
           new OAuthIssuerImpl(new MD5Generator());
 
@@ -46,7 +43,7 @@ public class OAuthRequestHandler {
 
       LOG.info("Creating authorization response");
       OAuthASResponse.OAuthAuthorizationResponseBuilder builder =
-          OAuthASResponse.authorizationResponse(request,
+          OAuthASResponse.authorizationResponse(new StateParamHttpRequest(oauthRequest.getState()),
               HttpServletResponse.SC_FOUND);
 
       // 1
@@ -68,11 +65,6 @@ public class OAuthRequestHandler {
       return Response.status(response.getResponseStatus())
           .location(url)
           .build();
-    }
-    catch (OAuthProblemException e) {
-      LOG.error("Problem resolving authorization request", e);
-      return Response.serverError().entity("Server Error").build();
-    }
   }
 
   public static Response handleTokenRequest(HttpServletRequest request,

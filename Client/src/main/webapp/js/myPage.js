@@ -66,11 +66,11 @@ function applyAuthCode(authCode) {
     contentType: 'application/x-www-form-urlencoded',
     url: oauthServerBase + "token",
     data: {
-      "grant_type": "authorization_code",
-      "code": authCode,
-      "redirect_uri": getRawUri(),
-      "client_id": clientId,
-      "client_secret": clientSecret
+      grant_type: "authorization_code",
+      code: authCode,
+      redirect_uri: getRawUri(),
+      client_id: clientId,
+      client_secret: clientSecret
     },
     dataType: 'json',
     success: function(data) {
