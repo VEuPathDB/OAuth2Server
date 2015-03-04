@@ -10,20 +10,20 @@ public class OAuthResponseFactory {
 
   private static ResponseBuilder NOT_ACCEPTABLE_RESPONSE = Response.notAcceptable(Collections.<Variant>emptyList());
 
+  public Response buildInvalidGrantTypeResponse() {
+    return NOT_ACCEPTABLE_RESPONSE.entity("Unsupported Grant Type").build();
+  }
+
   public Response buildInvalidUserPassResponse() {
     return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Username/Password").build();
   }
 
-  public Response buildInvalidClientSecretResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Client Secret").build();
+  public Response buildInvalidClientResponse() {
+    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Client").build();
   }
 
   public Response buildBadAuthCodeResponse() {
     return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Auth Code").build();
-  }
-
-  public Response buildInvalidClientIdResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Client ID").build();
   }
 
   public Response buildServerErrorResponse() {

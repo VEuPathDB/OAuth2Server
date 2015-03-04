@@ -50,4 +50,12 @@ public class Session {
   private Map<String, OAuthAuthzRequest> getFormIdMap() {
     return (Map<String, OAuthAuthzRequest>)_session.getAttribute(SESSION_FORM_ID_MAP_KEY);
   }
+
+  public void invalidate() {
+    String username = getUsername();
+    if (username != null) {
+      TokenStore.clearObjectsForUser(username);
+    }
+    _session.invalidate();
+  }
 }

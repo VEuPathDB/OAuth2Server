@@ -28,8 +28,11 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Variant;
 
 import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
+import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
+import org.apache.oltu.oauth2.common.message.types.ParameterStyle;
+import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.server.OAuthServlet;
@@ -40,6 +43,9 @@ import org.slf4j.LoggerFactory;
 public class OAuthService {
 
   private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
+
+  private static final String FORM_ID_PARAM_NAME = "form_id";
+  private static enum LoginFormStatus { failed; }
 
   @Context
   private ServletContext _servletContext;
@@ -74,13 +80,13 @@ public class OAuthService {
       @FormParam("username") final String username,
       @FormParam("password") final String password,
       @HeaderParam("Referer") final String referrer) throws Exception {
-    Session session = new Session(_session);
     String formId = getFormIdFromReferrer(referrer);
+    Session session = new Session(_session);
     Authenticator authenticator = OAuthServlet.getAuthenticator(_servletContext);
     boolean validCreds = authenticator.isCredentialsValid(username, password);
     if (validCreds) {
       session.setUsername(username);
-      OAuthAuthzRequest originalRequest = session.clearFormId(formId);
+      OAuthAuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
       if (originalRequest == null) {
         // formId doesn't exist on this session; give user generic success page
         return Response.seeOther(new URI("assets/success.html")).build();
@@ -88,16 +94,17 @@ public class OAuthService {
       return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username);
     }
     else {
-      return Response.seeOther(new URI("assets/login.html?status=failed&formId=" + formId)).build();
+      return Response.seeOther(getLoginUri(formId, LoginFormStatus.failed)).build();
     }
   }
 
   // FIXME: this could probably be done much better with a regex; fix later
   private String getFormIdFromReferrer(String referrer) {
+    String formIdPrefix = FORM_ID_PARAM_NAME + "=";
     if (referrer == null) return null;
-    int beginIndex = referrer.indexOf("formId=");
+    int beginIndex = referrer.indexOf(formIdPrefix);
     if (beginIndex == -1) return null;
-    referrer = referrer.substring(beginIndex + "formId=".length());
+    referrer = referrer.substring(beginIndex + formIdPrefix.length());
     if (referrer.isEmpty() || referrer.charAt(0) == '&') return null;
     int endIndex = referrer.indexOf("&");
     if (endIndex == -1) return referrer;
@@ -107,9 +114,9 @@ public class OAuthService {
   @GET
   @Path("/logout")
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) throws URISyntaxException {
-    _session.invalidate();
-    if (redirectUri == null || redirectUri.isEmpty()) redirectUri = "assets/login.html";
-    return Response.seeOther(new URI(redirectUri)).build();
+    new Session(_session).invalidate();
+    URI uri = (redirectUri == null || redirectUri.isEmpty() ? getLoginUri(null, null) : new URI(redirectUri));
+    return Response.seeOther(uri).build();
   }
 
   @GET
@@ -118,6 +125,10 @@ public class OAuthService {
     LOG.info("Handling authorize request with the following params:" +
         System.lineSeparator() + paramsToString(_request));
     OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(_request);
+    ClientValidator clientValidator = OAuthServlet.getClientValidator(_servletContext);
+    if (!clientValidator.isValidAuthorizationClient(oauthRequest)) {
+      return new OAuthResponseFactory().buildInvalidClientResponse();
+    }
     Session session = new Session(_session);
     if (session.isAuthenticated()) {
       // user is already logged in; respond with auth code for user
@@ -125,25 +136,37 @@ public class OAuthService {
     }
     else {
       // no one is logged in; generate form ID and send
-      String formId = session.generateFormId(oauthRequest);
-      return Response.seeOther(new URI("assets/login.html?form_id=" + formId)).build();
-      
+      return Response.seeOther(getLoginUri(session.generateFormId(oauthRequest), null)).build();
     }
+  }
+
+  private static URI getLoginUri(String formId, LoginFormStatus status) throws URISyntaxException {
+    String queryString = "";
+    if (formId != null) {
+      queryString = FORM_ID_PARAM_NAME + "=" + formId;
+    }
+    if (status != null) {
+      queryString += (queryString.isEmpty() ? "" : "&") + "status=" + status.name();
+    }
+    return new URI("assets/login.html" + (queryString.isEmpty() ? "" : "?" + queryString));
   }
 
   @POST
   @Path("/token")
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
-    HttpServletRequest wrapper = new JerseyHttpRequestWrapper(_request, formParams);
-    LOG.info("Can we get grant type as form param? " + formParams.getFirst("grant_type"));
+  public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException, OAuthProblemException {
+    // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
+    HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
     LOG.info("Handling token request with the following params:" +
-        System.lineSeparator() + paramsToString(wrapper));
-    return OAuthRequestHandler.handleTokenRequest(wrapper,
-        OAuthServlet.getApplicationConfig(_servletContext),
-        OAuthServlet.getAuthenticator(_servletContext),
-        new OAuthResponseFactory());
+        System.lineSeparator() + paramsToString(request));
+    OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
+    ClientValidator clientValidator = OAuthServlet.getClientValidator(_servletContext);
+    if (!clientValidator.isValidTokenClient(oauthRequest)) {
+      return new OAuthResponseFactory().buildInvalidClientResponse();
+    }
+    return OAuthRequestHandler.handleTokenRequest(oauthRequest,
+        OAuthServlet.getAuthenticator(_servletContext));
   }
 
   private static String paramsToString(HttpServletRequest request) {
@@ -160,8 +183,9 @@ public class OAuthService {
   @GET
   @Path("/user")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserInfo() throws OAuthSystemException {
-    return OAuthRequestHandler.handleUserInfoRequest(_request);
+  public Response getUserInfo() throws OAuthSystemException, OAuthProblemException {
+    OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
+    return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_servletContext));
   }
 
 }

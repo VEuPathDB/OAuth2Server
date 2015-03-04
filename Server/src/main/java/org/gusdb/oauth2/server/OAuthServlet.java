@@ -12,6 +12,7 @@ import org.glassfish.jersey.servlet.ServletProperties;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.config.ApplicationConfig;
+import org.gusdb.oauth2.service.ClientValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,10 @@ public class OAuthServlet extends ServletContainer {
 
   public static Authenticator getAuthenticator(ServletContext context) {
     return (Authenticator)context.getAttribute(OAUTH_AUTHENTICATOR_KEY);
+  }
+
+  public static ClientValidator getClientValidator(ServletContext servletContext) {
+    return new ClientValidator(getApplicationConfig(servletContext).getAllowedClients());
   }
 
   @Override

@@ -19,7 +19,7 @@ public class ExceptionMapper implements javax.ws.rs.ext.ExceptionMapper<Exceptio
   @Override
   public Response toResponse(Exception e) {
 
-    LOG.error(e.getMessage(), e);
+    LOG.error("Error processing request", e);
     try { throw e; }
 
     catch (NotFoundException | PathParamException e404) {
