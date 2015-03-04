@@ -25,7 +25,7 @@ public class TestAuthenticator extends UserDbAuthenticator {
 
   @Override
   protected Long getUserId(String username, String password, boolean checkPassword) {
-    LOG.info("Request to get user id with [" + username + ", " + password + "," + checkPassword + "]");
+    LOG.info("Request to get user id with [" + username + ", " + password + ", " + checkPassword + "]");
     if (username == null) return null;
     TwoTuple<Long, String> profile = USERS.get(username);
     if (profile == null) return null;

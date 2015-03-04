@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.gusdb.oauth2.service.JerseyHttpRequestWrapper.ListEnumeration;
+import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper.ListEnumeration;
 import org.junit.Test;
 
 public class ListEnumerationTest {

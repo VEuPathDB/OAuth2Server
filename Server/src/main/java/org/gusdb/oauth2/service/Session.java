@@ -6,9 +6,13 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpSession;
 
-import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
+import org.gusdb.oauth2.service.util.AuthzRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Session {
+
+  private static final Logger LOG = LoggerFactory.getLogger(Session.class);
 
   private static final String SESSION_USERNAME_KEY = "username";
   private static final String SESSION_FORM_ID_MAP_KEY = "formIdMap";
@@ -19,7 +23,7 @@ public class Session {
     _session = session;
     synchronized(session) {
       if (getFormIdMap() == null) {
-        _session.setAttribute(SESSION_FORM_ID_MAP_KEY, new HashMap<String, OAuthAuthzRequest>());
+        _session.setAttribute(SESSION_FORM_ID_MAP_KEY, new HashMap<String, AuthzRequest>());
       }
     }
   }
@@ -36,19 +40,20 @@ public class Session {
     _session.setAttribute(SESSION_USERNAME_KEY, username);
   }
 
-  public OAuthAuthzRequest clearFormId(String formId) {
+  public AuthzRequest clearFormId(String formId) {
     return getFormIdMap().remove(formId);
   }
 
-  public String generateFormId(OAuthAuthzRequest authRequest) {
+  public String generateFormId(AuthzRequest authRequest) {
     String nextFormId = UUID.randomUUID().toString();
+    LOG.info("Generated formId [" + nextFormId + "] to reference AuthzRequest with response type: " + authRequest.getResponseType());
     getFormIdMap().put(nextFormId, authRequest);
     return nextFormId;
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, OAuthAuthzRequest> getFormIdMap() {
-    return (Map<String, OAuthAuthzRequest>)_session.getAttribute(SESSION_FORM_ID_MAP_KEY);
+  private Map<String, AuthzRequest> getFormIdMap() {
+    return (Map<String, AuthzRequest>)_session.getAttribute(SESSION_FORM_ID_MAP_KEY);
   }
 
   public void invalidate() {

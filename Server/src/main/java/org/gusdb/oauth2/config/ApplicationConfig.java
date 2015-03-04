@@ -13,7 +13,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
-import javax.json.JsonValue.ValueType;
 
 import org.gusdb.oauth2.InitializationException;
 import org.slf4j.Logger;
@@ -78,16 +77,13 @@ public class ApplicationConfig {
       Set<String> usedClientIds = new HashSet<String>();
       for (JsonValue client : clientsJson) {
         JsonObject clientObj = (JsonObject)client;
-        
+
         // validate domain list
         JsonArray clientDomains = clientObj.getJsonArray(JsonKey.clientDomains.name());
         Set<String> domainList = new HashSet<>();
         if (clientDomains != null) {
-          for (JsonValue value : clientDomains) {
-            if (!value.getValueType().equals(ValueType.STRING)) {
-              throw new ClassCastException("Client domain entries must be strings");
-            }
-            domainList.add(value.toString());
+          for (int i = 0; i < clientDomains.size(); i++) {
+            domainList.add(clientDomains.getString(i));
           }
         }
 

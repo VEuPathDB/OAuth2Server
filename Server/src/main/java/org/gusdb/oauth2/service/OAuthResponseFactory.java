@@ -26,6 +26,10 @@ public class OAuthResponseFactory {
     return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Auth Code").build();
   }
 
+  public Response buildBadResponseTypeResponse() {
+    return NOT_ACCEPTABLE_RESPONSE.entity("Unsupported Response Type").build();
+  }
+
   public Response buildServerErrorResponse() {
     return Response.serverError().build();
   }

@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -36,6 +35,8 @@ import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.server.OAuthServlet;
+import org.gusdb.oauth2.service.util.AuthzRequest;
+import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +56,6 @@ public class OAuthService {
 
   @Context
   private HttpHeaders _headers;
-
-  @Context
-  private HttpSession _session;
 
   @GET
   @Path("assets/{name:.+}")
@@ -81,12 +79,12 @@ public class OAuthService {
       @FormParam("password") final String password,
       @HeaderParam("Referer") final String referrer) throws Exception {
     String formId = getFormIdFromReferrer(referrer);
-    Session session = new Session(_session);
+    Session session = new Session(_request.getSession());
     Authenticator authenticator = OAuthServlet.getAuthenticator(_servletContext);
     boolean validCreds = authenticator.isCredentialsValid(username, password);
     if (validCreds) {
       session.setUsername(username);
-      OAuthAuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
+      AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
       if (originalRequest == null) {
         // formId doesn't exist on this session; give user generic success page
         return Response.seeOther(new URI("assets/success.html")).build();
@@ -114,7 +112,7 @@ public class OAuthService {
   @GET
   @Path("/logout")
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) throws URISyntaxException {
-    new Session(_session).invalidate();
+    new Session(_request.getSession()).invalidate();
     URI uri = (redirectUri == null || redirectUri.isEmpty() ? getLoginUri(null, null) : new URI(redirectUri));
     return Response.seeOther(uri).build();
   }
@@ -129,14 +127,14 @@ public class OAuthService {
     if (!clientValidator.isValidAuthorizationClient(oauthRequest)) {
       return new OAuthResponseFactory().buildInvalidClientResponse();
     }
-    Session session = new Session(_session);
+    Session session = new Session(_request.getSession());
     if (session.isAuthenticated()) {
       // user is already logged in; respond with auth code for user
-      return OAuthRequestHandler.handleAuthorizationRequest(oauthRequest, session.getUsername());
+      return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest), session.getUsername());
     }
     else {
       // no one is logged in; generate form ID and send
-      return Response.seeOther(getLoginUri(session.generateFormId(oauthRequest), null)).build();
+      return Response.seeOther(getLoginUri(session.generateFormId(new AuthzRequest(oauthRequest)), null)).build();
     }
   }
 

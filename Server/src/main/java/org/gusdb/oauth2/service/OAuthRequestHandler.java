@@ -10,7 +10,6 @@ import javax.ws.rs.core.Response;
 import org.apache.oltu.oauth2.as.issuer.MD5Generator;
 import org.apache.oltu.oauth2.as.issuer.OAuthIssuer;
 import org.apache.oltu.oauth2.as.issuer.OAuthIssuerImpl;
-import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
 import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
 import org.apache.oltu.oauth2.as.response.OAuthASResponse;
 import org.apache.oltu.oauth2.common.OAuth;
@@ -24,6 +23,8 @@ import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.service.TokenStore.AuthCodeData;
+import org.gusdb.oauth2.service.util.AuthzRequest;
+import org.gusdb.oauth2.service.util.StateParamHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,18 +32,19 @@ public class OAuthRequestHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(OAuthRequestHandler.class);
 
-  public static Response handleAuthorizationRequest(OAuthAuthzRequest oauthRequest, String username)
+  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username)
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
     // build response according to response_type
-    String responseType = oauthRequest.getParam(OAuth.OAUTH_RESPONSE_TYPE);
+    String responseType = oauthRequest.getResponseType();
+    LOG.info("Cached request values: " + responseType + ", " + oauthRequest.getClientId() + ", " +
+        oauthRequest.getRedirectUri() + ", " + oauthRequest.getResponseType());
 
     LOG.info("Creating authorization response");
     OAuthASResponse.OAuthAuthorizationResponseBuilder builder = OAuthASResponse.authorizationResponse(
         new StateParamHttpRequest(oauthRequest.getState()), HttpServletResponse.SC_FOUND);
 
-    // 1
     LOG.info("Checking if requested response_type is '" + ResponseType.CODE.toString() + "'");
     if (responseType.equals(ResponseType.CODE.toString())) {
       LOG.info("Generating authorization code...");
@@ -50,8 +52,11 @@ public class OAuthRequestHandler {
       TokenStore.addAuthCode(new AuthCodeData(authorizationCode, oauthRequest.getClientId(), username));
       builder.setCode(authorizationCode);
     }
+    else {
+      return new OAuthResponseFactory().buildBadResponseTypeResponse();
+    }
 
-    String redirectURI = oauthRequest.getParam(OAuth.OAUTH_REDIRECT_URI);
+    String redirectURI = oauthRequest.getRedirectUri();
     final OAuthResponse response = builder.location(redirectURI).buildQueryMessage();
     URI url = new URI(response.getLocationUri());
     return Response.status(response.getResponseStatus()).location(url).build();
@@ -92,7 +97,7 @@ public class OAuthRequestHandler {
       }
 
       final String accessToken = oauthIssuerImpl.accessToken();
-      TokenStore.addAccessToken(oauthRequest.getCode(), accessToken);
+      TokenStore.addAccessToken(accessToken, oauthRequest.getCode());
 
       OAuthResponse response = OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK).setAccessToken(
           accessToken).setExpiresIn("3600").buildJSONMessage();
@@ -111,7 +116,7 @@ public class OAuthRequestHandler {
       return GrantType.valueOf(grantTypeStr.toUpperCase());
     }
     catch (IllegalArgumentException e) {
-      throw OAuthProblemException.error("invalid_request", "Illegal grant type: " + grantTypeStr);
+      throw OAuthProblemException.error(OAuthError.TokenResponse.INVALID_REQUEST, "Illegal grant type: " + grantTypeStr);
     }
   }
 

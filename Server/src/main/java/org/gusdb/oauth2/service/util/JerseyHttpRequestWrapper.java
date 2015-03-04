@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.service;
+package org.gusdb.oauth2.service.util;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
