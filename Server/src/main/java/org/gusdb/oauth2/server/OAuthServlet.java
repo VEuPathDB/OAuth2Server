@@ -35,7 +35,8 @@ public class OAuthServlet extends ServletContainer {
   }
 
   public static ClientValidator getClientValidator(ServletContext servletContext) {
-    return new ClientValidator(getApplicationConfig(servletContext).getAllowedClients());
+    ApplicationConfig config = getApplicationConfig(servletContext);
+    return new ClientValidator(config.getAllowedClients(), config.validateDomains());
   }
 
   @Override

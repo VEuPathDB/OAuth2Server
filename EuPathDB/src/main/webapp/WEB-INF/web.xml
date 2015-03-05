@@ -26,6 +26,7 @@
   </servlet-mapping>
 
   <session-config>
+    <session-timeout>30</session-timeout>
     <cookie-config>
       <name>eupathdb-login</name>
     </cookie-config>

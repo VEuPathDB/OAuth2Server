@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>EuPathDB: Please Log In</title>
+    <link rel="stylesheet" type="text/css" href="css/oauth.css"/>
+    <script type="application/javascript" src="js/lib/jquery-2.1.1.min.js"></script>
+    <script type="application/javascript" src="js/util.js"></script>
+    <script type="application/javascript" src="js/login.js"></script>
+  </head>
+  <body>
+    <div style="text-align:center"><img src="eupathdb-logo.png" style="width:400px"></div>
+    <div class="form-container">
+      <h2>Please Log In</h2>
+      <form method="POST" action="../login">
+        <div><span class="message"></span></div>
+        <div class="input-line"><label>Username:</label><input type="text" name="username"/></div>
+        <div class="input-line"><label>Password:</label><input type="password" name="password"/></div>
+        <input class="submit-button" type="submit" value="Submit"/>
+      </form>
+    </div>
+  </body>
+</html>

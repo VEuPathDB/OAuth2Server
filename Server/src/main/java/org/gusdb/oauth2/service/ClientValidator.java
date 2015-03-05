@@ -3,10 +3,8 @@ package org.gusdb.oauth2.service;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
 import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
@@ -18,14 +16,14 @@ public class ClientValidator {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClientValidator.class);
 
-  private Map<String, AllowedClient> _clientMap = new HashMap<>();
-  private Set<String> _allAllowedDomains = new HashSet<>();
+  private final Map<String, AllowedClient> _clientMap = new HashMap<>();
+  private final boolean _validateDomains;
 
-  public ClientValidator(List<AllowedClient> allowedClients) {
+  public ClientValidator(List<AllowedClient> allowedClients, boolean validateDomains) {
     for (AllowedClient client : allowedClients) {
-      _allAllowedDomains.addAll(client.getDomains());
       _clientMap.put(client.getId(), client);
     }
+    _validateDomains = validateDomains;
   }
 
   public boolean isValidAuthorizationClient(OAuthAuthzRequest oauthRequest) {
@@ -53,6 +51,7 @@ public class ClientValidator {
   }
 
   private boolean isValidRedirectUri(String clientId, String redirectUri) {
+    if (!_validateDomains) return true;
     try {
       String redirectUriHost = new URI(redirectUri).getHost();
       AllowedClient client = _clientMap.get(clientId);

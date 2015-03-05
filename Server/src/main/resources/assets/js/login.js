@@ -1,6 +1,10 @@
 $(function loadPage() {
   var status = getUrlParams()["status"];
-  if (status != undefined && status == "failed") {
-    jQuery('.message').html("Invalid credentials.  Please try again.");
+  var messages = {
+    "failed": "Invalid credentials.  Please try again.",
+    "accessdenied": "Anonymous logins disabled.<br/>Please register your client application."
+  }
+  if (status != undefined) {
+    jQuery('.message').html(messages[status]);
   }
 });

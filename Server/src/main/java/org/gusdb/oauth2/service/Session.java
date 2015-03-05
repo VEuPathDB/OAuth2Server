@@ -44,6 +44,10 @@ public class Session {
     return getFormIdMap().remove(formId);
   }
 
+  public boolean isFormId(String formId) {
+    return getFormIdMap().containsKey(formId);
+  }
+
   public String generateFormId(AuthzRequest authRequest) {
     String nextFormId = UUID.randomUUID().toString();
     LOG.debug("Generated formId [" + nextFormId + "] to reference AuthzRequest");

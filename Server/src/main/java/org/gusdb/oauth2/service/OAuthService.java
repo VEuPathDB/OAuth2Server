@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.service;
 
+import static org.gusdb.oauth2.assets.StaticResource.RESOURCE_PREFIX;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -34,6 +36,7 @@ import org.apache.oltu.oauth2.common.message.types.ParameterStyle;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
@@ -46,10 +49,10 @@ public class OAuthService {
   private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
 
   private static final String FORM_ID_PARAM_NAME = "form_id";
-  private static enum LoginFormStatus { failed; }
+  private static enum LoginFormStatus { failed, accessdenied; }
 
   @Context
-  private ServletContext _servletContext;
+  private ServletContext _context;
 
   @Context
   private HttpServletRequest _request;
@@ -58,7 +61,7 @@ public class OAuthService {
   private HttpHeaders _headers;
 
   @GET
-  @Path("assets/{name:.+}")
+  @Path(RESOURCE_PREFIX + "{name:.+}")
   public Response getStaticFile(@PathParam("name") String name) {
     LOG.debug("Request made to fetch resource: " + name);
     if (name == null || name.isEmpty()) {
@@ -78,16 +81,21 @@ public class OAuthService {
       @FormParam("username") final String username,
       @FormParam("password") final String password,
       @HeaderParam("Referer") final String referrer) throws Exception {
-    String formId = getFormIdFromReferrer(referrer);
     Session session = new Session(_request.getSession());
-    Authenticator authenticator = OAuthServlet.getAuthenticator(_servletContext);
+    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+    String formId = getFormIdFromReferrer(referrer);
+    if ((formId == null || !session.isFormId(formId)) && !config.anonymousLoginsAllowed()) {
+      return Response.seeOther(getLoginUri(formId, LoginFormStatus.accessdenied)).build();
+    }
+    Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
     boolean validCreds = authenticator.isCredentialsValid(username, password);
     if (validCreds) {
       session.setUsername(username);
       AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
       if (originalRequest == null) {
         // formId doesn't exist on this session; give user generic success page
-        return Response.seeOther(new URI("assets/success.html")).build();
+        return Response.seeOther(new URI(RESOURCE_PREFIX +
+            config.getLoginSuccessPage())).build();
       }
       return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username);
     }
@@ -123,7 +131,7 @@ public class OAuthService {
     LOG.debug("Handling authorize request with the following params:" +
         System.lineSeparator() + paramsToString(_request));
     OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(_request);
-    ClientValidator clientValidator = OAuthServlet.getClientValidator(_servletContext);
+    ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
     if (!clientValidator.isValidAuthorizationClient(oauthRequest)) {
       return new OAuthResponseFactory().buildInvalidClientResponse();
     }
@@ -138,7 +146,7 @@ public class OAuthService {
     }
   }
 
-  private static URI getLoginUri(String formId, LoginFormStatus status) throws URISyntaxException {
+  private URI getLoginUri(String formId, LoginFormStatus status) throws URISyntaxException {
     String queryString = "";
     if (formId != null) {
       queryString = FORM_ID_PARAM_NAME + "=" + formId;
@@ -146,7 +154,8 @@ public class OAuthService {
     if (status != null) {
       queryString += (queryString.isEmpty() ? "" : "&") + "status=" + status.name();
     }
-    return new URI("assets/login.html" + (queryString.isEmpty() ? "" : "?" + queryString));
+    return new URI(RESOURCE_PREFIX + OAuthServlet.getApplicationConfig(_context).getLoginFormPage() +
+        (queryString.isEmpty() ? "" : "?" + queryString));
   }
 
   @POST
@@ -159,12 +168,12 @@ public class OAuthService {
     LOG.debug("Handling token request with the following params:" +
         System.lineSeparator() + paramsToString(request));
     OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
-    ClientValidator clientValidator = OAuthServlet.getClientValidator(_servletContext);
+    ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
     if (!clientValidator.isValidTokenClient(oauthRequest)) {
       return new OAuthResponseFactory().buildInvalidClientResponse();
     }
     return OAuthRequestHandler.handleTokenRequest(oauthRequest,
-        OAuthServlet.getAuthenticator(_servletContext));
+        OAuthServlet.getAuthenticator(_context));
   }
 
   private static String paramsToString(HttpServletRequest request) {
@@ -183,7 +192,7 @@ public class OAuthService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getUserInfo() throws OAuthSystemException, OAuthProblemException {
     OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
-    return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_servletContext));
+    return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context));
   }
 
 }

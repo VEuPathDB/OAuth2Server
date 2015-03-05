@@ -15,7 +15,11 @@ public class TestAuthenticator extends UserDbAuthenticator {
   // maps from username -> [ userid, password ]
   private static final Map<String, TwoTuple<Long, String>> USERS =
       new MapBuilder<String, TwoTuple<Long, String>>()
-      .put("rdoherty", new TwoTuple<>(1L, "12345"))
+      .put("caurreco", new TwoTuple<>(1L, "12345"))
+      .put("dfaulk", new TwoTuple<>(2L, "12345"))
+      .put("xingao", new TwoTuple<>(3L, "12345"))
+      .put("rdoherty", new TwoTuple<>(4L, "12345"))
+      .put("sfischer", new TwoTuple<>(5L, "12345"))
       .toMap();
 
   @Override

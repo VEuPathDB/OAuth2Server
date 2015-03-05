@@ -18,7 +18,7 @@ public class StaticResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(StaticResource.class);
 
-  private static final String RESOURCE_PREFIX = "assets/";
+  public static final String RESOURCE_PREFIX = "assets/";
 
   private static final List<ResponseType> VALID_TYPES =
       Arrays.asList(new ResponseType[] {
