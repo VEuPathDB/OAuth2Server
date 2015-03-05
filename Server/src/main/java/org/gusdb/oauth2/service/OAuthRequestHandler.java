@@ -38,16 +38,15 @@ public class OAuthRequestHandler {
 
     // build response according to response_type
     String responseType = oauthRequest.getResponseType();
-    LOG.info("Cached request values: " + responseType + ", " + oauthRequest.getClientId() + ", " +
+    LOG.trace("Cached request values: " + responseType + ", " + oauthRequest.getClientId() + ", " +
         oauthRequest.getRedirectUri() + ", " + oauthRequest.getResponseType());
 
-    LOG.info("Creating authorization response");
+    LOG.debug("Creating authorization response");
     OAuthASResponse.OAuthAuthorizationResponseBuilder builder = OAuthASResponse.authorizationResponse(
         new StateParamHttpRequest(oauthRequest.getState()), HttpServletResponse.SC_FOUND);
 
-    LOG.info("Checking if requested response_type is '" + ResponseType.CODE.toString() + "'");
     if (responseType.equals(ResponseType.CODE.toString())) {
-      LOG.info("Generating authorization code...");
+      LOG.debug("Generating authorization code...");
       final String authorizationCode = oauthIssuerImpl.authorizationCode();
       TokenStore.addAuthCode(new AuthCodeData(authorizationCode, oauthRequest.getClientId(), username));
       builder.setCode(authorizationCode);
@@ -137,7 +136,7 @@ public class OAuthRequestHandler {
       }
 
       JsonObject userData = authenticator.getUserInfo(username);
-      return Response.status(Response.Status.OK).entity(userData).build();
+      return Response.status(Response.Status.OK).entity(userData.toString()).build();
     }
     catch (Exception e) {
       LOG.error("Problem responding to user info request", e);

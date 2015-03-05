@@ -65,7 +65,7 @@ public class ApplicationConfig {
   }
 
   public static ApplicationConfig parseConfigFile(Path configFile) throws IOException, InitializationException {
-    LOG.info("Parsing config file: " + configFile.toAbsolutePath());
+    LOG.debug("Parsing config file: " + configFile.toAbsolutePath());
     try (FileInputStream in = new FileInputStream(configFile.toFile());
          JsonReader jsonIn = Json.createReader(in)) {
       JsonObject json = jsonIn.readObject();

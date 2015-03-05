@@ -60,7 +60,7 @@ public class OAuthService {
   @GET
   @Path("assets/{name:.+}")
   public Response getStaticFile(@PathParam("name") String name) {
-    LOG.info("Request made to fetch resource: " + name);
+    LOG.debug("Request made to fetch resource: " + name);
     if (name == null || name.isEmpty()) {
       return Response.notAcceptable(Collections.<Variant>emptyList()).build();
     }
@@ -120,7 +120,7 @@ public class OAuthService {
   @GET
   @Path("/authorize")
   public Response authorize() throws URISyntaxException, OAuthSystemException, OAuthProblemException {
-    LOG.info("Handling authorize request with the following params:" +
+    LOG.debug("Handling authorize request with the following params:" +
         System.lineSeparator() + paramsToString(_request));
     OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(_request);
     ClientValidator clientValidator = OAuthServlet.getClientValidator(_servletContext);
@@ -156,7 +156,7 @@ public class OAuthService {
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException, OAuthProblemException {
     // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
     HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
-    LOG.info("Handling token request with the following params:" +
+    LOG.debug("Handling token request with the following params:" +
         System.lineSeparator() + paramsToString(request));
     OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
     ClientValidator clientValidator = OAuthServlet.getClientValidator(_servletContext);

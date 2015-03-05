@@ -46,7 +46,7 @@ public class Session {
 
   public String generateFormId(AuthzRequest authRequest) {
     String nextFormId = UUID.randomUUID().toString();
-    LOG.info("Generated formId [" + nextFormId + "] to reference AuthzRequest with response type: " + authRequest.getResponseType());
+    LOG.debug("Generated formId [" + nextFormId + "] to reference AuthzRequest");
     getFormIdMap().put(nextFormId, authRequest);
     return nextFormId;
   }

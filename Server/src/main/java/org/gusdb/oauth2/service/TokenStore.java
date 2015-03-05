@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Manages state on the OAuth server.  This includes OAuth server sessions,
  * their owners, and associated authentication codes and tokens
@@ -13,6 +16,9 @@ import java.util.Map;
  * @author ryan
  */
 public class TokenStore {
+
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory.getLogger(TokenStore.class);
 
   /*
    * HttpSession contains the username (string used in username field of
@@ -39,6 +45,11 @@ public class TokenStore {
       this.clientId = clientId;
       this.username = username;
       this.creationDate = new Date();
+    }
+
+    @Override
+    public String toString() {
+      return "{ authCode: " + authCode + ", clientId: " + clientId + ", username: " + username + " }";
     }
   }
 
@@ -72,7 +83,8 @@ public class TokenStore {
   }
 
   public static synchronized void addAccessToken(String accessToken, String authCode) {
-    AccessTokenData accessTokenData = new AccessTokenData(accessToken, AUTH_CODE_MAP.get(authCode));
+    AuthCodeData authCodeData = AUTH_CODE_MAP.get(authCode);
+    AccessTokenData accessTokenData = new AccessTokenData(accessToken, authCodeData);
     ACCESS_TOKEN_MAP.put(accessTokenData.tokenValue, accessTokenData);
     List<AccessTokenData> list = USER_ACCESS_TOKEN_MAP.get(accessTokenData.authCodeData.username);
     if (list == null) {

@@ -18,7 +18,7 @@ public class AllowedClient {
     _id = id;
     _secret = secret;
     _domains = domains;
-    LOG.info("Creating AllowedClient " + id + "/" + secret + " with allowed domains " + Arrays.toString(domains.toArray()));
+    LOG.debug("Creating AllowedClient " + id + "/" + secret + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
   public String getId() { return _id; }

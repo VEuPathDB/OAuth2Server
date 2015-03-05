@@ -41,14 +41,14 @@ public class ClientValidator {
 
   private boolean isValidClientId(String clientId) {
     boolean valid = _clientMap.containsKey(clientId);
-    LOG.info("Valid client ID [" + clientId + "]? " + valid);
+    LOG.debug("Valid client ID [" + clientId + "]? " + valid);
     return valid;
   }
 
   private boolean isValidClientSecret(String clientId, String clientSecret) {
     AllowedClient client = _clientMap.get(clientId);
     boolean valid = (client == null ? false : client.getSecret().equals(clientSecret));
-    LOG.info("Valid client secret for ID [" + clientId + "]? " + valid);
+    LOG.debug("Valid client secret for ID [" + clientId + "]? " + valid);
     return valid;
   }
 
@@ -57,7 +57,7 @@ public class ClientValidator {
       String redirectUriHost = new URI(redirectUri).getHost();
       AllowedClient client = _clientMap.get(clientId);
       boolean valid = (client.getDomains().contains(redirectUriHost));
-      LOG.info("Valid redirectUri host [" + redirectUriHost + "] for client [" + clientId + "]? " + valid);
+      LOG.debug("Valid redirectUri host [" + redirectUriHost + "] for client [" + clientId + "]? " + valid);
       return valid;
     }
     catch (URISyntaxException e) {

@@ -23,17 +23,17 @@ function getUrlParams() {
 //=================================================
 
 function setSessionCookieValue(obj) {
-  setSessionCookieStr(JSON.stringify(obj));
+  $.cookie(sessionCookieName, JSON.stringify(obj));
 }
 
 function getSessionCookieValue() {
-  var value = $.cookie('myPageUser');
+  var value = $.cookie(sessionCookieName);
   if (value == undefined) return undefined;
   return JSON.parse(value);
 }
 
 function removeSessionCookie() {
-  $.removeCookie('myPageUser');
+  $.removeCookie(sessionCookieName);
 }
 
 //=================================================
@@ -86,10 +86,15 @@ function applyAuthCode(authCode) {
 function logout() {
   // remove local session cookie
   removeSessionCookie();
-  // visit oauth server to log out there
-  var logoutLink = oauthServerBase + "logout?" + "redirect_uri=" + getRawUri();
-  // should be redirected back to this page
-  window.location = logoutLink;
+  // give user the option to log out of oauth server
+  if (confirm("Would you also like to log out of the OAuth server?")) {
+    // visit oauth server to log out there; should be redirected back to this page
+    var nextPage = oauthServerBase + "logout?" + "redirect_uri=" + getRawUri();
+  }
+  else {
+    var nextPage = getRawUri();
+  }
+  window.location = nextPage;
 }
 
 function getRawUri() {
