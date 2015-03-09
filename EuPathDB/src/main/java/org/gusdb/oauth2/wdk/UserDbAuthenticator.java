@@ -71,7 +71,9 @@ public class UserDbAuthenticator implements Authenticator {
   protected Long getUserId(String username, String password, boolean checkPassword) {
     String sql = "select user_id from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
-    Object[] params = { username, encrypt(password) };
+    Object[] params = (checkPassword ?
+        new Object[]{ username, encrypt(password) } :
+        new Object[]{ username });
     final TwoTuple<Boolean, Long> result = new TwoTuple<>(false, null);
     new SQLRunner(_userDb.getDataSource(), sql )
       .executeQuery(params, new ResultSetHandler() {
