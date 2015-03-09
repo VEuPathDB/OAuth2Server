@@ -97,6 +97,8 @@ The OAuth config file must contain a JSON object with the following properties:
       approved client domain list; by default, client redirect domains must
       be contained in the approved list
 
+There is 
+
 ### The Authenticator Class ###
 
 You must provide an implementation of the org.gusdb.oauth2.Authenticator
@@ -134,9 +136,10 @@ the EuPathDB family of websites.
 
 #### How we override the basic server ####
 
-* **Custom Authenticator**: The UserDbAuthenticator class is a EuPathDB-specific
-    implementation of the Authenticator class.  It accesses the USERS table and
-    encrypts passwords in the same way as WDK, but does not depend on WDK.
+* **Custom Authenticator**: The org.gusdb.oauth2.wdk.UserDbAuthenticator class
+    is a EuPathDB-specific implementation of the Authenticator class.  It
+    accesses the USERS table and encrypts passwords in the same way as WDK, but
+    does not depend on WDK.
 
 * **Custom View**: The eupathdb-login.html page shows a custom login page used
     by EuPathDB including custom logo and message to the user.
@@ -190,9 +193,9 @@ To download and build the EuPathDB implementation:
    projects.
 
 6. Once you have run the build script and written your configuration file,
-    simply deploy the WAR file in your servlet container (probably Tomcat).
-    Since we use a Servlet 3.0 feature (cookie renaming), Tomcat 7+ is required.
-    Don't forget to include the Oracle driver in Tomcat's lib directory so
-    the UserDbAuthenticator can access the database.  A good test URL is
+    simply deploy the WAR file (./EuPathDB/target/oauth.war) in your servlet
+    container (probably Tomcat).  Since we use a Servlet 3.0 feature (cookie
+    renaming), Tomcat 7+ is required.  Don't forget to include the Oracle driver
+    in Tomcat's lib directory so the UserDbAuthenticator can access the
+    database.  A good test URL is
     \<scheme>://\<domain>:\<port>/oauth/assets/login.html. 
-    
