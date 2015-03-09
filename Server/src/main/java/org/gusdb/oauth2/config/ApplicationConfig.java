@@ -67,10 +67,7 @@ public class ApplicationConfig {
     loginSuccessPage,
     allowAnonymousLogin,
     validateDomains,
-    allowedClients,
-    clientId,
-    clientSecret,
-    clientDomains
+    allowedClients
   }
 
   public static ApplicationConfig parseConfigFile(Path configFile) throws IOException, InitializationException {
@@ -89,30 +86,15 @@ public class ApplicationConfig {
       JsonArray clientsJson = json.getJsonArray(JsonKey.allowedClients.name());
       List<AllowedClient> allowedClients = new ArrayList<>();
       Set<String> usedClientIds = new HashSet<String>();
-      for (JsonValue client : clientsJson) {
-        JsonObject clientObj = (JsonObject)client;
-
-        // validate domain list
-        JsonArray clientDomains = clientObj.getJsonArray(JsonKey.clientDomains.name());
-        Set<String> domainList = new HashSet<>();
-        if (clientDomains != null) {
-          for (int i = 0; i < clientDomains.size(); i++) {
-            domainList.add(clientDomains.getString(i));
-          }
-        }
-
-        // validate client id uniqueness
-        String clientId = clientObj.getString(JsonKey.clientId.name());
-        if (usedClientIds.contains(clientId)) {
+      for (JsonValue clientJson : clientsJson) {
+        JsonObject clientJsonObj = (JsonObject)clientJson;
+        AllowedClient client = AllowedClient.createFromJson(clientJsonObj);
+        // make sure clientIds are unique
+        if (usedClientIds.contains(client.getId())) {
           throw new IllegalArgumentException("More than one allowed client configured with the same ID.  Client IDs must be unique.");
         }
-        usedClientIds.add(clientId);
-
-        allowedClients.add(new AllowedClient(
-            clientId,
-            clientObj.getString(JsonKey.clientSecret.name()),
-            domainList
-        ));
+        usedClientIds.add(client.getId());
+        allowedClients.add(client);
       }
       return new ApplicationConfig(authClassName, authClassConfig,
           loginFormPage, loginSuccessPage, allowAnonymousLogin, validateDomains, allowedClients);

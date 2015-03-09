@@ -119,28 +119,23 @@ public class OAuthRequestHandler {
     }
   }
 
-  public static Response handleUserInfoRequest(OAuthAccessResourceRequest oauthRequest, Authenticator authenticator) {
-    try {
-      String accessToken = oauthRequest.getAccessToken();
-      String username = TokenStore.getUserForToken(accessToken);
+  public static Response handleUserInfoRequest(OAuthAccessResourceRequest oauthRequest,
+      Authenticator authenticator) throws Exception {
+    String accessToken = oauthRequest.getAccessToken();
+    String username = TokenStore.getUserForToken(accessToken);
 
-      // Validate the access token
-      if (username == null) {
-        // Return the OAuth error message
-        OAuthResponse oauthResponse = OAuthRSResponse.errorResponse(HttpServletResponse.SC_UNAUTHORIZED).setError(
-            OAuthError.ResourceResponse.INVALID_TOKEN).buildHeaderMessage();
+    // Validate the access token
+    if (username == null) {
+      // Return the OAuth error message
+      OAuthResponse oauthResponse = OAuthRSResponse.errorResponse(HttpServletResponse.SC_UNAUTHORIZED).setError(
+          OAuthError.ResourceResponse.INVALID_TOKEN).buildHeaderMessage();
 
-        // return Response.status(Response.Status.UNAUTHORIZED).build();
-        return Response.status(Response.Status.UNAUTHORIZED).header(OAuth.HeaderType.WWW_AUTHENTICATE,
-            oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE)).build();
-      }
-
-      JsonObject userData = authenticator.getUserInfo(username);
-      return Response.status(Response.Status.OK).entity(userData.toString()).build();
+      // return Response.status(Response.Status.UNAUTHORIZED).build();
+      return Response.status(Response.Status.UNAUTHORIZED).header(OAuth.HeaderType.WWW_AUTHENTICATE,
+          oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE)).build();
     }
-    catch (Exception e) {
-      LOG.error("Problem responding to user info request", e);
-      return Response.serverError().build();
-    }
+
+    JsonObject userData = authenticator.getUserInfo(username);
+    return Response.status(Response.Status.OK).entity(userData.toString()).build();
   }
 }

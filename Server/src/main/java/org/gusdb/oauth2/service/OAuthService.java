@@ -49,7 +49,7 @@ public class OAuthService {
   private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
 
   private static final String FORM_ID_PARAM_NAME = "form_id";
-  private static enum LoginFormStatus { failed, accessdenied; }
+  private static enum LoginFormStatus { failed, error, accessdenied; }
 
   @Context
   private ServletContext _context;
@@ -80,27 +80,33 @@ public class OAuthService {
   public Response attemptLogin(
       @FormParam("username") final String username,
       @FormParam("password") final String password,
-      @HeaderParam("Referer") final String referrer) throws Exception {
+      @HeaderParam("Referer") final String referrer) throws URISyntaxException {
     Session session = new Session(_request.getSession());
     ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
     String formId = getFormIdFromReferrer(referrer);
-    if ((formId == null || !session.isFormId(formId)) && !config.anonymousLoginsAllowed()) {
-      return Response.seeOther(getLoginUri(formId, LoginFormStatus.accessdenied)).build();
-    }
-    Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-    boolean validCreds = authenticator.isCredentialsValid(username, password);
-    if (validCreds) {
-      session.setUsername(username);
-      AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
-      if (originalRequest == null) {
-        // formId doesn't exist on this session; give user generic success page
-        return Response.seeOther(new URI(RESOURCE_PREFIX +
-            config.getLoginSuccessPage())).build();
+    try {
+      if ((formId == null || !session.isFormId(formId)) && !config.anonymousLoginsAllowed()) {
+        return Response.seeOther(getLoginUri(formId, LoginFormStatus.accessdenied)).build();
       }
-      return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username);
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      boolean validCreds = authenticator.isCredentialsValid(username, password);
+      if (validCreds) {
+        session.setUsername(username);
+        AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
+        if (originalRequest == null) {
+          // formId doesn't exist on this session; give user generic success page
+          return Response.seeOther(new URI(RESOURCE_PREFIX +
+              config.getLoginSuccessPage())).build();
+        }
+        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username);
+      }
+      else {
+        return Response.seeOther(getLoginUri(formId, LoginFormStatus.failed)).build();
+      }
     }
-    else {
-      return Response.seeOther(getLoginUri(formId, LoginFormStatus.failed)).build();
+    catch (Exception e) {
+      LOG.error("Error processing /login request", e);
+      return Response.seeOther(getLoginUri(formId, LoginFormStatus.error)).build();
     }
   }
 
@@ -190,7 +196,7 @@ public class OAuthService {
   @GET
   @Path("/user")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserInfo() throws OAuthSystemException, OAuthProblemException {
+  public Response getUserInfo() throws Exception {
     OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
     return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context));
   }
