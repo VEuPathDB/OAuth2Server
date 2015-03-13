@@ -1,10 +1,12 @@
 package org.gusdb.oauth2.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +19,6 @@ import org.slf4j.LoggerFactory;
  */
 public class TokenStore {
 
-  @SuppressWarnings("unused")
   private static final Logger LOG = LoggerFactory.getLogger(TokenStore.class);
 
   /*
@@ -51,6 +52,12 @@ public class TokenStore {
     public String toString() {
       return "{ authCode: " + authCode + ", clientId: " + clientId + ", username: " + username + " }";
     }
+
+    @Override
+    public boolean equals(Object other) {
+      return (other instanceof AuthCodeData &&
+          authCode.equals(((AuthCodeData)other).authCode));
+    }
   }
 
   public static class AccessTokenData {
@@ -63,6 +70,12 @@ public class TokenStore {
       this.tokenValue = tokenValue;
       this.authCodeData = authCodeData;
       this.creationDate = new Date();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return (other instanceof AccessTokenData &&
+          tokenValue.equals(((AccessTokenData)other).tokenValue));
     }
   }
 
@@ -115,5 +128,36 @@ public class TokenStore {
     if (tokenList != null)
       for (AccessTokenData data : tokenList)
         ACCESS_TOKEN_MAP.remove(data.tokenValue);
+  }
+
+  public static synchronized void removeExpiredTokens(int expirationSeconds) {
+    long currentDateMillis = new Date().getTime();
+    List<String> expiredTokens = new ArrayList<>();
+    for (Entry<String, AuthCodeData> entry : AUTH_CODE_MAP.entrySet()) {
+      if (isExpired(entry.getValue().creationDate, currentDateMillis, expirationSeconds)) {
+        expiredTokens.add(entry.getKey());
+      }
+    }
+    LOG.debug("Expiring the following auth codes: " + Arrays.toString(expiredTokens.toArray()));
+    for (String authCode : expiredTokens) {
+      AuthCodeData removedCode = AUTH_CODE_MAP.remove(authCode);
+      USER_AUTH_CODE_MAP.get(removedCode.username).remove(removedCode);
+    }
+    expiredTokens.clear();
+    for (Entry<String, AccessTokenData> entry : ACCESS_TOKEN_MAP.entrySet()) {
+      if (isExpired(entry.getValue().creationDate, currentDateMillis, expirationSeconds)) {
+        expiredTokens.add(entry.getKey());
+      }
+    }
+    LOG.debug("Expiring the following access tokens: " + Arrays.toString(expiredTokens.toArray()));
+    for (String accessToken : expiredTokens) {
+      AccessTokenData removedToken = ACCESS_TOKEN_MAP.remove(accessToken);
+      USER_AUTH_CODE_MAP.get(removedToken.authCodeData.username).remove(removedToken);
+    }
+  }
+
+  private static boolean isExpired(Date creationDate, long currentDateMillis, int expirationSeconds) {
+    long ageMillis = currentDateMillis - creationDate.getTime();
+    return (ageMillis > (1000 * expirationSeconds));
   }
 }

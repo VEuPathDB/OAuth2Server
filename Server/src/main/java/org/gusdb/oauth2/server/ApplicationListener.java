@@ -7,11 +7,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Application listener closes resources on the client-provided Authenticator class.  This
- * listener should be included in web.xml if your Authenticator opens resources during its
- * init() method that must be closed before the object is finalized.  Including this
- * listener ensures those resources are closed during web app shut down; if your
- * Authenticator does not open resources, you need not register this listener in web.xml.
+ * Application listener closes resources on the client-provided Authenticator
+ * class.  This listener should be included in web.xml if your Authenticator
+ * opens resources during its init() method that must be closed before the
+ * object is finalized.  Including this listener ensures those resources are
+ * closed during web app shut down; if your Authenticator does not open
+ * resources, you need not register this listener in web.xml.
+ * 
+ * Edit: This listener is also now responsible for shutting down the token
+ * expirer thread.  If your application reports a possible memory leak on
+ * webapp undeploy, you should include this listener in your app's web.xml.
  * 
  * @author ryan
  */
@@ -29,6 +34,7 @@ public class ApplicationListener implements ServletContextListener {
   public void contextDestroyed(ServletContextEvent event) {
     LOG.info("Shutting down OAuth Server webapp");
     OAuthServlet.getAuthenticator(event.getServletContext()).close();
+    TokenExpirerThread.shutdown();
   }
 
 }

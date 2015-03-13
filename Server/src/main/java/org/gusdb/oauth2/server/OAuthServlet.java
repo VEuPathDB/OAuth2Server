@@ -71,6 +71,7 @@ public class OAuthServlet extends ServletContainer {
       context.setAttribute(OAUTH_CONFIG_KEY, config);
       context.setAttribute(OAUTH_AUTHENTICATOR_KEY, getAuthenticator(config));
       LOG.info("Authenticator successfully initialized.");
+      TokenExpirerThread.start(config);
       LOG.info("Ready to serve requests from " + config.getAllowedClients().size() + " unique clients.");
     }
     catch (InitializationException e) {

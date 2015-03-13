@@ -87,6 +87,10 @@ The OAuth config file must contain a JSON object with the following properties:
       success page; if omitted a default success page will be displayed; only
       relevant if allowAnonymousLogin is set to true (see Static Resources)
 
+* **tokenExpirationSecs (Number, optional)**: how long to wait before expiring
+     authentication codes and access tokens (same value used for both).  Must
+     be an integer.  If omitted, 300 (5 minutes) is used.
+
 * **allowAnonymousLogin (Boolean, optional, default: false)**: whether to allow
       user authentication without an approved client.  If allowed, a user can
       log in using the loginFormPage, then at some later time, access that
