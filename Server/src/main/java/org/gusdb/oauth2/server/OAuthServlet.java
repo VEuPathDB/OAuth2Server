@@ -54,18 +54,11 @@ public class OAuthServlet extends ServletContainer {
 
   private void configureApplication() throws InitializationException {
     String configFileName = getServletConfig().getInitParameter(CONFIG_FILE_PARAM_KEY);
+    Path configFilePath = resolveConfigFilePath(configFileName);
     LOG.info("Initializing OAuth Server with config: " + configFileName);
-    if (configFileName == null || configFileName.isEmpty()) {
-      throw new InitializationException("Missing required servlet init parameter: '" + CONFIG_FILE_PARAM_KEY + "'");
-    }
-    Path configFile = Paths.get(configFileName);
-    if (!Files.isReadable(configFile)) {
-      throw new InitializationException("Unable to read OAuth configuration file: " + configFileName +
-          " (attempted full path: " + configFile.toAbsolutePath() + ")");
-    }
     try {
       ServletContext context = getServletContext();
-      ApplicationConfig config = ApplicationConfig.parseConfigFile(configFile);
+      ApplicationConfig config = ApplicationConfig.parseConfigFile(configFilePath);
       LOG.info("Configuration parsed successfully.");
       LOG.info("Will initialize Authenticator implementation: " + config.getAuthClassName());
       context.setAttribute(OAUTH_CONFIG_KEY, config);
@@ -80,6 +73,26 @@ public class OAuthServlet extends ServletContainer {
     catch (Exception e) {
       throw new InitializationException("Unable to parse OAuth configuration file: " + configFileName, e);
     }
+  }
+
+  private Path resolveConfigFilePath(String configFileName) throws InitializationException {
+    if (configFileName == null || configFileName.isEmpty()) {
+      throw new InitializationException("Missing required servlet init parameter: '" + CONFIG_FILE_PARAM_KEY + "'");
+    }
+    Path configFilePath = Paths.get(configFileName);
+    if (!configFilePath.isAbsolute()) {
+      String resolvedPath = getServletContext().getRealPath(configFilePath.toString());
+      if (resolvedPath == null) {
+        throw new InitializationException("Cannot realize relative config file path '" + configFileName +
+            "'.  Does your servlet container explode your war file?");
+      }
+      configFilePath = Paths.get(resolvedPath);
+    }
+    if (!Files.isReadable(configFilePath)) {
+      throw new InitializationException("Unable to read OAuth configuration file: " + configFileName +
+          " (attempted full path: " + configFilePath.toAbsolutePath() + ")");
+    }
+    return configFilePath;
   }
 
   private static Authenticator getAuthenticator(ApplicationConfig config) throws InitializationException {
