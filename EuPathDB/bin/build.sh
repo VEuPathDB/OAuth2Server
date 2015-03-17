@@ -37,7 +37,7 @@ startTime=`date +%s`
 
 # check arguments and set up options based on them
 if [ "$#" == "1" ]; then
-  configFile=$(myreadlink $1)
+  configFile=$1
   echo "Config file absolute path: $configFile"
   configFileOption="\"-DoauthConfigFile=$configFile\""
 elif [ "$#" == "2" ]; then

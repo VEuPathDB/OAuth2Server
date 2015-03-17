@@ -60,7 +60,7 @@ web.xml, include the following servlet:
       <url-pattern>/*</url-pattern>
     </servlet-mapping>
 
-The OAuth config file must contain a JSON object with the following properties:
+The OAuth config file param should be an absolute path to the runtime file location, or a relative path from the servlet context (i.e. the directory containing WEB-INF).  It is advisable to place the file inside WEB-INF for security reasons.  The file must contain a JSON-formatted object with the following properties:
 
 * **authenticatorClass (String, required)**: the fully qualified path of your
       org.gusdb.oauth2.AuthenticatorAuthenticator implementation
@@ -101,7 +101,8 @@ The OAuth config file must contain a JSON object with the following properties:
       approved client domain list; by default, client redirect domains must
       be contained in the approved list
 
-There is 
+There is a sample config file at:
+\<project>/EuPathDB/src/main/webapp/WEB-INF/OAuthSampleConfig.json
 
 ### The Authenticator Class ###
 
@@ -180,7 +181,8 @@ To download and build the EuPathDB implementation:
         svn co https://www.cbil.upenn.edu/svn/gus/OAuth2Server/trunk OAuth2Server
 
 3. Decide the name and runtime location of your configuration file.  It will
-    be in JSON format.  Sorry- environment variables are not yet supported.
+    be in JSON format.  This must be an absolute path to the
+    runtime/deployment location, or a relative path from the servlet context.
 
 4. Decide if you want to configure a separate local maven repository for the
     build.  This can be handy for isolating builds and keeping all the
@@ -191,7 +193,7 @@ To download and build the EuPathDB implementation:
         ./EuPathDB/bin/build.sh [configFile [localMvnRepo]]
 
    The specification of the config file is above.  The local Maven repository
-   must be a directory.  Both should be absolute paths.  You can modify the
+   must be a directory and should be an absolute path.  You can modify the
    script (via constants at the top of the file) to turn on unit tests or to
    tell the script to do an 'svn update' on both the OAuth2Server and FgpUtil
    projects.

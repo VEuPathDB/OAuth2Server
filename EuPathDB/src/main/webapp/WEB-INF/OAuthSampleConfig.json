@@ -1,6 +1,4 @@
 {
-  "validateDomains": true,
-  "allowAnonymousLogin": false,
   "loginFormPage": "eupathdb-login.html",
   "tokenExpirationSecs": 300,
   "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
