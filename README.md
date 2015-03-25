@@ -180,6 +180,11 @@ To download and build the EuPathDB implementation:
 
         svn co https://www.cbil.upenn.edu/svn/gus/OAuth2Server/trunk OAuth2Server
 
+  If you do not want the build.sh script to manage dependencies (e.g. as with Jenkins jobs), 
+  you will also need FgpUtil:
+
+        svn co https://www.cbil.upenn.edu/svn/gus/FgpUtil/trunk FgpUtil
+
 3. Decide the name and runtime location of your configuration file.  It will
     be in JSON format.  This must be an absolute path to the
     runtime/deployment location, or a relative path from the servlet context.
@@ -190,7 +195,7 @@ To download and build the EuPathDB implementation:
 
 5. Run the EuPathDB OAuth2Server build script.  It has the following usage:
 
-        ./EuPathDB/bin/build.sh [configFile [localMvnRepo]]
+        OAuth2Server/EuPathDB/bin/build.sh [configFile [localMvnRepo]]
 
    The specification of the config file is above.  The local Maven repository
    must be a directory and should be an absolute path.  You can modify the
@@ -199,7 +204,7 @@ To download and build the EuPathDB implementation:
    projects.
 
 6. Once you have run the build script and written your configuration file,
-    simply deploy the WAR file (./EuPathDB/target/oauth.war) in your servlet
+    simply deploy the WAR file (OAuth2Server/EuPathDB/target/oauth.war) in your servlet
     container (probably Tomcat).  Since we use a Servlet 3.0 feature (cookie
     renaming), Tomcat 7+ is required.  Don't forget to include the Oracle driver
     in Tomcat's lib directory so the UserDbAuthenticator can access the
