@@ -38,11 +38,11 @@ startTime=`date +%s`
 # check arguments and set up options based on them
 if [ "$#" == "1" ]; then
   configFile=$1
-  echo "Config file absolute path: $configFile"
+  echo "Config file path: $configFile"
   configFileOption="\"-DoauthConfigFile=$configFile\""
 elif [ "$#" == "2" ]; then
-  configFile=$(myreadlink $1)
-  echo "Config file absolute path: $configFile"
+  configFile=$1
+  echo "Config file path: $configFile"
   configFileOption="\"-DoauthConfigFile=$configFile\""
   altMavenRepo=$(myreadlink $2)
   echo "Custom local Maven repo absolute path: $altMavenRepo"
