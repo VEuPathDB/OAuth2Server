@@ -16,7 +16,7 @@ To skip to the EuPathDB implementation installation, see [here](#installation).
 ### How does it work? ###
 
 A webapp using this library is deployed to a servlet container.  Approved
-clients send an OAuth2 authentication request to the /\<webapp>/authorize
+clients send an OAuth2 authentication request to the /&lt;webapp&gt;/authorize
 endpoint.  If the user has already logged in to the OAuth server, an
 authorization code is returned via redirect.  If not, a login form is displayed
 and the user is asked to log in.  Once the user provides correct credentials,
@@ -24,11 +24,11 @@ he is redirected back to the client with the authorization code.
 
 The client's server can then trade the authorization code for an access token
 (but only with its client secret) via an OAuth2 token request (a POST to the
-/\<webapp>/token endpoint, returning JSON).  With an access token, a client
-server can access the /\<webapp>/user resource, which returns a JSON response
+/&lt;webapp&gt;/token endpoint, returning JSON).  With an access token, a client
+server can access the /&lt;webapp&gt;/user resource, which returns a JSON response
 containing user information provided by the configured Authenticator class.
 
-From the browser, the client can logout using the /\<webapp>/logout URL, which
+From the browser, the client can logout using the /&lt;webapp&gt;/logout URL, which
 expires the OAuth server's session cookie.
 
 ### How to use the library ###
@@ -102,7 +102,7 @@ The OAuth config file param should be an absolute path to the runtime file locat
       be contained in the approved list
 
 There is a sample config file at:
-\<project>/EuPathDB/src/main/webapp/WEB-INF/OAuthSampleConfig.json
+&lt;project&gt;/EuPathDB/src/main/webapp/WEB-INF/OAuthSampleConfig.json
 
 ### The Authenticator Class ###
 
@@ -209,4 +209,4 @@ To download and build the EuPathDB implementation:
     renaming), Tomcat 7+ is required.  Don't forget to include the Oracle driver
     in Tomcat's lib directory so the UserDbAuthenticator can access the
     database.  A good test URL is
-    \<scheme>://\<domain>:\<port>/oauth/assets/login.html. 
+    &lt;scheme&gt;://&lt;domain&gt;:&lt;port&gt;/oauth/assets/login.html. 
