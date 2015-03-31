@@ -30,7 +30,7 @@ skipSvnUpdate=true
 die() { echo "$@" 1>&2 ; exit 1; }
 
 # use in case readlink is unavailable on your system
-myreadlink() { ( cd $(dirname $1); echo $PWD/$(basename $1); ) }
+myreadlink() { ( cd "$(dirname "$1")"; echo "$PWD/$(basename "$1")"; ) }
 
 # record start time
 startTime=`date +%s`
@@ -44,15 +44,15 @@ elif [ "$#" == "2" ]; then
   configFile=$1
   echo "Config file path: $configFile"
   configFileOption="\"-DoauthConfigFile=$configFile\""
-  altMavenRepo=$(myreadlink $2)
+  altMavenRepo=$(myreadlink "$2")
   echo "Custom local Maven repo absolute path: $altMavenRepo"
   altMavenRepoOption="\"-Dmaven.repo.local=$altMavenRepo\""
 fi
 
 # find OAuth2Server project dir and go there
-scriptDir=$(cd $(dirname "$0") && pwd)
-cd $scriptDir/../..
-projectDir=$(pwd)
+scriptDir=$(cd "$(dirname "$0")" && pwd)
+cd "$scriptDir/../.."
+projectDir="$(pwd)"
 echo "Found OAuth2Server project at $projectDir"
 
 # get latest OAuth code from subversion
@@ -82,7 +82,7 @@ echo "Building FgpUtil"
 mvn clean install $altMavenRepoOption -DskipTests=$skipJavaUnitTests || die "Build of FgpUtil failed.  Cannot build OAuth2Server without FgpUtil"
 
 # build server
-cd $projectDir
+cd "$projectDir"
 echo "Building OAuth2Server"
 cmd="mvn clean install $altMavenRepoOption -DskipTests=$skipJavaUnitTests $configFileOption"
 echo "$cmd"
