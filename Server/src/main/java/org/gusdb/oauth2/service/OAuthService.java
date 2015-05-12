@@ -98,7 +98,8 @@ public class OAuthService {
           return Response.seeOther(new URI(RESOURCE_PREFIX +
               config.getLoginSuccessPage())).build();
         }
-        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username);
+        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest,
+            username, config.getTokenExpirationSecs());
       }
       else {
         return Response.seeOther(getLoginUri(formId, LoginFormStatus.failed)).build();
@@ -144,7 +145,9 @@ public class OAuthService {
     Session session = new Session(_request.getSession());
     if (session.isAuthenticated()) {
       // user is already logged in; respond with auth code for user
-      return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest), session.getUsername());
+      ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+      return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
+          session.getUsername(), config.getTokenExpirationSecs());
     }
     else {
       // no one is logged in; generate form ID and send
@@ -178,8 +181,11 @@ public class OAuthService {
     if (!clientValidator.isValidTokenClient(oauthRequest)) {
       return new OAuthResponseFactory().buildInvalidClientResponse();
     }
+    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
     return OAuthRequestHandler.handleTokenRequest(oauthRequest,
-        OAuthServlet.getAuthenticator(_context));
+        OAuthServlet.getAuthenticator(_context),
+        config.getTokenExpirationSecs(),
+        config.includeUserInfoWithToken());
   }
 
   private static String paramsToString(HttpServletRequest request) {

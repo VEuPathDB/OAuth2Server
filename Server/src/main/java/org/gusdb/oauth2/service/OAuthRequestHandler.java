@@ -2,8 +2,10 @@ package org.gusdb.oauth2.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map.Entry;
 
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 
@@ -12,6 +14,7 @@ import org.apache.oltu.oauth2.as.issuer.OAuthIssuer;
 import org.apache.oltu.oauth2.as.issuer.OAuthIssuerImpl;
 import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
 import org.apache.oltu.oauth2.as.response.OAuthASResponse;
+import org.apache.oltu.oauth2.as.response.OAuthASResponse.OAuthTokenResponseBuilder;
 import org.apache.oltu.oauth2.common.OAuth;
 import org.apache.oltu.oauth2.common.error.OAuthError;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
@@ -32,7 +35,7 @@ public class OAuthRequestHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(OAuthRequestHandler.class);
 
-  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username)
+  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username, int expirationSecs)
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
@@ -56,13 +59,13 @@ public class OAuthRequestHandler {
     }
 
     String redirectURI = oauthRequest.getRedirectUri();
-    final OAuthResponse response = builder.location(redirectURI).buildQueryMessage();
+    final OAuthResponse response = builder.location(redirectURI).setExpiresIn(String.valueOf(expirationSecs)).buildQueryMessage();
     URI url = new URI(response.getLocationUri());
     return Response.status(response.getResponseStatus()).location(url).build();
   }
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
-      Authenticator authenticator) throws OAuthSystemException {
+      Authenticator authenticator, int expirationSecs, boolean includeUserInfo) throws OAuthSystemException {
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
       OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
@@ -98,14 +101,43 @@ public class OAuthRequestHandler {
       final String accessToken = oauthIssuerImpl.accessToken();
       TokenStore.addAccessToken(accessToken, oauthRequest.getCode());
 
-      OAuthResponse response = OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK).setAccessToken(
-          accessToken).setExpiresIn("3600").buildJSONMessage();
+      OAuthTokenResponseBuilder responseBuilder = OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK).setAccessToken(
+          accessToken).setExpiresIn(String.valueOf(expirationSecs));
+
+      if (includeUserInfo) {
+        JsonObject userObj = getUserInfo(authenticator, TokenStore.getUserForToken(accessToken));
+        for (Entry<String, JsonValue> entry : userObj.entrySet()) {
+          switch (entry.getKey()) {
+            case OAuth.OAUTH_ACCESS_TOKEN:
+            case OAuth.OAUTH_EXPIRES_IN:
+            case OAuth.OAUTH_REFRESH_TOKEN:
+            case OAuth.OAUTH_TOKEN_TYPE:
+              LOG.warn("Authenticator tried to override standard token response property '" + entry.getKey() + "'; skipping");
+              break;
+            default:
+              responseBuilder.setParam(entry.getKey(), getUserInfoPropertyString(entry.getValue()));
+          }
+        }
+      }
+
+      OAuthResponse response = responseBuilder.buildJSONMessage();
       return Response.status(response.getResponseStatus()).entity(response.getBody()).build();
     }
     catch (OAuthProblemException e) {
       LOG.error("Problem responding to token request", e);
       OAuthResponse res = OAuthASResponse.errorResponse(HttpServletResponse.SC_BAD_REQUEST).error(e).buildJSONMessage();
       return Response.status(res.getResponseStatus()).entity(res.getBody()).build();
+    }
+  }
+
+  private static String getUserInfoPropertyString(JsonValue value) {
+    switch (value.getValueType()) {
+      case OBJECT:
+        return "[Object]";
+      case ARRAY:
+        return "[Array]";
+      default:
+        return value.toString();
     }
   }
 
@@ -120,7 +152,7 @@ public class OAuthRequestHandler {
   }
 
   public static Response handleUserInfoRequest(OAuthAccessResourceRequest oauthRequest,
-      Authenticator authenticator) throws Exception {
+      Authenticator authenticator) throws OAuthSystemException {
     String accessToken = oauthRequest.getAccessToken();
     String username = TokenStore.getUserForToken(accessToken);
 
@@ -135,7 +167,17 @@ public class OAuthRequestHandler {
           oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE)).build();
     }
 
-    JsonObject userData = authenticator.getUserInfo(username);
+    JsonObject userData = getUserInfo(authenticator, username);
     return Response.status(Response.Status.OK).entity(userData.toString()).build();
+  }
+
+  private static JsonObject getUserInfo(Authenticator authenticator, String username) throws OAuthSystemException {
+    try {
+      return authenticator.getUserInfo(username);
+    }
+    catch (Exception e) {
+      LOG.error("Unable to retrieve user info for usernaem '" + username + "'", e);
+      throw new OAuthSystemException(e);
+    }
   }
 }

@@ -1,5 +1,6 @@
 package org.gusdb.oauth2.server;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -81,7 +82,9 @@ public class OAuthServlet extends ServletContainer {
     }
     Path configFilePath = Paths.get(configFileName);
     if (!configFilePath.isAbsolute()) {
-      String resolvedPath = getServletContext().getRealPath(configFilePath.toString());
+      String searchPath = File.separator + configFilePath.toString();
+      LOG.info("Trying to get real path of relative config file path: " + searchPath);
+      String resolvedPath = getServletContext().getRealPath(searchPath);
       if (resolvedPath == null) {
         throw new InitializationException("Cannot realize relative config file path '" + configFileName +
             "'.  Does your servlet container explode your war file?");

@@ -101,6 +101,15 @@ The OAuth config file param should be an absolute path to the runtime file locat
       approved client domain list; by default, client redirect domains must
       be contained in the approved list
 
+* **includeUserInfoWithToken (Boolean, optional, default: true)**: whether to
+      include the Authenticator user information as supplemental properties on
+      Token Request responses.  If true, the properties of the JSON object
+      returned by Authenticator.getUserInfo() will be added to the Token
+      response JSON object.  Since the OAuth 2.0 spec requires values to be
+      strings, any Object or Array values will have the string values "[Object]"
+      and "[Array]" respectively, and numbers and literals will be sent as
+      strings (i.e. wrapped in quotes).
+
 There is a sample config file at:
 &lt;project&gt;/EuPathDB/src/main/webapp/WEB-INF/OAuthSampleConfig.json
 

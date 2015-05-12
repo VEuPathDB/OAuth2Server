@@ -57,6 +57,7 @@ public class ApplicationConfig {
 
   private static final boolean VALIDATE_DOMAINS_BY_DEFAULT = true;
   private static final boolean ALLOW_ANONYMOUS_LOGIN_BY_DEFAULT = false;
+  private static final boolean INCLUDE_USER_INFO_WITH_TOKEN_BY_DEFAULT = true;
   private static final String DEFAULT_LOGIN_FORM_PAGE = "login.html";
   private static final String DEFAULT_LOGIN_SUCCESS_PAGE = "success.html";
   private static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300;
@@ -69,6 +70,7 @@ public class ApplicationConfig {
     tokenExpirationSecs,
     allowAnonymousLogin,
     validateDomains,
+    includeUserInfoWithToken,
     allowedClients
   }
 
@@ -81,6 +83,7 @@ public class ApplicationConfig {
       JsonObject authClassConfig = json.getJsonObject(JsonKey.authenticatorConfig.name());
       boolean validateDomains = json.getBoolean(JsonKey.validateDomains.name(), VALIDATE_DOMAINS_BY_DEFAULT);
       boolean allowAnonymousLogin = json.getBoolean(JsonKey.allowAnonymousLogin.name(), ALLOW_ANONYMOUS_LOGIN_BY_DEFAULT);
+      boolean includeUserInfoWithToken = json.getBoolean(JsonKey.includeUserInfoWithToken.name(), INCLUDE_USER_INFO_WITH_TOKEN_BY_DEFAULT);
       String loginFormPage = json.getString(JsonKey.loginFormPage.name(), DEFAULT_LOGIN_FORM_PAGE);
       String loginSuccessPage = json.getString(JsonKey.loginSuccessPage.name(), DEFAULT_LOGIN_SUCCESS_PAGE);
       int tokenExpirationSecs = json.getInt(JsonKey.tokenExpirationSecs.name(), DEFAULT_TOKEN_EXPIRATION_SECS);
@@ -100,7 +103,8 @@ public class ApplicationConfig {
         allowedClients.add(client);
       }
       return new ApplicationConfig(authClassName, authClassConfig, loginFormPage,
-          loginSuccessPage, tokenExpirationSecs, allowAnonymousLogin, validateDomains, allowedClients);
+          loginSuccessPage, tokenExpirationSecs, allowAnonymousLogin, validateDomains,
+          includeUserInfoWithToken, allowedClients);
     }
     catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
       throw new InitializationException("Improperly constructed configuration object", e);
@@ -121,10 +125,12 @@ public class ApplicationConfig {
   private final int _tokenExpirationSecs;
   private final boolean _anonymousLoginsAllowed;
   private final boolean _validateDomains;
+  private final boolean _includeUserInfoWithToken;
   private final List<AllowedClient> _allowedClients;
 
   private ApplicationConfig(String authClassName, JsonObject authClassConfig, String loginFormPage,
-      String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed, boolean validateDomains, List<AllowedClient> allowedClients) {
+      String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed,
+      boolean validateDomains, boolean includeUserInfoWithToken, List<AllowedClient> allowedClients) {
     _authClassName = authClassName;
     _authClassConfig = authClassConfig;
     _loginFormPage = loginFormPage;
@@ -132,6 +138,7 @@ public class ApplicationConfig {
     _tokenExpirationSecs = tokenExpirationSecs;
     _anonymousLoginsAllowed = anonymousLoginsAllowed;
     _validateDomains = validateDomains;
+    _includeUserInfoWithToken = includeUserInfoWithToken;
     _allowedClients = allowedClients;
   }
 
@@ -161,6 +168,10 @@ public class ApplicationConfig {
 
   public boolean validateDomains() {
     return _validateDomains;
+  }
+
+  public boolean includeUserInfoWithToken() {
+    return _includeUserInfoWithToken;
   }
 
   public List<AllowedClient> getAllowedClients() {
