@@ -15,11 +15,11 @@
     {
       "clientId": "apiComponentSite",
       "clientSecret": "12345",
-      "clientDomains": [ "localhost" ]
+      "clientDomains": [ "localhost", "*.plasmodb.org" ]
     },{
       "clientId": "globusGenomics",
       "clientSecret": "12345",
-      "clientDomains": [ "localhost" ]
+      "clientDomains": [ "localhost", "*.globus.org", "*.globusgenomics.org" ]
     }
   ]
 }

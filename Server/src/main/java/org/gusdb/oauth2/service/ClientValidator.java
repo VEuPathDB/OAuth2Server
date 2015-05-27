@@ -55,7 +55,15 @@ public class ClientValidator {
     try {
       String redirectUriHost = new URI(redirectUri).getHost();
       AllowedClient client = _clientMap.get(clientId);
-      boolean valid = (client.getDomains().contains(redirectUriHost));
+      boolean valid = false;
+      for (String validDomain : client.getDomains()) {
+        if (validDomain.equalsIgnoreCase(redirectUriHost) ||
+            (validDomain.startsWith("*.") &&
+             redirectUriHost.toLowerCase().endsWith(validDomain.toLowerCase().substring(2)))) {
+          valid = true;
+          break;
+        }
+      }
       LOG.debug("Valid redirectUri host [" + redirectUriHost + "] for client [" + clientId + "]? " + valid);
       return valid;
     }
