@@ -130,21 +130,22 @@ public class OAuthService {
   @Path("/logout")
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) throws URISyntaxException {
     // determine whether this request came from a valid page
-    ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-    if (!clientValidator.isValidLogoutClient(redirectUri)) {
-      return Response
-          .status(Status.FORBIDDEN)
-          .entity("Valid client redirect URI required")
-          .build();
-    }
     try {
       URL url = new URL(redirectUri);
       String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
-      String allowedOriginVal = url.getProtocol() + "://" + url.getHost() + passedPort;
+      String originVal = url.getProtocol() + "://" + url.getHost() + passedPort;
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      if (!clientValidator.isValidLogoutClient(redirectUri)) {
+        return Response
+            .status(Status.FORBIDDEN)
+            .header("Access-Control-Allow-Origin", originVal)
+            .entity("Valid client redirect URI required")
+            .build();
+      }
       new Session(_request.getSession()).invalidate();
       return Response
-          .seeOther(url.toURI())
-          .header("Access-Control-Allow-Origin", allowedOriginVal)
+          .seeOther(new URI(redirectUri))
+          .header("Access-Control-Allow-Origin", originVal)
           .build();
     }
     catch (MalformedURLException e) {
