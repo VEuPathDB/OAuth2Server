@@ -30,6 +30,10 @@ public class OAuthResponseFactory {
     return NOT_ACCEPTABLE_RESPONSE.entity("Unsupported Response Type").build();
   }
 
+  public Response buildBadRedirectUrlResponse() {
+    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Redirect URI in Request").build();
+  }
+
   public Response buildServerErrorResponse() {
     return Response.serverError().build();
   }

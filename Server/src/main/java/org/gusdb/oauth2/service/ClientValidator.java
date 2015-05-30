@@ -74,4 +74,12 @@ public class ClientValidator {
       return false;
     }
   }
+
+  public boolean isValidLogoutClient(String redirectUri) {
+    // any valid domain on any client is legal
+    for (String clientId : _clientMap.keySet()) {
+      if (isValidRedirectUri(clientId, redirectUri)) return true;
+    }
+    return false;
+  }
 }

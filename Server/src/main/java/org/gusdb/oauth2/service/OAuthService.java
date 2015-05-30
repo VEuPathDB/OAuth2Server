@@ -2,8 +2,10 @@ package org.gusdb.oauth2.service;
 
 import static org.gusdb.oauth2.assets.StaticResource.RESOURCE_PREFIX;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -127,9 +129,27 @@ public class OAuthService {
   @GET
   @Path("/logout")
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) throws URISyntaxException {
-    new Session(_request.getSession()).invalidate();
-    URI uri = (redirectUri == null || redirectUri.isEmpty() ? getLoginUri(null, null) : new URI(redirectUri));
-    return Response.seeOther(uri).build();
+    // determine whether this request came from a valid page
+    ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+    if (!clientValidator.isValidLogoutClient(redirectUri)) {
+      return Response
+          .status(Status.FORBIDDEN)
+          .entity("Valid client redirect URI required")
+          .build();
+    }
+    try {
+      URL url = new URL(redirectUri);
+      String passedPort = (url.getPort() == -1 ? ":" + url.getPort() : "");
+      String allowedOriginVal = url.getProtocol() + "://" + url.getHost() + passedPort;
+      new Session(_request.getSession()).invalidate();
+      return Response
+          .seeOther(url.toURI())
+          .header("Access-Control-Allow-Origin", allowedOriginVal)
+          .build();
+    }
+    catch (MalformedURLException e) {
+      return new OAuthResponseFactory().buildBadRedirectUrlResponse();
+    }
   }
 
   @GET
