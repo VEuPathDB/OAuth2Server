@@ -139,7 +139,7 @@ public class OAuthService {
     }
     try {
       URL url = new URL(redirectUri);
-      String passedPort = (url.getPort() == -1 ? ":" + url.getPort() : "");
+      String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
       String allowedOriginVal = url.getProtocol() + "://" + url.getHost() + passedPort;
       new Session(_request.getSession()).invalidate();
       return Response
