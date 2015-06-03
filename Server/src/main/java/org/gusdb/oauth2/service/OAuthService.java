@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -128,28 +129,35 @@ public class OAuthService {
 
   @GET
   @Path("/logout")
-  public Response logOut(@QueryParam("redirect_uri") String redirectUri) throws URISyntaxException {
+  public Response logOut(@QueryParam("redirect_uri") String redirectUri) {
+    // FIXME: cannot get CORS requests to work so logout can be async from a different domain
     // determine whether this request came from a valid page
     try {
+      @SuppressWarnings("unused")
       URL url = new URL(redirectUri);
-      String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
-      String originVal = url.getProtocol() + "://" + url.getHost() + passedPort;
-      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-      if (!clientValidator.isValidLogoutClient(redirectUri)) {
-        return Response
-            .status(Status.FORBIDDEN)
-            .header("Access-Control-Allow-Origin", originVal)
-            .entity("Valid client redirect URI required")
-            .build();
-      }
+      //String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
+      //String originVal = url.getProtocol() + "://" + url.getHost() + passedPort;
+      //ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      //if (!clientValidator.isValidLogoutClient(redirectUri)) {
+      //  return Response
+      //      .status(Status.FORBIDDEN)
+      //      .header("Access-Control-Allow-Origin", originVal)
+      //      .entity("Valid client redirect URI required")
+      //      .build();
+      //}
+
+      // invalidate the session
       new Session(_request.getSession()).invalidate();
+
+      // attempt to construct redirect response; if unable, just return 200
       return Response
           .seeOther(new URI(redirectUri))
-          .header("Access-Control-Allow-Origin", originVal)
+          //.header("Access-Control-Allow-Origin", originVal)
           .build();
     }
-    catch (MalformedURLException e) {
-      return new OAuthResponseFactory().buildBadRedirectUrlResponse();
+    catch (MalformedURLException | URISyntaxException e) {
+      //return new OAuthResponseFactory().buildBadRedirectUrlResponse();
+      return Response.ok("Logged out at " + new Date()).build();
     }
   }
 
@@ -210,7 +218,6 @@ public class OAuthService {
   }
 
   private static String paramsToString(HttpServletRequest request) {
-    @SuppressWarnings("unchecked")
     Map<String, String[]> params = request.getParameterMap();
     StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
     for (Entry<String, String[]> entry : params.entrySet()) {
