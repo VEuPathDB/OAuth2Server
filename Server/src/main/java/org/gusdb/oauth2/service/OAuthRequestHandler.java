@@ -74,6 +74,8 @@ public class OAuthRequestHandler {
       switch (grantType) {
         case AUTHORIZATION_CODE:
           if (!TokenStore.isValidAuthCode(oauthRequest.getCode(), oauthRequest.getClientId())) {
+            LOG.info("Returning bad auth code response; could not find code " +
+                oauthRequest.getCode() + " for client " + oauthRequest.getClientId());
             return responses.buildBadAuthCodeResponse();
           }
           break;

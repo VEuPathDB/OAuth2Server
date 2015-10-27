@@ -203,7 +203,7 @@ public class OAuthService {
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException, OAuthProblemException {
     // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
     HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
-    LOG.debug("Handling token request with the following params:" +
+    LOG.info("Handling token request with the following params:" +
         System.lineSeparator() + paramsToString(request));
     OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
     ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);

@@ -108,7 +108,17 @@ public class TokenStore {
   }
 
   public static synchronized boolean isValidAuthCode(String authCode, String clientId) {
+    if (LOG.isDebugEnabled()) LOG.debug(dumpAuthCodeMap());
     return AUTH_CODE_MAP.containsKey(authCode) && AUTH_CODE_MAP.get(authCode).clientId.equals(clientId);
+  }
+
+  private static String dumpAuthCodeMap() {
+    String NL = System.lineSeparator();
+    StringBuilder str = new StringBuilder("AUTH_CODE_MAP:").append(NL);
+    for (Entry<String, AuthCodeData> entry : AUTH_CODE_MAP.entrySet()) {
+      str.append(entry.getKey()).append(": ").append(entry.getValue().toString());
+    }
+    return str.toString();
   }
 
   public static String getUserForToken(String accessToken) {
