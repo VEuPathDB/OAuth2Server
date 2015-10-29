@@ -1,4 +1,4 @@
-$(function loadPage() {
+$(function() {
   var status = getUrlParams()["status"];
   var messages = {
     "failed": "Invalid credentials.  Please try again.",

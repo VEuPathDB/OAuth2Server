@@ -1,0 +1,17 @@
+.small-font {
+  font-size: 0.85em;
+}
+
+.left-just {
+  float: left;
+  margin-left: 60px;
+}
+
+.right-just {
+  float: right;
+  margin-right: 60px;
+}
+
+.form-container .last-line {
+  margin-bottom: 20px;
+}

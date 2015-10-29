@@ -40,6 +40,10 @@ public class Session {
     _session.setAttribute(SESSION_USERNAME_KEY, username);
   }
 
+  public AuthzRequest getOriginalRequest(String formId) {
+    return getFormIdMap().get(formId);
+  }
+
   public AuthzRequest clearFormId(String formId) {
     return getFormIdMap().remove(formId);
   }

@@ -2,10 +2,12 @@ package org.gusdb.oauth2.service;
 
 import static org.gusdb.oauth2.assets.StaticResource.RESOURCE_PREFIX;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -89,7 +91,7 @@ public class OAuthService {
     String formId = getFormIdFromReferrer(referrer);
     try {
       if ((formId == null || !session.isFormId(formId)) && !config.anonymousLoginsAllowed()) {
-        return Response.seeOther(getLoginUri(formId, LoginFormStatus.accessdenied)).build();
+        return Response.seeOther(getLoginUri(formId, "", LoginFormStatus.accessdenied)).build();
       }
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
       boolean validCreds = authenticator.isCredentialsValid(username, password);
@@ -105,12 +107,14 @@ public class OAuthService {
             username, config.getTokenExpirationSecs());
       }
       else {
-        return Response.seeOther(getLoginUri(formId, LoginFormStatus.failed)).build();
+        return Response.seeOther(getLoginUri(formId,
+            session.getOriginalRequest(formId).getRedirectUri(),
+            LoginFormStatus.failed)).build();
       }
     }
     catch (Exception e) {
       LOG.error("Error processing /login request", e);
-      return Response.seeOther(getLoginUri(formId, LoginFormStatus.error)).build();
+      return Response.seeOther(getLoginUri(formId, "", LoginFormStatus.error)).build();
     }
   }
 
@@ -180,20 +184,36 @@ public class OAuthService {
     }
     else {
       // no one is logged in; generate form ID and send
-      return Response.seeOther(getLoginUri(session.generateFormId(new AuthzRequest(oauthRequest)), null)).build();
+      AuthzRequest request = new AuthzRequest(oauthRequest);
+      return Response.seeOther(getLoginUri(
+          session.generateFormId(request),
+          request.getRedirectUri(),
+          null)).build();
     }
   }
 
-  private URI getLoginUri(String formId, LoginFormStatus status) throws URISyntaxException {
+  private URI getLoginUri(String formId, String redirectUri, LoginFormStatus status) throws URISyntaxException {
     String queryString = "";
     if (formId != null) {
       queryString = FORM_ID_PARAM_NAME + "=" + formId;
+    }
+    if (redirectUri != null) {
+      queryString += (queryString.isEmpty() ? "" : "&") + "redirectUri=" + encodeUrl(redirectUri);
     }
     if (status != null) {
       queryString += (queryString.isEmpty() ? "" : "&") + "status=" + status.name();
     }
     return new URI(RESOURCE_PREFIX + OAuthServlet.getApplicationConfig(_context).getLoginFormPage() +
         (queryString.isEmpty() ? "" : "?" + queryString));
+  }
+
+  private static String encodeUrl(String redirectUri) {
+    try {
+      return URLEncoder.encode(redirectUri, "UTF-8");
+    }
+    catch (UnsupportedEncodingException e) {
+      throw new RuntimeException("UTF-8 encoding is no longer supported.", e);
+    }
   }
 
   @POST
