@@ -12,6 +12,16 @@
   margin-right: 60px;
 }
 
-.form-container .last-line {
+.form-container .external-links {
   margin-bottom: 20px;
+}
+
+.external-links a, external-links a:visited {
+  color: blue;
+  text-decoration: none;
+}
+
+.external-links a:hover {
+  color: blue;
+  text-decoration: underline;
 }
