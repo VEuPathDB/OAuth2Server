@@ -47,7 +47,7 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   protected void initialize(ConnectionPoolConfig dbConfig, String userSchema) {
-    _userDb = new DatabaseInstance(dbConfig);
+    _userDb = new DatabaseInstance(dbConfig, true);
     _userSchema = userSchema;
   }
 
