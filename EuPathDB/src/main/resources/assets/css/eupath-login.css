@@ -1,3 +1,11 @@
+.main-logo-container {
+  text-align: center;
+}
+
+.main-logo-container img {
+  width: 250px;
+}
+
 .small-font {
   font-size: 0.85em;
 }
@@ -24,4 +32,13 @@
 .external-links a:hover {
   color: blue;
   text-decoration: underline;
+}
+
+.component-links {
+  text-align: center;
+}
+
+.component-links img {
+  height: 28px;
+  padding: 0 6px;
 }

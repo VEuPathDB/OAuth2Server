@@ -1,6 +1,6 @@
 
 .form-container {
-  margin: 20px auto;
+  margin: 10px auto 20px auto;
   border: 1px solid black;
   border-radius: 10px;
   padding: 15px;
@@ -25,7 +25,7 @@
   margin: 0.3em;
 }
 
-.form-container .submit-button {
+.form-container .input-button {
   padding:3px 7px;
   margin-top:5px
 }
