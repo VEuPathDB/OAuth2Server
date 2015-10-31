@@ -20,6 +20,13 @@
   margin-right: 60px;
 }
 
+.form-container label {
+  display: inline-block;
+  margin-right: 10px;
+  text-align: right;
+  width: 4.5em;
+}
+
 .form-container .external-links {
   margin-bottom: 20px;
 }
@@ -41,4 +48,9 @@
 .component-links img {
   height: 28px;
   padding: 0 6px;
+}
+
+.form-container .input-button {
+  margin: 8px 0;
+  width: 7em;
 }
