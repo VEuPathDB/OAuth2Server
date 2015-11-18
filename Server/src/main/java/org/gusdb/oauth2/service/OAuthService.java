@@ -168,7 +168,7 @@ public class OAuthService {
   @GET
   @Path("/authorize")
   public Response authorize() throws URISyntaxException, OAuthSystemException, OAuthProblemException {
-    LOG.debug("Handling authorize request with the following params:" +
+    LOG.info("Handling authorize request with the following params:" +
         System.lineSeparator() + paramsToString(_request));
     OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(_request);
     ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
