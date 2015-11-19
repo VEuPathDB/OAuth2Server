@@ -58,14 +58,16 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public JsonObject getUserInfo(String username) throws Exception {
+  public String getIdToken(String username) throws Exception {
     Long id = getUserId(username, "", false);
     return (id == null ?
-        Json.createObjectBuilder().add("id", JsonValue.NULL).build() :
         Json.createObjectBuilder()
-          .add("id", id)
-          .add("email", username)
-          .build());
+            .add("sub", JsonValue.NULL) :
+        Json.createObjectBuilder()
+            .add("sub", id)
+            // shouldn't need email for Api sites; hide from Globus
+            //.add("email", username)
+        ).build().toString();
   }
 
   protected Long getUserId(String username, String password, boolean checkPassword) {

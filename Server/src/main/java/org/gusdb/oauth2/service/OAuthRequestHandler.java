@@ -2,10 +2,9 @@ package org.gusdb.oauth2.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map.Entry;
 
+import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonValue;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 
@@ -107,19 +106,8 @@ public class OAuthRequestHandler {
           accessToken).setExpiresIn(String.valueOf(expirationSecs));
 
       if (includeUserInfo) {
-        JsonObject userObj = getUserInfo(authenticator, TokenStore.getUserForToken(accessToken));
-        for (Entry<String, JsonValue> entry : userObj.entrySet()) {
-          switch (entry.getKey()) {
-            case OAuth.OAUTH_ACCESS_TOKEN:
-            case OAuth.OAUTH_EXPIRES_IN:
-            case OAuth.OAUTH_REFRESH_TOKEN:
-            case OAuth.OAUTH_TOKEN_TYPE:
-              LOG.warn("Authenticator tried to override standard token response property '" + entry.getKey() + "'; skipping");
-              break;
-            default:
-              responseBuilder.setParam(entry.getKey(), getUserInfoPropertyString(entry.getValue()));
-          }
-        }
+        responseBuilder.setParam("id_token",
+            getIdToken(authenticator, TokenStore.getUserForToken(accessToken)));
       }
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
@@ -129,17 +117,6 @@ public class OAuthRequestHandler {
       LOG.error("Problem responding to token request", e);
       OAuthResponse res = OAuthASResponse.errorResponse(HttpServletResponse.SC_BAD_REQUEST).error(e).buildJSONMessage();
       return Response.status(res.getResponseStatus()).entity(res.getBody()).build();
-    }
-  }
-
-  private static String getUserInfoPropertyString(JsonValue value) {
-    switch (value.getValueType()) {
-      case OBJECT:
-        return "[Object]";
-      case ARRAY:
-        return "[Array]";
-      default:
-        return value.toString();
     }
   }
 
@@ -169,13 +146,14 @@ public class OAuthRequestHandler {
           oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE)).build();
     }
 
-    JsonObject userData = getUserInfo(authenticator, username);
-    return Response.status(Response.Status.OK).entity(userData.toString()).build();
+    JsonObject response = Json.createObjectBuilder()
+        .add("id_token", getIdToken(authenticator, username)).build();
+    return Response.status(Response.Status.OK).entity(response.toString()).build();
   }
 
-  private static JsonObject getUserInfo(Authenticator authenticator, String username) throws OAuthSystemException {
+  private static String getIdToken(Authenticator authenticator, String username) throws OAuthSystemException {
     try {
-      return authenticator.getUserInfo(username);
+      return authenticator.getIdToken(username);
     }
     catch (Exception e) {
       LOG.error("Unable to retrieve user info for usernaem '" + username + "'", e);

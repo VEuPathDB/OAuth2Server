@@ -36,16 +36,18 @@ public interface Authenticator {
   public boolean isCredentialsValid(String username, String password) throws Exception;
 
   /**
-   * Returns implementation-specific user information.  This is the JSON
-   * returned for /user requests when accompanied by a valid access token.  The
-   * implementation can provide as little or as much information about the
-   * user as it likes (i.e. user id, name, display name, email, etc.)
+   * Returns implementation-specific user information in the form of an ID
+   * token.  This could be simply a user ID or complex structure in JSON.  It is
+   * returned for /token requests if the "includeUserInfoWithToken" config value
+   * is true, and is returned for /user requests accompanied by a valid access
+   * token.  The implementation can provide as little or as much information
+   * about the user as it likes (i.e. user id, name, display name, email, etc.)
    * 
    * @param username username for which to get user information
    * @return user information in JSON format
    * @throws Exception if something goes wrong while fetching user info
    */
-  public JsonObject getUserInfo(String username) throws Exception;
+  public String getIdToken(String username) throws Exception;
 
   /**
    * Closes resources opened during initialization.  This method will be called
