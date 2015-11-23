@@ -232,9 +232,7 @@ public class OAuthService {
     }
     ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
     return OAuthRequestHandler.handleTokenRequest(oauthRequest,
-        OAuthServlet.getAuthenticator(_context),
-        config.getTokenExpirationSecs(),
-        config.includeUserInfoWithToken());
+        OAuthServlet.getAuthenticator(_context), config);
   }
 
   private static String paramsToString(HttpServletRequest request) {
@@ -251,8 +249,8 @@ public class OAuthService {
   @Path("/user")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getUserInfo() throws Exception {
+    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
     OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
-    return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context));
+    return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context), config.getIssuer(), config.getTokenExpirationSecs());
   }
-
 }

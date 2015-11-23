@@ -12,6 +12,7 @@ public class AuthzRequest {
   private final String _redirectUri;
   private final String _responseType;
   private final String _state;
+  private final String _nonce;
   private final Set<String> _scopes;
   
   public AuthzRequest(OAuthAuthzRequest request) {
@@ -20,6 +21,7 @@ public class AuthzRequest {
     _redirectUri = request.getRedirectURI();
     _responseType = request.getResponseType();
     _state = request.getState();
+    _nonce = request.getParam("nonce"); // OpenID Connect
     _scopes = new HashSet<>(request.getScopes());
   }
 
@@ -41,6 +43,10 @@ public class AuthzRequest {
 
   public String getState() {
     return _state;
+  }
+
+  public String getNonce() {
+    return _nonce;
   }
 
   public Set<String> getScopes() {

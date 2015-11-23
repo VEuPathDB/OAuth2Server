@@ -39,18 +39,26 @@ public class TokenStore {
     public final String authCode;
     public final String clientId;
     public final String username;
-    public final Date creationDate;
+    public final String nonce;
+    public final long creationTime;
 
-    public AuthCodeData(String authCode, String clientId, String username) {
+    public AuthCodeData(String authCode, String clientId, String username, String nonce) {
       this.authCode = authCode;
       this.clientId = clientId;
       this.username = username;
-      this.creationDate = new Date();
+      this.nonce = nonce;
+      this.creationTime = new Date().getTime() / 1000;
     }
 
     @Override
     public String toString() {
-      return "{ authCode: " + authCode + ", clientId: " + clientId + ", username: " + username + " }";
+      return new StringBuilder()
+        .append("{ authCode: ").append(authCode)
+        .append(", clientId: ").append(clientId)
+        .append(", username: ").append(username)
+        .append(", nonce: ").append(nonce)
+        .append(", authTime: ").append(creationTime)
+        .append(" }").toString();
     }
 
     @Override
@@ -64,12 +72,12 @@ public class TokenStore {
 
     public final String tokenValue;
     public final AuthCodeData authCodeData;
-    public final Date creationDate;
+    public final long creationTime;
 
     public AccessTokenData(String tokenValue, AuthCodeData authCodeData) {
       this.tokenValue = tokenValue;
       this.authCodeData = authCodeData;
-      this.creationDate = new Date();
+      this.creationTime = new Date().getTime() / 1000;
     }
 
     @Override
@@ -95,7 +103,7 @@ public class TokenStore {
     list.add(authCodeData);
   }
 
-  public static synchronized void addAccessToken(String accessToken, String authCode) {
+  public static synchronized AccessTokenData addAccessToken(String accessToken, String authCode) {
     AuthCodeData authCodeData = AUTH_CODE_MAP.get(authCode);
     AccessTokenData accessTokenData = new AccessTokenData(accessToken, authCodeData);
     ACCESS_TOKEN_MAP.put(accessTokenData.tokenValue, accessTokenData);
@@ -105,6 +113,7 @@ public class TokenStore {
       USER_ACCESS_TOKEN_MAP.put(accessTokenData.authCodeData.username, list);
     }
     list.add(accessTokenData);
+    return accessTokenData;
   }
 
   public static synchronized boolean isValidAuthCode(String authCode, String clientId) {
@@ -119,6 +128,11 @@ public class TokenStore {
       str.append(entry.getKey()).append(": ").append(entry.getValue().toString());
     }
     return str.toString();
+  }
+
+
+  public static AccessTokenData getTokenData(String accessToken) {
+    return ACCESS_TOKEN_MAP.get(accessToken);
   }
 
   public static String getUserForToken(String accessToken) {
@@ -141,10 +155,10 @@ public class TokenStore {
   }
 
   public static synchronized void removeExpiredTokens(int expirationSeconds) {
-    long currentDateMillis = new Date().getTime();
+    long currentDateSecs = new Date().getTime() / 1000;
     List<String> expiredTokens = new ArrayList<>();
     for (Entry<String, AuthCodeData> entry : AUTH_CODE_MAP.entrySet()) {
-      if (isExpired(entry.getValue().creationDate, currentDateMillis, expirationSeconds)) {
+      if (isExpired(entry.getValue().creationTime, currentDateSecs, expirationSeconds)) {
         expiredTokens.add(entry.getKey());
       }
     }
@@ -155,7 +169,7 @@ public class TokenStore {
     }
     expiredTokens.clear();
     for (Entry<String, AccessTokenData> entry : ACCESS_TOKEN_MAP.entrySet()) {
-      if (isExpired(entry.getValue().creationDate, currentDateMillis, expirationSeconds)) {
+      if (isExpired(entry.getValue().creationTime, currentDateSecs, expirationSeconds)) {
         expiredTokens.add(entry.getKey());
       }
     }
@@ -166,8 +180,8 @@ public class TokenStore {
     }
   }
 
-  private static boolean isExpired(Date creationDate, long currentDateMillis, int expirationSeconds) {
-    long ageMillis = currentDateMillis - creationDate.getTime();
-    return (ageMillis > (1000 * expirationSeconds));
+  private static boolean isExpired(long creationTimeSecs, long currentDateSecs, int expirationSeconds) {
+    long ageMillis = currentDateSecs - creationTimeSecs;
+    return (ageMillis > expirationSeconds);
   }
 }

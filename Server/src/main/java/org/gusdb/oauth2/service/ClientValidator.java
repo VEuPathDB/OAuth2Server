@@ -57,16 +57,16 @@ public class ClientValidator {
       AllowedClient client = _clientMap.get(clientId);
       boolean valid = false;
       for (String validDomain : client.getDomains()) {
-        LOG.info("For client '"+ clientId + "', checking passed URL host '" + redirectUriHost + "' against " + validDomain);
+        LOG.debug("For client '"+ clientId + "', checking passed URL host '" + redirectUriHost + "' against " + validDomain);
         if (validDomain.equalsIgnoreCase(redirectUriHost) ||
             (validDomain.startsWith("*.") &&
              redirectUriHost.toLowerCase().endsWith(validDomain.toLowerCase().substring(2)))) {
-          LOG.info("Is valid!");
+          LOG.debug("Is valid!");
           valid = true;
           break;
         }
       }
-      LOG.info("Valid redirectUri host [" + redirectUriHost + "] for client [" + clientId + "]? " + valid);
+      LOG.debug("Valid redirectUri host [" + redirectUriHost + "] for client [" + clientId + "]? " + valid);
       return valid;
     }
     catch (URISyntaxException e) {

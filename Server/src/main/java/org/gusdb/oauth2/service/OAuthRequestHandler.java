@@ -3,7 +3,6 @@ package org.gusdb.oauth2.service;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import javax.json.Json;
 import javax.json.JsonObject;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
@@ -24,6 +23,8 @@ import org.apache.oltu.oauth2.common.message.types.ResponseType;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
+import org.gusdb.oauth2.config.ApplicationConfig;
+import org.gusdb.oauth2.service.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.TokenStore.AuthCodeData;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
@@ -38,8 +39,12 @@ public class OAuthRequestHandler {
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
-    // build response according to response_type
+    // 'code' is the only response type supported
     String responseType = oauthRequest.getResponseType();
+    if (!responseType.equals(ResponseType.CODE.toString())) {
+      return new OAuthResponseFactory().buildBadResponseTypeResponse();
+    }
+
     LOG.trace("Cached request values: " + responseType + ", " + oauthRequest.getClientId() + ", " +
         oauthRequest.getRedirectUri() + ", " + oauthRequest.getResponseType());
 
@@ -47,24 +52,23 @@ public class OAuthRequestHandler {
     OAuthASResponse.OAuthAuthorizationResponseBuilder builder = OAuthASResponse.authorizationResponse(
         new StateParamHttpRequest(oauthRequest.getState()), HttpServletResponse.SC_FOUND);
 
-    if (responseType.equals(ResponseType.CODE.toString())) {
-      LOG.debug("Generating authorization code...");
-      final String authorizationCode = oauthIssuerImpl.authorizationCode();
-      TokenStore.addAuthCode(new AuthCodeData(authorizationCode, oauthRequest.getClientId(), username));
-      builder.setCode(authorizationCode);
-    }
-    else {
-      return new OAuthResponseFactory().buildBadResponseTypeResponse();
-    }
+    LOG.debug("Generating authorization code...");
+    final String authorizationCode = oauthIssuerImpl.authorizationCode();
+    TokenStore.addAuthCode(new AuthCodeData(authorizationCode,
+        oauthRequest.getClientId(), username, oauthRequest.getNonce()));
+    builder.setCode(authorizationCode);
 
     String redirectURI = oauthRequest.getRedirectUri();
-    final OAuthResponse response = builder.location(redirectURI).setExpiresIn(String.valueOf(expirationSecs)).buildQueryMessage();
+    final OAuthResponse response = builder.location(redirectURI)
+        .setExpiresIn(String.valueOf(expirationSecs)).buildQueryMessage();
     URI url = new URI(response.getLocationUri());
     return Response.status(response.getResponseStatus()).location(url).build();
   }
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
-      Authenticator authenticator, int expirationSecs, boolean includeUserInfo) throws OAuthSystemException {
+      Authenticator authenticator, ApplicationConfig config) throws OAuthSystemException {
+    int expirationSecs = config.getTokenExpirationSecs();
+    boolean isOpenIdConnect = config.useOpenIdConnect();
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
       OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
@@ -79,19 +83,8 @@ public class OAuthRequestHandler {
           }
           break;
         case PASSWORD:
-          // Don't current support password grant
+          // don't currently support password grant
           return responses.buildInvalidGrantTypeResponse();
-          /*
-          try {
-            if (!authenticator.isCredentialsValid(oauthRequest.getUsername(), oauthRequest.getPassword())) {
-              return responses.buildInvalidUserPassResponse();
-            }
-          }
-          catch (Exception e) {
-            return responses.buildServerErrorResponse();
-          }
-          break;
-          */
         case REFRESH_TOKEN:
           // refresh token is not supported in this implementation
           return responses.buildInvalidGrantTypeResponse();
@@ -100,14 +93,19 @@ public class OAuthRequestHandler {
       }
 
       final String accessToken = oauthIssuerImpl.accessToken();
-      TokenStore.addAccessToken(accessToken, oauthRequest.getCode());
+      AccessTokenData tokenData = TokenStore.addAccessToken(accessToken, oauthRequest.getCode());
 
-      OAuthTokenResponseBuilder responseBuilder = OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK).setAccessToken(
-          accessToken).setExpiresIn(String.valueOf(expirationSecs));
+      OAuthTokenResponseBuilder responseBuilder =
+          OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)
+          .setTokenType("Bearer")
+          .setAccessToken(accessToken)
+          .setExpiresIn(String.valueOf(expirationSecs));
 
-      if (includeUserInfo) {
-        responseBuilder.setParam("id_token",
-            getIdToken(authenticator, TokenStore.getUserForToken(accessToken)));
+      // if configured to send id_token with access token response, create and add it
+      if (isOpenIdConnect) {
+        responseBuilder.setParam("id_token", IdTokenFactory.createJwtFromJson(
+            IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs),
+            config.getSecretMap().get(tokenData.authCodeData.clientId)));
       }
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
@@ -131,12 +129,13 @@ public class OAuthRequestHandler {
   }
 
   public static Response handleUserInfoRequest(OAuthAccessResourceRequest oauthRequest,
-      Authenticator authenticator) throws OAuthSystemException {
+      Authenticator authenticator, String issuer, int expirationSecs)
+          throws OAuthSystemException, OAuthProblemException {
     String accessToken = oauthRequest.getAccessToken();
-    String username = TokenStore.getUserForToken(accessToken);
+    AccessTokenData tokenData = TokenStore.getTokenData(accessToken);
 
     // Validate the access token
-    if (username == null) {
+    if (tokenData == null) {
       // Return the OAuth error message
       OAuthResponse oauthResponse = OAuthRSResponse.errorResponse(HttpServletResponse.SC_UNAUTHORIZED).setError(
           OAuthError.ResourceResponse.INVALID_TOKEN).buildHeaderMessage();
@@ -146,18 +145,7 @@ public class OAuthRequestHandler {
           oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE)).build();
     }
 
-    JsonObject response = Json.createObjectBuilder()
-        .add("id_token", getIdToken(authenticator, username)).build();
-    return Response.status(Response.Status.OK).entity(response.toString()).build();
-  }
-
-  private static String getIdToken(Authenticator authenticator, String username) throws OAuthSystemException {
-    try {
-      return authenticator.getIdToken(username);
-    }
-    catch (Exception e) {
-      LOG.error("Unable to retrieve user info for usernaem '" + username + "'", e);
-      throw new OAuthSystemException(e);
-    }
+    JsonObject idTokenData = IdTokenFactory.createIdTokenJson(authenticator, tokenData, issuer, expirationSecs);
+    return Response.status(Response.Status.OK).entity(idTokenData.toString()).build();
   }
 }

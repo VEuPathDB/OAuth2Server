@@ -4,8 +4,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.Map;
 
-import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
@@ -58,16 +59,31 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public String getIdToken(String username) throws Exception {
-    Long id = getUserId(username, "", false);
-    return (id == null ?
-        Json.createObjectBuilder()
-            .add("sub", JsonValue.NULL) :
-        Json.createObjectBuilder()
-            .add("sub", id)
-            // shouldn't need email for Api sites; hide from Globus
-            //.add("email", username)
-        ).build().toString();
+  public UserInfo getUserInfo(String username) throws Exception {
+    final Long id = getUserId(username, "", false);
+    if (id == null) {
+      throw new IllegalStateException("User could not be found even though already authenticated.");
+    }
+    return new UserInfo() {
+      @Override
+      public String getUserId() {
+        return String.valueOf(id);
+      }
+      @Override
+      public String getEmail() {
+        // shouldn't need email for Api sites; hide from Globus
+        //return username;
+        return null;
+      }
+      @Override
+      public boolean isEmailVerified() {
+        return true;
+      }
+      @Override
+      public Map<String, JsonValue> getSupplementalFields() {
+        return Collections.EMPTY_MAP;
+      }
+    };
   }
 
   protected Long getUserId(String username, String password, boolean checkPassword) {

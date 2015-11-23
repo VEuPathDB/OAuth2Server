@@ -1,6 +1,9 @@
 package org.gusdb.oauth2;
 
+import java.util.Map;
+
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 /**
  * Provides access to a custom user store to authenticate users and provide
@@ -8,9 +11,54 @@ import javax.json.JsonObject;
  * must provide an implementation of this class specific to their user storage
  * mechanism.
  * 
- * @author ryan
+ * @author rdoherty
  */
 public interface Authenticator {
+
+  /**
+   * Provides access to user's ID and email
+   * 
+   * @author rdoherty
+   */
+  public static interface UserInfo {
+    /**
+     * Returns system-unique and static ID for a user; this identifier should be
+     * suitable for representing a primary key for this user.  It will be
+     * used as the "sub" property of the OpenID Connect ID token.  If null
+     * or an empty value is returned, and exception will be thrown.
+     * 
+     * @return unique user ID
+     */
+    public String getUserId();
+
+    /**
+     * Returns user's email address; if this method returns a value, it will be
+     * used as the "email" property of the OpenID Connect ID token.  If null
+     * or an empty String is returned, the "email" property will be omitted.
+     * 
+     * @return user's email address
+     */
+    public String getEmail();
+
+    /**
+     * Returns whether this user's email has been verified.  The value returned
+     * will be used as the "email_verified" property of the OpenID Connect ID
+     * token.  This will only be included, however, if the "email" property is
+     * also included.
+     * 
+     * @return whether the user's email address has been verified
+     */
+    public boolean isEmailVerified();
+
+    /**
+     * Returns supplemental fields to be included in the OpenID Connect ID
+     * token.  Keys cannot override natively-supported fields, but any other
+     * value is valid.  Any JSON value is allowed.
+     * 
+     * @return supplemental fields to add to ID token
+     */
+    public Map<String,JsonValue> getSupplementalFields();
+  }
 
   /**
    * Initializes this authenticator using configuration set in the OAuth config
@@ -36,18 +84,21 @@ public interface Authenticator {
   public boolean isCredentialsValid(String username, String password) throws Exception;
 
   /**
-   * Returns implementation-specific user information in the form of an ID
-   * token.  This could be simply a user ID or complex structure in JSON.  It is
+   * Returns implementation-specific user information.  Only the user ID field
+   * of the returned object is required.  Email and EmailVerified are optional.
+   * Authenticator implementations can also add supplemental fields in the
+   * supplementalFields property of the returned object.
+   * 
+   * This information is used to populate an OpenID Connect ID token, which is
    * returned for /token requests if the "includeUserInfoWithToken" config value
    * is true, and is returned for /user requests accompanied by a valid access
-   * token.  The implementation can provide as little or as much information
-   * about the user as it likes (i.e. user id, name, display name, email, etc.)
+   * token.
    * 
    * @param username username for which to get user information
-   * @return user information in JSON format
+   * @return user information
    * @throws Exception if something goes wrong while fetching user info
    */
-  public String getIdToken(String username) throws Exception;
+  public UserInfo getUserInfo(String username) throws Exception;
 
   /**
    * Closes resources opened during initialization.  This method will be called

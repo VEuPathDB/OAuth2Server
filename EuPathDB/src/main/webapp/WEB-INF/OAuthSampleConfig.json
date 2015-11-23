@@ -1,7 +1,8 @@
 {
+  "issuer": "https://integrate.eupathdb.org/oauth",
   "loginFormPage": "eupathdb-login.html",
-  "tokenExpirationSecs": 300,
-  "includeUserInfoWithToken": true,
+  "tokenExpirationSecs": 3600,
+  "useOpenIdConnect": true,
   "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
   "authenticatorConfig": {
     "login": "db_login",
