@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -238,9 +237,10 @@ public class OAuthService {
   private static String paramsToString(HttpServletRequest request) {
     Map<String, String[]> params = request.getParameterMap();
     StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
-    for (Entry<String, String[]> entry : params.entrySet()) {
-      sb.append("  ").append(entry.getKey()).append(": ")
-        .append(Arrays.toString(entry.getValue())).append(System.lineSeparator());
+    for (String key : params.keySet()) {
+      String[] values = (key.equals("client_secret") ? new String[]{ "<blocked>" } : params.get(key));
+      sb.append("  ").append(key).append(": ")
+        .append(Arrays.toString(values)).append(System.lineSeparator());
     }
     return sb.append("}").toString();
   }
