@@ -2,8 +2,17 @@
   text-align: center;
 }
 
+.main-logo-container a {
+  display: none;
+}
+
 .main-logo-container img {
-  width: 250px;
+  height: 70px;
+}
+
+/* override height for ortho image */
+#orthomcl-logo img {
+  height: 60px;
 }
 
 .small-font {
