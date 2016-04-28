@@ -2,7 +2,7 @@ $(function() {
 
   // figure out component site referring user to login page
   var redirectUri = getUrlParams()["redirectUri"];
-  if (redirectUri == '') {
+  if (redirectUri == null || redirectUri == '') {
     var baseUrl = 'http://eupathdb.org/eupathdb';
     var cancelUrl = baseUrl;
     var project = 'eupathdb';
