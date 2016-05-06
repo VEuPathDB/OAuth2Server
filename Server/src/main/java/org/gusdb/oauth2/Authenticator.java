@@ -107,4 +107,13 @@ public interface Authenticator {
    */
   public void close();
 
+  /**
+   * Overwrites user's password in the system.  The passed strings are not
+   * checked for SQL-injection or other hacks.
+   * 
+   * @param username username of user whose password should be overwritten
+   * @param newPassword new password for the user
+   */
+  public void overwritePassword(String username, String newPassword) throws Exception;
+
 }

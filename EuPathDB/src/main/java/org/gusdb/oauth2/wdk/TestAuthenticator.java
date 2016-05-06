@@ -38,6 +38,12 @@ public class TestAuthenticator extends UserDbAuthenticator {
   }
 
   @Override
+  public void overwritePassword(String username, String newPassword) {
+    TwoTuple<Long, String> user = USERS.get(username);
+    USERS.put(username, new TwoTuple<Long, String>(user.getFirst(), newPassword));
+  }
+
+  @Override
   public void close() {
     // don't need to do anything
   }

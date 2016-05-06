@@ -90,10 +90,10 @@ public class UserDbAuthenticator implements Authenticator {
     String sql = "select user_id from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
     Object[] params = (checkPassword ?
-        new Object[]{ username, encrypt(password) } :
+        new Object[]{ username, encryptPassword(password) } :
         new Object[]{ username });
     final TwoTuple<Boolean, Long> result = new TwoTuple<>(false, null);
-    new SQLRunner(_userDb.getDataSource(), sql )
+    new SQLRunner(_userDb.getDataSource(), sql)
       .executeQuery(params, new ResultSetHandler() {
         @Override public void handleResult(ResultSet rs) throws SQLException {
           if (rs.next()) result.set(true, rs.getLong(1));
@@ -103,7 +103,7 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   // copied from WDK's UserFactory class
-  private static String encrypt(String str) {
+  private static String encryptPassword(String str) {
     String algorithm = "MD5";
     try {
       // convert each byte into hex format
@@ -130,5 +130,12 @@ public class UserDbAuthenticator implements Authenticator {
         throw new RuntimeException("Unable to properly close configured database instance", e);
       }
     }
+  }
+
+  @Override
+  public void overwritePassword(String username, String newPassword) throws Exception {
+    newPassword = encryptPassword(newPassword);
+    String sql = "update " + _userSchema + "users set passwd = ? where email = ?";
+    new SQLRunner(_userDb.getDataSource(), sql).executeUpdate();
   }
 }

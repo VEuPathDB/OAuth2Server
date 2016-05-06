@@ -6,6 +6,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
+
 public class OAuthResponseFactory {
 
   private static ResponseBuilder NOT_ACCEPTABLE_RESPONSE = Response.notAcceptable(Collections.<Variant>emptyList());
@@ -34,6 +36,10 @@ public class OAuthResponseFactory {
     return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Redirect URI in Request").build();
   }
 
+  public Response buildInvalidRequestResponse(OAuthProblemException e) {
+    return NOT_ACCEPTABLE_RESPONSE.entity(e.getMessage()).build();
+  }
+  
   public Response buildServerErrorResponse() {
     return Response.serverError().build();
   }

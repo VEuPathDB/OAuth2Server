@@ -2,6 +2,7 @@ package org.gusdb.oauth2.service;
 
 import static org.gusdb.oauth2.assets.StaticResource.RESOURCE_PREFIX;
 
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -13,6 +14,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -166,28 +170,34 @@ public class OAuthService {
 
   @GET
   @Path("/authorize")
-  public Response authorize() throws URISyntaxException, OAuthSystemException, OAuthProblemException {
-    LOG.info("Handling authorize request with the following params:" +
-        System.lineSeparator() + paramsToString(_request));
-    OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(_request);
-    ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-    if (!clientValidator.isValidAuthorizationClient(oauthRequest)) {
-      return new OAuthResponseFactory().buildInvalidClientResponse();
+  public Response authorize() throws URISyntaxException, OAuthSystemException {
+    try {
+     LOG.info("Handling authorize request with the following params:" +
+         System.lineSeparator() + paramsToString(_request));
+      OAuthAuthzRequest oauthRequest = new OAuthAuthzRequest(_request);
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      if (!clientValidator.isValidAuthorizationClient(oauthRequest)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      Session session = new Session(_request.getSession());
+      if (session.isAuthenticated()) {
+        // user is already logged in; respond with auth code for user
+        ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+        return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
+            session.getUsername(), config.getTokenExpirationSecs());
+      }
+      else {
+        // no one is logged in; generate form ID and send
+        AuthzRequest request = new AuthzRequest(oauthRequest);
+        return Response.seeOther(getLoginUri(
+            session.generateFormId(request),
+            request.getRedirectUri(),
+            null)).build();
+      }
     }
-    Session session = new Session(_request.getSession());
-    if (session.isAuthenticated()) {
-      // user is already logged in; respond with auth code for user
-      ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
-      return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
-          session.getUsername(), config.getTokenExpirationSecs());
-    }
-    else {
-      // no one is logged in; generate form ID and send
-      AuthzRequest request = new AuthzRequest(oauthRequest);
-      return Response.seeOther(getLoginUri(
-          session.generateFormId(request),
-          request.getRedirectUri(),
-          null)).build();
+    catch (OAuthProblemException e) {
+      LOG.error("Problem with authorize request: ", e);
+      return new OAuthResponseFactory().buildInvalidRequestResponse(e);
     }
   }
 
@@ -219,19 +229,25 @@ public class OAuthService {
   @Path("/token")
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException, OAuthProblemException {
-    // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
-    HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
-    LOG.info("Handling token request with the following params:" +
+  public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
+    try {
+      // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
+      HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
+      LOG.info("Handling token request with the following params:" +
         System.lineSeparator() + paramsToString(request));
-    OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
-    ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-    if (!clientValidator.isValidTokenClient(oauthRequest)) {
-      return new OAuthResponseFactory().buildInvalidClientResponse();
+      OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      if (!clientValidator.isValidTokenClient(oauthRequest)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+      return OAuthRequestHandler.handleTokenRequest(oauthRequest,
+          OAuthServlet.getAuthenticator(_context), config);
     }
-    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
-    return OAuthRequestHandler.handleTokenRequest(oauthRequest,
-        OAuthServlet.getAuthenticator(_context), config);
+    catch (OAuthProblemException e) {
+      LOG.error("Problem with authorize request: ", e);
+      return new OAuthResponseFactory().buildInvalidRequestResponse(e);
+    }
   }
 
   private static String paramsToString(HttpServletRequest request) {
@@ -253,4 +269,38 @@ public class OAuthService {
     OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
     return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context), config.getIssuer(), config.getTokenExpirationSecs());
   }
+
+  @POST
+  @Path("/changePassword")
+  public Response changePassword(String body) {
+
+    // parse request params
+    String username, password, newPassword;
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      username = input.getString("username");
+      password = input.getString("currentPassword");
+      newPassword = input.getString("newPassword");
+    }
+    catch (NullPointerException | ClassCastException | JsonParsingException e) {
+      return Response.status(Status.BAD_REQUEST).build();
+    }
+
+    // request properly formatted, check if credentials are valid
+    Authenticator auth = OAuthServlet.getAuthenticator(_context);
+    try {
+      if (!auth.isCredentialsValid(username, password)) {
+        // wrong password given for the passed user
+        return Response.status(Status.FORBIDDEN).build();
+      }
+      // credentials valid; overwrite password
+      auth.overwritePassword(username, newPassword);
+      return Response.ok().build();
+    }
+    catch (Exception e) {
+      LOG.error("Error while processing password change request", e);
+      return Response.serverError().build();
+    }
+  }
+  
 }
