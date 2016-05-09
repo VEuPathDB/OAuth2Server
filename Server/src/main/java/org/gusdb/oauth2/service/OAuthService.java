@@ -279,7 +279,7 @@ public class OAuthService {
     try {
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
       username = input.getString("username");
-      password = input.getString("currentPassword");
+      password = input.getString("password");
       newPassword = input.getString("newPassword");
     }
     catch (NullPointerException | ClassCastException | JsonParsingException e) {
