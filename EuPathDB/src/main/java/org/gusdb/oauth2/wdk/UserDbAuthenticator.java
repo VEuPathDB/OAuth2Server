@@ -136,6 +136,6 @@ public class UserDbAuthenticator implements Authenticator {
   public void overwritePassword(String username, String newPassword) throws Exception {
     newPassword = encryptPassword(newPassword);
     String sql = "update " + _userSchema + "users set passwd = ? where email = ?";
-    new SQLRunner(_userDb.getDataSource(), sql).executeUpdate();
+    new SQLRunner(_userDb.getDataSource(), sql).executeUpdate(new Object[]{ newPassword, username });
   }
 }
