@@ -1,9 +1,15 @@
 package org.gusdb.oauth2.service;
 
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
+import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 
@@ -109,6 +115,9 @@ public class OAuthRequestHandler {
       }
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Processed token request successfully.  Returning: " + prettyPrintJsonObject(response.getBody()));
+      }
       return Response.status(response.getResponseStatus()).entity(response.getBody()).build();
     }
     catch (OAuthProblemException e) {
@@ -147,5 +156,14 @@ public class OAuthRequestHandler {
 
     JsonObject idTokenData = IdTokenFactory.createIdTokenJson(authenticator, tokenData, issuer, expirationSecs);
     return Response.status(Response.Status.OK).entity(idTokenData.toString()).build();
+  }
+
+  private static String prettyPrintJsonObject(String json) {
+    JsonObject obj = Json.createReader(new StringReader(json)).readObject();
+    StringWriter stringWriter = new StringWriter();
+    Map<String, Object> properties = new HashMap<String, Object>(1);
+    properties.put(JsonGenerator.PRETTY_PRINTING, true);
+    Json.createWriterFactory(properties).createWriter(stringWriter).writeObject(obj);
+    return stringWriter.toString();
   }
 }

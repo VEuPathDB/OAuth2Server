@@ -101,13 +101,6 @@ public interface Authenticator {
   public UserInfo getUserInfo(String username) throws Exception;
 
   /**
-   * Closes resources opened during initialization.  This method will be called
-   * on webapp unloading if the org.gusdb.oauth2.server.ApplicationListener is
-   * added as a listener in web.xml.
-   */
-  public void close();
-
-  /**
    * Overwrites user's password in the system.  The passed strings are not
    * checked for SQL-injection or other hacks.
    * 
@@ -115,5 +108,12 @@ public interface Authenticator {
    * @param newPassword new password for the user
    */
   public void overwritePassword(String username, String newPassword) throws Exception;
+
+  /**
+   * Closes resources opened during initialization.  This method will be called
+   * on webapp unloading if the org.gusdb.oauth2.server.ApplicationListener is
+   * added as a listener in web.xml.
+   */
+  public void close();
 
 }
