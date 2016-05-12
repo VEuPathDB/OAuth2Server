@@ -4,12 +4,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.Map;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.gusdb.fgputil.MapBuilder;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
@@ -73,7 +74,7 @@ public class UserDbAuthenticator implements Authenticator {
       public String getEmail() {
         // shouldn't need email for Api sites; hide from Globus
         //return username;
-        return null;
+        return "user@eupathdb.org";
       }
       @Override
       public boolean isEmailVerified() {
@@ -81,7 +82,14 @@ public class UserDbAuthenticator implements Authenticator {
       }
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
-        return Collections.EMPTY_MAP;
+        JsonObject json = Json.createObjectBuilder()
+            .add("name", "EuPathDB User")
+            .add("organization", "EuPathDB")
+            .build();
+        return new MapBuilder<String, JsonValue>()
+            .put("name", json.getJsonString("name"))
+            .put("organization", json.getJsonString("organization"))
+            .toMap();
       }
     };
   }
