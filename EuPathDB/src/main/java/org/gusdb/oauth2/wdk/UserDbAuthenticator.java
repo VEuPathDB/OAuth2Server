@@ -60,7 +60,7 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public UserInfo getUserInfo(String username) throws Exception {
+  public UserInfo getUserInfo(final String username) throws Exception {
     final Long id = getUserId(username, "", false);
     if (id == null) {
       throw new IllegalStateException("User could not be found even though already authenticated.");
@@ -72,9 +72,8 @@ public class UserDbAuthenticator implements Authenticator {
       }
       @Override
       public String getEmail() {
-        // shouldn't need email for Api sites; hide from Globus
-        //return username;
-        return "user@eupathdb.org";
+        // FIXME: shouldn't need email for Api sites; should probably hide from Globus
+        return username;
       }
       @Override
       public boolean isEmailVerified() {
