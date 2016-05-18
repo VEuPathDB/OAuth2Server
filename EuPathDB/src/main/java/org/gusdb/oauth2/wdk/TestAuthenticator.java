@@ -13,13 +13,13 @@ public class TestAuthenticator extends UserDbAuthenticator {
   private static Logger LOG = LoggerFactory.getLogger(TestAuthenticator.class);
 
   // maps from username -> [ userid, password ]
-  private static final Map<String, TwoTuple<Long, String>> USERS =
-      new MapBuilder<String, TwoTuple<Long, String>>()
-      .put("caurreco", new TwoTuple<>(1L, "12345"))
-      .put("dfaulk", new TwoTuple<>(2L, "12345"))
-      .put("xingao", new TwoTuple<>(3L, "12345"))
-      .put("rdoherty", new TwoTuple<>(4L, "12345"))
-      .put("sfischer", new TwoTuple<>(5L, "12345"))
+  private static final Map<String, TwoTuple<Long, String[]>> USERS =
+      new MapBuilder<String, TwoTuple<Long, String[]>>()
+      .put("caurreco", new TwoTuple<>(1L, new String[]{ "12345", "Christina" }))
+      .put("dfaulk", new TwoTuple<>(2L, new String[]{ "12345", "Dave" }))
+      .put("xingao", new TwoTuple<>(3L, new String[]{ "12345", "Jerric" }))
+      .put("rdoherty", new TwoTuple<>(4L, new String[]{ "12345", "Ryan" }))
+      .put("sfischer", new TwoTuple<>(5L, new String[]{ "12345", "Steve"}))
       .toMap();
 
   @Override
@@ -28,19 +28,23 @@ public class TestAuthenticator extends UserDbAuthenticator {
   }
 
   @Override
-  protected Long getUserId(String username, String password, boolean checkPassword) {
+  protected UserDbData getUserData(String username, String password, boolean checkPassword) {
     LOG.info("Request to get user id with [" + username + ", " + password + ", " + checkPassword + "]");
     if (username == null) return null;
-    TwoTuple<Long, String> profile = USERS.get(username);
+    TwoTuple<Long, String[]> profile = USERS.get(username);
     if (profile == null) return null;
-    if (checkPassword && !profile.getSecond().equals(password)) return null;
-    return profile.getFirst();
+    if (checkPassword && !profile.getSecond()[0].equals(password)) return null;
+    UserDbData data = new UserDbData();
+    data.userId = profile.getFirst();
+    data.firstName = profile.getSecond()[1];
+    data.organization = "EuPathDB";
+    return data;
   }
 
   @Override
   public void overwritePassword(String username, String newPassword) {
-    TwoTuple<Long, String> user = USERS.get(username);
-    USERS.put(username, new TwoTuple<Long, String>(user.getFirst(), newPassword));
+    TwoTuple<Long, String[]> user = USERS.get(username);
+    user.getSecond()[0] = newPassword;
   }
 
   @Override

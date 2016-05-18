@@ -32,6 +32,26 @@ public class UserDbAuthenticator implements Authenticator {
     userSchema
   }
 
+  protected static class UserDbData {
+    public Long userId;
+    public String firstName;
+    public String middleName;
+    public String lastName;
+    public String organization;
+
+    public String getName() {
+      String name = null;
+      if (firstName != null && !firstName.isEmpty()) name = firstName;
+      if (middleName != null && !middleName.isEmpty()) {
+        name = (name == null ? middleName : name + " " + middleName);
+      }
+      if (lastName != null && !lastName.isEmpty()) {
+        name = (name == null ? lastName : name + " " + lastName);
+      }
+      return name;
+    }
+  }
+
   private DatabaseInstance _userDb;
   private String _userSchema;
 
@@ -56,23 +76,23 @@ public class UserDbAuthenticator implements Authenticator {
   // WDK uses email and password
   @Override
   public boolean isCredentialsValid(String username, String password) throws Exception {
-    return getUserId(username, password, true) != null;
+    return getUserData(username, password, true) != null;
   }
 
   @Override
   public UserInfo getUserInfo(final String username) throws Exception {
-    final Long id = getUserId(username, "", false);
-    if (id == null) {
+    final UserDbData userData = getUserData(username, "", false);
+    if (userData == null) {
       throw new IllegalStateException("User could not be found even though already authenticated.");
     }
     return new UserInfo() {
       @Override
       public String getUserId() {
-        return String.valueOf(id);
+        return String.valueOf(userData.userId);
       }
       @Override
       public String getEmail() {
-        // FIXME: shouldn't need email for Api sites; should probably hide from Globus
+        // username is email address in User DB
         return username;
       }
       @Override
@@ -82,9 +102,10 @@ public class UserDbAuthenticator implements Authenticator {
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
         JsonObject json = Json.createObjectBuilder()
-            .add("name", "EuPathDB User")
-            .add("organization", "EuPathDB")
+            .add("name", userData.getName())
+            .add("organization", userData.organization)
             .build();
+        // convert JSON object to map of String -> JsonValue
         return new MapBuilder<String, JsonValue>()
             .put("name", json.getJsonString("name"))
             .put("organization", json.getJsonString("organization"))
@@ -93,17 +114,25 @@ public class UserDbAuthenticator implements Authenticator {
     };
   }
 
-  protected Long getUserId(String username, String password, boolean checkPassword) {
-    String sql = "select user_id from " + _userSchema + "users where email = ?";
+  protected UserDbData getUserData(String username, String password, boolean checkPassword) {
+    String sql = "select user_id, first_name, middle_name, last_name, organization from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
     Object[] params = (checkPassword ?
         new Object[]{ username, encryptPassword(password) } :
         new Object[]{ username });
-    final TwoTuple<Boolean, Long> result = new TwoTuple<>(false, null);
+    final TwoTuple<Boolean, UserDbData> result = new TwoTuple<>(false, null);
     new SQLRunner(_userDb.getDataSource(), sql)
       .executeQuery(params, new ResultSetHandler() {
         @Override public void handleResult(ResultSet rs) throws SQLException {
-          if (rs.next()) result.set(true, rs.getLong(1));
+          if (rs.next()) {
+            UserDbData userData = new UserDbData();
+            userData.userId = rs.getLong(1);
+            userData.firstName = rs.getString(2);
+            userData.middleName = rs.getString(3);
+            userData.lastName = rs.getString(4);
+            userData.organization = rs.getString(5);
+            result.set(true, userData);
+          }
         }
       });
     return (result.getFirst() ? result.getSecond() : null);
