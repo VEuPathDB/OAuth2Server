@@ -2,20 +2,25 @@ $(function() {
 
   // figure out component site referring user to login page
   var redirectUri = getUrlParams()["redirectUri"];
+  var baseUrl, cancelUrl, project;
   if (redirectUri == null || redirectUri == '') {
-    var baseUrl = 'http://eupathdb.org/eupathdb';
-    var cancelUrl = baseUrl;
-    var project = 'eupathdb';
+    baseUrl = 'http://eupathdb.org/eupathdb';
+    cancelUrl = baseUrl;
+    project = 'eupathdb';
   }
   else {
     var url = parseURL(redirectUri);
     var webappName = getWebappName(url.pathname);
     var hostParts = url.host.split('.');
-    var baseUrl = url.protocol + "//" + url.host + "/" + webappName;
-    var cancelUrl = (url.searchObject.redirectUrl == undefined ?
+    baseUrl = url.protocol + "//" + url.host + "/" + webappName;
+    cancelUrl = (url.searchObject.redirectUrl == undefined ?
         baseUrl : decodeURIComponent(url.searchObject.redirectUrl));
-    var project = hostParts[hostParts.length - 2];
-    if (project == 'globus' || project == 'globusgenomics') project = 'eupathdb';
+    project = hostParts[hostParts.length - 2];
+    if (project == 'globus' || project == 'globusgenomics') {
+      project = 'eupathdb';
+      baseUrl = 'http://eupathdb.org/eupathdb';
+      cancelUrl = baseUrl;
+    }
   }
 
   // add custom URLs to form
@@ -23,8 +28,9 @@ $(function() {
   $('#forgot-password').attr('href', baseUrl + "/showResetPassword.do");
   $('.cancel-button').click(function(){ window.location = cancelUrl; });
 
-  // choose the correct header logo
+  // choose the correct header logo and link
   $('#' + project + '-logo').css({ display: 'inline' });
+  $('.main-logo-container a').attr('href', baseUrl);
 
   // override default messages for various status keys
   var status = getUrlParams()["status"];
