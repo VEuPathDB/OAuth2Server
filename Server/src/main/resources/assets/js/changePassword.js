@@ -4,6 +4,11 @@ $(function() {
   var returnHtml = (returnUrl == undefined ? "" :
     "<br/>To return to your previous page, <a href=\"" + returnUrl + "\">click here.<a>");
 
+  var suggestUname = getUrlParams()["suggestedUsername"];
+  if (suggestUname != undefined) {
+    $(input[name=username]).attr('value', suggestUname);
+  }
+
   var displayMessage = function(htmlMessage) {
     $('.message').html(htmlMessage);
   };
