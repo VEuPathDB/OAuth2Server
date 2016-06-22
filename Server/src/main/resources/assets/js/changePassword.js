@@ -6,7 +6,7 @@ $(function() {
 
   var suggestUname = getUrlParams()["suggestedUsername"];
   if (suggestUname != undefined) {
-    $(input[name=username]).attr('value', suggestUname);
+    $('input[name=username]').attr('value', suggestUname);
   }
 
   var displayMessage = function(htmlMessage) {
