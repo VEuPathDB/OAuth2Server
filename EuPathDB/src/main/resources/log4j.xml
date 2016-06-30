@@ -7,8 +7,7 @@
     <param name="maxBackupIndex" value="1"/>
     <param name="File" value="${catalina.base}/logs/oauth/oauth.log4j"/>
     <layout class="org.apache.log4j.PatternLayout">
-      <!-- ipAddress provided by org.apidb.apicommon.controller.log4j.MDCServletFilter -->
-      <param name="ConversionPattern" value="%-9r [%-5p] [%d{dd/MMM/yyyy:HH:mm:ss}] %X{ipAddress} - %C:%L - %m%n" />
+      <param name="ConversionPattern" value="%-9r [%-5p] [%d{dd/MMM/yyyy|HH:mm:ss}] - %C:%L - %m%n" />
     </layout>
     <filter class="org.apache.log4j.varia.LevelRangeFilter">
       <param name="LevelMin" value="trace" />
@@ -19,7 +18,7 @@
   <logger name="org.apache"><level value="warn"/></logger>
   <!-- info level required to log stdout/stderr -->
   <logger name="org.apache.catalina.core"><level value="info"/></logger>
-  <logger name="org.gusdb"><level value="debug"/></logger>
+  <logger name="org.gusdb"><level value="info"/></logger>
 
   <root>
     <priority value="warn"></priority>

@@ -1,0 +1,3 @@
+$(function() {
+  addEupathDecorators(getReferringSiteData("returnUrl"));
+});

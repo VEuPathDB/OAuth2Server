@@ -46,7 +46,7 @@ $(function() {
       contentType: "application/json",
       data: JSON.stringify(formData),
       statusCode: {
-        200: function() { displayMessage("You have successfully changed your password." + returnHtml); },
+        200: function() { displayMessage("<span style=\"color:green\">You have successfully changed your password." + returnHtml + "</span>"); },
         400: function() { displayMessage("A client error occurred.  Please report this bug."); },
         403: function() { displayMessage("Incorrect username or password.  Please try again."); },
         500: function(jqXHR, status, error) {

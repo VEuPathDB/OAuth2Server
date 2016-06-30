@@ -37,6 +37,10 @@
   width: 4.5em;
 }
 
+.password-form label {
+  width: 12em;
+}
+
 .form-container .external-links {
   margin-bottom: 20px;
 }
