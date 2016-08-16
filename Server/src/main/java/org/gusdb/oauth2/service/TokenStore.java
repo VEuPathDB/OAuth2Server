@@ -66,6 +66,12 @@ public class TokenStore {
       return (other instanceof AuthCodeData &&
           authCode.equals(((AuthCodeData)other).authCode));
     }
+
+    @Override
+    public int hashCode() {
+      return authCode.hashCode();
+    }
+    
   }
 
   public static class AccessTokenData {
@@ -84,6 +90,11 @@ public class TokenStore {
     public boolean equals(Object other) {
       return (other instanceof AccessTokenData &&
           tokenValue.equals(((AccessTokenData)other).tokenValue));
+    }
+
+    @Override
+    public int hashCode() {
+      return tokenValue.hashCode();
     }
   }
 
