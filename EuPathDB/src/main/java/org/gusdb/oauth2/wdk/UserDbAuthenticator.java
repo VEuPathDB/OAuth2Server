@@ -54,6 +54,15 @@ public class UserDbAuthenticator implements Authenticator {
       }
       return name;
     }
+
+    @Override
+    public String toString() {
+      return Json.createObjectBuilder()
+          .add("userId", userId)
+          .add("name", getName())
+          .add("organization", organization)
+          .build().toString();
+    }
   }
 
   private DatabaseInstance _userDb;
