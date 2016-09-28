@@ -11,7 +11,6 @@ import javax.json.JsonObject;
 import javax.json.JsonValue;
 
 import org.apache.log4j.Logger;
-import org.gusdb.fgputil.FormatUtil;
 import org.gusdb.fgputil.MapBuilder;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.SupportedPlatform;
@@ -134,7 +133,6 @@ public class UserDbAuthenticator implements Authenticator {
         new Object[]{ username, encryptPassword(password) } :
         new Object[]{ username });
     final TwoTuple<Boolean, UserDbData> result = new TwoTuple<>(false, null);
-    LOG.info("Checking creds with SQL " + sql + " and params " + FormatUtil.arrayToString(params));
     new SQLRunner(_userDb.getDataSource(), sql)
       .executeQuery(params, new ResultSetHandler() {
         @Override public void handleResult(ResultSet rs) throws SQLException {
@@ -149,7 +147,8 @@ public class UserDbAuthenticator implements Authenticator {
           }
         }
       });
-    LOG.info("Success? " + result.getFirst() + ", user: " + result.getSecond());
+    LOG.debug("Checking submitted credentials of " + username +
+        ".  Success? " + result.getFirst() + ", user: " + result.getSecond());
     return (result.getFirst() ? result.getSecond() : null);
   }
 
