@@ -1,5 +1,5 @@
 {
-  "issuer": "https://integrate.eupathdb.org/oauth",
+  "issuer": "https://eupathdb.org/oauth",
   "loginFormPage": "eupathdb-login.html",
   "tokenExpirationSecs": 3600,
   "useOpenIdConnect": true,
