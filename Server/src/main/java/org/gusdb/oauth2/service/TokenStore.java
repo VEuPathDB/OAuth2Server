@@ -106,6 +106,7 @@ public class TokenStore {
 
   public static synchronized void addAuthCode(AuthCodeData authCodeData) {
     AUTH_CODE_MAP.put(authCodeData.authCode, authCodeData);
+    LOG.debug("Added auth code with data:" + authCodeData);
     List<AuthCodeData> list = USER_AUTH_CODE_MAP.get(authCodeData.username);
     if (list == null) {
       list = new ArrayList<>();
@@ -115,6 +116,7 @@ public class TokenStore {
   }
 
   public static synchronized AccessTokenData addAccessToken(String accessToken, String authCode) {
+    LOG.debug("Adding access token '" + accessToken + "' to user behind auth code '" + authCode + "'.");
     AuthCodeData authCodeData = AUTH_CODE_MAP.get(authCode);
     AccessTokenData accessTokenData = new AccessTokenData(accessToken, authCodeData);
     ACCESS_TOKEN_MAP.put(accessTokenData.tokenValue, accessTokenData);
