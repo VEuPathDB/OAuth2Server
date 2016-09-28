@@ -2,6 +2,7 @@ package org.gusdb.oauth2.service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.servlet.http.HttpSession;
@@ -57,6 +58,10 @@ public class Session {
     LOG.debug("Generated formId [" + nextFormId + "] to reference AuthzRequest");
     getFormIdMap().put(nextFormId, authRequest);
     return nextFormId;
+  }
+
+  public Set<String> getFormIds() {
+    return getFormIdMap().keySet();
   }
 
   @SuppressWarnings("unchecked")

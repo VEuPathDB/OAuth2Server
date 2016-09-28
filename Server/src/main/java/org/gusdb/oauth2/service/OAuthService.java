@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -71,7 +72,7 @@ public class OAuthService {
   @GET
   @Path(RESOURCE_PREFIX + "{name:.+}")
   public Response getStaticFile(@PathParam("name") String name) {
-    LOG.debug("Request made to fetch resource: " + name);
+    LOG.trace("Request made to fetch resource: " + name);
     if (name == null || name.isEmpty()) {
       return Response.notAcceptable(Collections.<Variant>emptyList()).build();
     }
@@ -94,6 +95,8 @@ public class OAuthService {
     String formId = getFormIdFromReferrer(referrer);
     try {
       if ((formId == null || !session.isFormId(formId)) && !config.anonymousLoginsAllowed()) {
+        LOG.warn("Attempt to access resources with form ID " + formId +
+            " that does not match formId in session (any of " + concat(session.getFormIds()));
         return Response.seeOther(getLoginUri(formId, "", LoginFormStatus.accessdenied)).build();
       }
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
@@ -120,6 +123,12 @@ public class OAuthService {
       LOG.error("Error processing /login request", e);
       return Response.seeOther(getLoginUri(formId, "", LoginFormStatus.error)).build();
     }
+  }
+
+  private String concat(Set<String> strs) {
+    StringBuilder sb = new StringBuilder("[ ");
+    for (String s : strs) { sb.append(s).append(", "); }
+    return sb.append("<END>").toString().replace(", <END>", " ]");
   }
 
   // FIXME: this could probably be done much better with a regex; fix later
