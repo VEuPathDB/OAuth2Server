@@ -42,7 +42,8 @@ public class IdTokenFactory {
     exp, // time of expiration (Unix integer seconds)
     nonce, // string value linking original auth request with ID token
     email, // user's email
-    email_verified; // whether email is verified
+    email_verified, // whether email is verified
+    preferred_username; // human-friendly display name for the user (may or may not be unique/stable)
 
     public static Set<String> getNames() {
       Set<String> names = new HashSet<>();
@@ -87,6 +88,13 @@ public class IdTokenFactory {
       jsonBuilder
         .add(IdTokenFields.email.name(), email)
         .add(IdTokenFields.email_verified.name(), user.isEmailVerified());
+    }
+
+    // add user's preferred_username if returned by Authenticator
+    String preferredUsername = user.getPreferredUsername();
+    if (preferredUsername != null && !preferredUsername.isEmpty()) {
+      jsonBuilder
+        .add(IdTokenFields.preferred_username.name(), preferredUsername);
     }
 
     // add any supplemental fields from Authenticator

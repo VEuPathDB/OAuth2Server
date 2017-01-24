@@ -41,6 +41,7 @@ public class UserDbAuthenticator implements Authenticator {
     public String middleName;
     public String lastName;
     public String organization;
+    public String stableName;
 
     public String getName() {
       String name = null;
@@ -112,6 +113,11 @@ public class UserDbAuthenticator implements Authenticator {
         return true;
       }
       @Override
+      public String getPreferredUsername() {
+        // stable value that EuPathDB can use to identify this user
+        return userData.stableName;
+      }
+      @Override
       public Map<String, JsonValue> getSupplementalFields() {
         JsonObject json = Json.createObjectBuilder()
             .add("name", userData.getName())
@@ -127,7 +133,7 @@ public class UserDbAuthenticator implements Authenticator {
   }
 
   protected UserDbData getUserData(String username, String password, boolean checkPassword) {
-    String sql = "select user_id, first_name, middle_name, last_name, organization from " + _userSchema + "users where email = ?";
+    String sql = "select user_id, first_name, middle_name, last_name, organization, address from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
     Object[] params = (checkPassword ?
         new Object[]{ username, encryptPassword(password) } :
@@ -143,6 +149,7 @@ public class UserDbAuthenticator implements Authenticator {
             userData.middleName = rs.getString(3);
             userData.lastName = rs.getString(4);
             userData.organization = rs.getString(5);
+            userData.stableName = rs.getString(6);
             result.set(true, userData);
           }
         }

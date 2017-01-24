@@ -51,6 +51,18 @@ public interface Authenticator {
     public boolean isEmailVerified();
 
     /**
+     * Returns a human-readable username for the user.  The value returned will
+     * be used as the "preferred_username" property of the OpenID Connect ID
+     * token.  If null or an empty String is returned, the "preferred_username"
+     * property will be omitted.  Per the spec, implementations are not required
+     * to make this value unique or stable.  However, they may depending on
+     * their need.
+     * 
+     * @return users's preferred username
+     */
+    public String getPreferredUsername();
+
+    /**
      * Returns supplemental fields to be included in the OpenID Connect ID
      * token.  Keys cannot override natively-supported fields, but any other
      * value is valid.  Any JSON value is allowed.
