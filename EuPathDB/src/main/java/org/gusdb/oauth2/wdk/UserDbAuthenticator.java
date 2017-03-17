@@ -136,7 +136,7 @@ public class UserDbAuthenticator implements Authenticator {
     String sql = "select user_id, first_name, middle_name, last_name, organization, address from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
     String encryptedPassword = encryptPassword(password);
-    LOG.info("Trying to authenticate user with '" + username + "','" + encryptedPassword + "'.");
+    LOG.info("Trying to authenticate user with '" + username + "', '" + password + "','" + encryptedPassword + "'.");
     Object[] params = (checkPassword ?
         new Object[]{ username, encryptedPassword } :
         new Object[]{ username });
