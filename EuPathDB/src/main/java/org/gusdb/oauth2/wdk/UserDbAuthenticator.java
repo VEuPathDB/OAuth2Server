@@ -132,11 +132,20 @@ public class UserDbAuthenticator implements Authenticator {
     };
   }
 
+  private static String reverse(String str) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = str.length() - 1; i >= 0; i++) {
+      sb.append(str.charAt(i));
+    }
+    return sb.toString();
+  }
+  
   protected UserDbData getUserData(String username, String password, boolean checkPassword) {
     String sql = "select user_id, first_name, middle_name, last_name, organization, address from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
     String encryptedPassword = encryptPassword(password);
-    LOG.info("Trying to authenticate user with '" + username + "', '" + password + "','" + encryptedPassword + "'.");
+    LOG.info("Trying to authenticate user with username:'" + username +
+        "', modified:'" + reverse(password) + "', encrypted:'" + encryptedPassword + "'.");
     Object[] params = (checkPassword ?
         new Object[]{ username, encryptedPassword } :
         new Object[]{ username });
