@@ -287,7 +287,7 @@ public class OAuthService {
     // parse request params
     String username, password, newPassword;
     try {
-      LOG.info("Received body from client: " + body);
+      LOG.debug("Received body from client: " + body);
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
       username = input.getString("username");
       password = input.getString("password");
@@ -300,13 +300,13 @@ public class OAuthService {
     // request properly formatted, check if credentials are valid
     Authenticator auth = OAuthServlet.getAuthenticator(_context);
     try {
-      LOG.info("Trying creds: " + username + "/" + password);
+      LOG.debug("Trying creds: " + username + "/" + password);
       if (!auth.isCredentialsValid(username, password)) {
         // wrong password given for the passed user
         return Response.status(Status.FORBIDDEN).build();
       }
       // credentials valid; overwrite password
-      LOG.info("Overwriting password: " + username + "/" + password);
+      LOG.debug("Overwriting password: " + username + "/" + password);
       auth.overwritePassword(username, newPassword);
       return Response.ok().build();
     }
