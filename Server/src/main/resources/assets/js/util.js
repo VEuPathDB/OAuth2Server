@@ -24,12 +24,15 @@ function parseURL(url) {
     split = queries[i].split('=');
     searchObject[split[0]] = split[1];
   }
+  var pathname = parser.pathname;
+  // special case for IE-11
+  if (pathname[0] != '/') pathname = '/' + pathname;
   return {
     protocol: parser.protocol,
     host: parser.host,
     hostname: parser.hostname,
     port: parser.port,
-    pathname: parser.pathname,
+    pathname: pathname,
     search: parser.search,
     searchObject: searchObject,
     hash: parser.hash
