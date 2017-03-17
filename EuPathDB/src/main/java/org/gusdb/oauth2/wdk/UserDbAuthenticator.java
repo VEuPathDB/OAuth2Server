@@ -135,8 +135,10 @@ public class UserDbAuthenticator implements Authenticator {
   protected UserDbData getUserData(String username, String password, boolean checkPassword) {
     String sql = "select user_id, first_name, middle_name, last_name, organization, address from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
+    String encryptedPassword = encryptPassword(password);
+    LOG.info("Trying to authenticate user with '" + username + "','" + encryptedPassword + "'.");
     Object[] params = (checkPassword ?
-        new Object[]{ username, encryptPassword(password) } :
+        new Object[]{ username, encryptedPassword } :
         new Object[]{ username });
     final TwoTuple<Boolean, UserDbData> result = new TwoTuple<>(false, null);
     new SQLRunner(_userDb.getDataSource(), sql)
