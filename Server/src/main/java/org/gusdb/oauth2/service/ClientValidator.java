@@ -60,7 +60,7 @@ public class ClientValidator {
         LOG.debug("For client '"+ clientId + "', checking passed URL host '" + redirectUriHost + "' against " + validDomain);
         if (validDomain.equalsIgnoreCase(redirectUriHost) ||
             (validDomain.startsWith("*.") &&
-             redirectUriHost.toLowerCase().endsWith(validDomain.toLowerCase().substring(2)))) {
+             redirectUriHost.toLowerCase().endsWith(validDomain.toLowerCase().substring(1)))) {
           LOG.debug("Is valid!");
           valid = true;
           break;
