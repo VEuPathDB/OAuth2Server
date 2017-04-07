@@ -141,6 +141,8 @@ public class UserDbAuthenticator implements Authenticator {
   }
   
   protected UserDbData getUserData(String username, String password, boolean checkPassword) {
+    // always trim and lowercase email for comparison
+    username = username.trim().toLowerCase();
     String sql = "select user_id, first_name, middle_name, last_name, organization, address from " + _userSchema + "users where email = ?";
     if (checkPassword) sql += " and passwd = ?";
     String encryptedPassword = encryptPassword(password);
