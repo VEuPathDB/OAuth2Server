@@ -32,7 +32,7 @@ public class UserDbAuthenticator implements Authenticator {
     connectionUrl,
     platform,
     poolSize,
-    userSchema
+    schema
   }
 
   protected static class UserDbData {
@@ -76,7 +76,7 @@ public class UserDbAuthenticator implements Authenticator {
         configJson.getString(JsonKey.login.name()),
         configJson.getString(JsonKey.password.name()),
         (short)configJson.getInt(JsonKey.poolSize.name()));
-    String userSchema = configJson.getString(JsonKey.userSchema.name());
+    String userSchema = configJson.getString(JsonKey.schema.name());
     if (!userSchema.isEmpty() && !userSchema.endsWith(".")) userSchema += ".";
     initialize(dbConfig, userSchema);
   }

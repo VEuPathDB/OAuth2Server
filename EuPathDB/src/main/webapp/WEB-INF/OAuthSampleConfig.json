@@ -7,10 +7,10 @@
   "authenticatorConfig": {
     "login": "db_login",
     "password": "db_password",
-    "connectionUrl": "jdbc:oracle:oci:@apicommDevN",
+    "connectionUrl": "jdbc:oracle:oci:@acctdbN",
     "platform": "Oracle",
     "poolSize": 10,
-    "userSchema": "userlogins5."
+    "schema": "useraccounts."
   },
   "allowedClients": [
     {
