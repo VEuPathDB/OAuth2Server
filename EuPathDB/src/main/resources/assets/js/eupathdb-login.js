@@ -7,9 +7,9 @@ $(function() {
 
   // load header and footer and choose component logo
   addEupathDecorators(siteData);
-  
+
   // add custom URLs to form
-  $('#new-account').attr('href', baseUrl + "/showRegister.do");
+  $('#new-account').attr('href', baseUrl + "/app/user/registration");
   $('#forgot-password').attr('href', baseUrl + "/showResetPassword.do");
   $('.cancel-button').click(function(){ window.location = cancelUrl; });
 
