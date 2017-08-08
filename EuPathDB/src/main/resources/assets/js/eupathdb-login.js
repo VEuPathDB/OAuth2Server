@@ -10,7 +10,7 @@ $(function() {
 
   // add custom URLs to form
   $('#new-account').attr('href', baseUrl + "/app/user/registration");
-  $('#forgot-password').attr('href', baseUrl + "/showResetPassword.do");
+  $('#forgot-password').attr('href', baseUrl + "/app/user/forgot-password");
   $('.cancel-button').click(function(){ window.location = cancelUrl; });
 
   // override default messages for various status keys
