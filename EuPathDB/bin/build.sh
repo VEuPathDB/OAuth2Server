@@ -75,7 +75,7 @@ if [ -d "../FgpUtil" ]; then
 else
   cd ..
   echo "Checking out FgpUtil"
-  svn co https://www.cbil.upenn.edu/svn/gus/FgpUtil/trunk FgpUtil || die "Unable to check out FgpUtil"
+  svn co https://cbilsvn.pmacs.upenn.edu/svn/gus/FgpUtil/trunk FgpUtil || die "Unable to check out FgpUtil"
   cd FgpUtil
 fi
 echo "Building FgpUtil"
