@@ -18,8 +18,12 @@ import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AccountDbAuthenticator implements Authenticator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AccountDbAuthenticator.class);
 
   private static enum JsonKey {
     login,
@@ -54,6 +58,7 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   protected void initialize(ConnectionPoolConfig dbConfig, String schema) {
+    LOG.info("Initializing database using: " + dbConfig);
     _accountDb = new DatabaseInstance(dbConfig, true);
     _schema = schema;
   }
