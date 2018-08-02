@@ -102,7 +102,7 @@ public class OAuthService {
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
       boolean validCreds = authenticator.isCredentialsValid(username, password);
       if (validCreds) {
-        LOG.info("Authenication successful.  Setting session username to " + username);
+        LOG.info("Authentication successful.  Setting session username to " + username);
         session.setUsername(username);
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
         if (originalRequest == null) {
