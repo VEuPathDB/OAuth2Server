@@ -1,14 +1,11 @@
 package org.gusdb.oauth2.assets;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.slf4j.Logger;
@@ -64,15 +61,11 @@ public class StaticResource {
   }
 
   public StreamingOutput getStreamingOutput() {
-    if (!_isValid) return null;
-    return new StreamingOutput() {
-      @Override
-      public void write(OutputStream out) throws IOException, WebApplicationException {
-        try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(_resourceName)) {
-          IoUtil.transferStream(out, in);
-        }
+    return (!_isValid ? null : out -> {
+      try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(_resourceName)) {
+        IoUtil.transferStream(out, in);
       }
-    };
+    });
   }
 
   public String getMimeType() {
