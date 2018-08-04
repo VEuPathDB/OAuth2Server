@@ -169,18 +169,21 @@ public class TokenStore {
 
   public static synchronized void removeExpiredTokens(int expirationSeconds) {
     long currentDateSecs = new Date().getTime() / 1000;
-    List<String> expiredTokens = new ArrayList<>();
+    List<String> expiredCodes = new ArrayList<>();
     for (Entry<String, AuthCodeData> entry : AUTH_CODE_MAP.entrySet()) {
       if (isExpired(entry.getValue().creationTime, currentDateSecs, expirationSeconds)) {
-        expiredTokens.add(entry.getKey());
+        expiredCodes.add(entry.getKey());
       }
     }
-    LOG.debug("Expiring the following auth codes: " + Arrays.toString(expiredTokens.toArray()));
-    for (String authCode : expiredTokens) {
+    LOG.debug("Expiring the following auth codes: " + Arrays.toString(expiredCodes.toArray()));
+    for (String authCode : expiredCodes) {
       AuthCodeData removedCode = AUTH_CODE_MAP.remove(authCode);
       USER_AUTH_CODE_MAP.get(removedCode.username).remove(removedCode);
+      if (USER_AUTH_CODE_MAP.get(removedCode.username).isEmpty()) {
+        USER_AUTH_CODE_MAP.remove(removedCode.username);
+      }
     }
-    expiredTokens.clear();
+    List<String> expiredTokens = new ArrayList<>();
     for (Entry<String, AccessTokenData> entry : ACCESS_TOKEN_MAP.entrySet()) {
       if (isExpired(entry.getValue().creationTime, currentDateSecs, expirationSeconds)) {
         expiredTokens.add(entry.getKey());
@@ -189,7 +192,10 @@ public class TokenStore {
     LOG.debug("Expiring the following access tokens: " + Arrays.toString(expiredTokens.toArray()));
     for (String accessToken : expiredTokens) {
       AccessTokenData removedToken = ACCESS_TOKEN_MAP.remove(accessToken);
-      USER_AUTH_CODE_MAP.get(removedToken.authCodeData.username).remove(removedToken);
+      USER_ACCESS_TOKEN_MAP.get(removedToken.authCodeData.username).remove(removedToken);
+      if (USER_ACCESS_TOKEN_MAP.get(removedToken.authCodeData.username).isEmpty()) {
+        USER_ACCESS_TOKEN_MAP.remove(removedToken.authCodeData.username);
+      }
     }
   }
 
