@@ -21,6 +21,10 @@
       "clientId": "globusGenomics",
       "clientSecret": "12345",
       "clientDomains": [ "localhost", "*.globus.org", "*.globusgenomics.org" ]
+    },{
+      "clientId": "apolloClients",
+      "clientSecret": "12345",
+      "clientDomains": [ "localhost" ]
     }
   ]
 }
