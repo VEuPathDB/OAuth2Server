@@ -286,10 +286,16 @@ public class OAuthService {
   @GET
   @Path(USER_INFO_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserInfo() throws Exception {
-    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
-    OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
-    return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context), config.getIssuer(), config.getTokenExpirationSecs());
+  public Response getUserInfo() throws OAuthSystemException {
+    try {
+      ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+      OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
+      return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context), config.getIssuer(), config.getTokenExpirationSecs());
+    }
+    catch (OAuthProblemException e) {
+      LOG.error("Problem with user request: ", e);
+      return new OAuthResponseFactory().buildInvalidRequestResponse(e);
+    }
   }
 
   @POST
@@ -343,7 +349,7 @@ public class OAuthService {
     return Response.ok(
       OAuthRequestHandler.prettyPrintJsonObject(
         Json.createObjectBuilder()
-          .add("issuer", baseUrl)
+          .add("issuer", OAuthServlet.getApplicationConfig(_context).getIssuer())
           .add("authorization_endpoint", baseUrl + AUTHORIZATION_PATH)
           .add("token_endpoint", baseUrl + TOKEN_PATH)
           .add("userinfo_endpoint", baseUrl + USER_INFO_PATH)
