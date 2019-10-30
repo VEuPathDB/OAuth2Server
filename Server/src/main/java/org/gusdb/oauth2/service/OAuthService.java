@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletContext;
@@ -57,6 +59,16 @@ public class OAuthService {
 
   private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
 
+  // supported paths
+  private static final String LOGIN_PATH = "login";
+  private static final String LOGOUT_PATH = "logout";
+  private static final String AUTHORIZATION_PATH = "authorize";
+  private static final String TOKEN_PATH = "token";
+  private static final String USER_INFO_PATH = "user";
+  private static final String CHANGE_PASSWORD_PATH = "changePassword";
+  private static final String DISCOVERY_PATH = "discovery";
+  private static final String JWKS_PATH = "jwks";
+
   private static final String FORM_ID_PARAM_NAME = "form_id";
   private static enum LoginFormStatus { failed, error, accessdenied; }
 
@@ -84,7 +96,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path("login")
+  @Path(LOGIN_PATH)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   public Response attemptLogin(
       @FormParam("username") final String username,
@@ -145,7 +157,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path("/logout")
+  @Path(LOGOUT_PATH)
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) {
     // FIXME: cannot get CORS requests to work so logout can be async from a different domain
     // determine whether this request came from a valid page
@@ -179,7 +191,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path("/authorize")
+  @Path(AUTHORIZATION_PATH)
   public Response authorize() throws URISyntaxException, OAuthSystemException {
     try {
      LOG.info("Handling authorize request with the following params:" +
@@ -236,7 +248,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path("/token")
+  @Path(TOKEN_PATH)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
@@ -272,7 +284,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path("/user")
+  @Path(USER_INFO_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getUserInfo() throws Exception {
     ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
@@ -281,7 +293,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path("/changePassword")
+  @Path(CHANGE_PASSWORD_PATH)
   public Response changePassword(String body) {
 
     // parse request params
@@ -315,5 +327,63 @@ public class OAuthService {
       return Response.serverError().build();
     }
   }
-  
+
+  @GET
+  @Path(DISCOVERY_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getConfiguration() {
+    String baseUrl = _request.getRequestURL().toString();
+    baseUrl = baseUrl.substring(0, baseUrl.indexOf(DISCOVERY_PATH));
+    JsonArray responseTypes = buildArray("code", "id_token");
+    JsonArray grantTypes = buildArray("authorization_code");
+    JsonArray subjectTypes = buildArray("public");
+    JsonArray supportedAlgorithms = buildArray("HS512");
+    JsonArray claims = buildArray(IdTokenFactory.IdTokenFields
+        .getNames().toArray(new String[0]));
+    return Response.ok(
+      OAuthRequestHandler.prettyPrintJsonObject(
+        Json.createObjectBuilder()
+          .add("issuer", baseUrl)
+          .add("authorization_endpoint", baseUrl + AUTHORIZATION_PATH)
+          .add("token_endpoint", baseUrl + TOKEN_PATH)
+          .add("userinfo_endpoint", baseUrl + USER_INFO_PATH)
+          .add("jwks_uri", baseUrl + JWKS_PATH)
+          .add("response_types_supported", responseTypes)
+          .add("grant_types_supported", grantTypes)
+          .add("subject_types_supported", subjectTypes)
+          .add("id_token_signing_alg_values_supported", supportedAlgorithms)
+          .add("claims_supported", claims)
+          .build()
+          .toString()
+        )
+      ).build();
+  }
+
+  private JsonArray buildArray(String... strings) {
+    JsonArrayBuilder builder = Json.createArrayBuilder();
+    for (String str : strings) {
+      builder.add(str);
+    }
+    return builder.build();
+  }
+
+  @GET
+  @Path(JWKS_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getJwksJson() {
+    return Response.ok(
+      OAuthRequestHandler.prettyPrintJsonObject(
+        Json.createObjectBuilder()
+          .add("keys", Json.createArrayBuilder()
+            .add(Json.createObjectBuilder()
+              .add("kty", "RSA")
+              .add("n", "<your_client_secret>")
+              .add("alg", "HS512")
+              .add("kid", "0")
+              .build())
+            .build())
+          .build()
+          .toString()))
+          .build();
+  }
 }

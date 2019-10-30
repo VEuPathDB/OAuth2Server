@@ -1,16 +1,12 @@
 package org.gusdb.oauth2.service;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.TextCodec;
-
 import java.io.StringWriter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -28,11 +24,15 @@ import org.gusdb.oauth2.service.TokenStore.AccessTokenData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.TextCodec;
+
 public class IdTokenFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(IdTokenFactory.class);
 
-  private static enum IdTokenFields {
+  public static enum IdTokenFields {
     iss, // issuer of this token
     sub, // subject (unique user ID)
     aud, // audience (client ID of consumer)
@@ -53,7 +53,7 @@ public class IdTokenFactory {
       return names;
     }
   }
-  
+
   public static JsonObject createIdTokenJson(Authenticator authenticator,
       AccessTokenData tokenData, String issuer, int expirationSecs)
           throws OAuthProblemException, OAuthSystemException {

@@ -158,7 +158,7 @@ public class OAuthRequestHandler {
     return Response.status(Response.Status.OK).entity(idTokenData.toString()).build();
   }
 
-  private static String prettyPrintJsonObject(String json) {
+  public static String prettyPrintJsonObject(String json) {
     JsonObject obj = Json.createReader(new StringReader(json)).readObject();
     StringWriter stringWriter = new StringWriter();
     Map<String, Object> properties = new HashMap<String, Object>(1);

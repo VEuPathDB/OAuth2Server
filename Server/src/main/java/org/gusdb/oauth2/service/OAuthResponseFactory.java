@@ -13,33 +13,37 @@ public class OAuthResponseFactory {
   private static ResponseBuilder NOT_ACCEPTABLE_RESPONSE = Response.notAcceptable(Collections.<Variant>emptyList());
 
   public Response buildInvalidGrantTypeResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Unsupported Grant Type").build();
+    return getNotAcceptableResponse("Unsupported Grant Type");
   }
 
   public Response buildInvalidUserPassResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Username/Password").build();
+    return getNotAcceptableResponse("Invalid Username/Password");
   }
 
   public Response buildInvalidClientResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Client").build();
+    return getNotAcceptableResponse("Invalid Client");
   }
 
   public Response buildBadAuthCodeResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Auth Code").build();
+    return getNotAcceptableResponse("Invalid Auth Code");
   }
 
   public Response buildBadResponseTypeResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Unsupported Response Type").build();
+    return getNotAcceptableResponse("Unsupported Response Type");
   }
 
   public Response buildBadRedirectUrlResponse() {
-    return NOT_ACCEPTABLE_RESPONSE.entity("Invalid Redirect URI in Request").build();
+    return getNotAcceptableResponse("Invalid Redirect URI in Request");
   }
 
   public Response buildInvalidRequestResponse(OAuthProblemException e) {
-    return NOT_ACCEPTABLE_RESPONSE.entity(e.getMessage()).build();
+    return getNotAcceptableResponse(e.getMessage());
   }
-  
+
+  private static Response getNotAcceptableResponse(String message) {
+    return NOT_ACCEPTABLE_RESPONSE.entity(message).build();
+  }
+
   public Response buildServerErrorResponse() {
     return Response.serverError().build();
   }
