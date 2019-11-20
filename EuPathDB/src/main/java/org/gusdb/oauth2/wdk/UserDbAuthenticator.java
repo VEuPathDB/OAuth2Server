@@ -2,8 +2,6 @@ package org.gusdb.oauth2.wdk;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Map;
 
 import javax.json.Json;
@@ -18,7 +16,6 @@ import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
 import org.gusdb.fgputil.db.runner.SQLRunner;
-import org.gusdb.fgputil.db.runner.SQLRunner.ResultSetHandler;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 
@@ -153,21 +150,19 @@ public class UserDbAuthenticator implements Authenticator {
     Object[] params = (checkPassword ?
         new Object[]{ username, encryptedPassword } :
         new Object[]{ username });
-    final TwoTuple<Boolean, UserDbData> result = new TwoTuple<>(false, null);
-    new SQLRunner(_userDb.getDataSource(), sql)
-      .executeQuery(params, new ResultSetHandler() {
-        @Override public void handleResult(ResultSet rs) throws SQLException {
-          if (rs.next()) {
-            UserDbData userData = new UserDbData();
-            userData.userId = rs.getLong(1);
-            userData.firstName = rs.getString(2);
-            userData.middleName = rs.getString(3);
-            userData.lastName = rs.getString(4);
-            userData.organization = rs.getString(5);
-            userData.stableName = rs.getString(6);
-            result.set(true, userData);
-          }
+    TwoTuple<Boolean, UserDbData> result =
+      new SQLRunner(_userDb.getDataSource(), sql).executeQuery(params, rs -> {
+        if (rs.next()) {
+          UserDbData userData = new UserDbData();
+          userData.userId = rs.getLong(1);
+          userData.firstName = rs.getString(2);
+          userData.middleName = rs.getString(3);
+          userData.lastName = rs.getString(4);
+          userData.organization = rs.getString(5);
+          userData.stableName = rs.getString(6);
+          return new TwoTuple<>(true, userData);
         }
+        return new TwoTuple<>(false, null);
       });
     LOG.debug("Checking submitted credentials of " + username +
         ".  Success? " + result.getFirst() + ", user: " + result.getSecond());
