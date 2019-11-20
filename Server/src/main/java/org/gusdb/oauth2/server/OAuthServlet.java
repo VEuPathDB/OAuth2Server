@@ -103,7 +103,7 @@ public class OAuthServlet extends ServletContainer {
     try {
       @SuppressWarnings("unchecked")
       Class<? extends Authenticator> authClass = (Class<? extends Authenticator>)Class.forName(config.getAuthClassName());
-      Authenticator authenticator = authClass.newInstance();
+      Authenticator authenticator = authClass.getConstructor().newInstance();
       authenticator.initialize(config.getAuthClassConfig());
       return authenticator;
     }
