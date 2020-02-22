@@ -1,8 +1,28 @@
 
+var knownProjects = [
+  "eupathdb",
+  "amoebadb",
+  "cryptodb",
+  "fungidb",
+  "giardiadb",
+  "microsporidiadb",
+  "piroplasmadb",
+  "plasmodb",
+  "toxodb",
+  "trichdb",
+  "tritrypdb",
+  "schistodb",
+  "hostdb",
+  "orthomcl",
+  "clinepidb",
+  "microbiomedb",
+  "vectorbase"
+];
+
 var defaultSiteData = {
   project: 'eupathdb',
-  baseUrl: 'http://eupathdb.org/eupathdb',
-  cancelUrl: 'http://eupathdb.org/eupathdb'
+  baseUrl: 'https://eupathdb.org/eupathdb',
+  cancelUrl: 'https://eupathdb.org/eupathdb'
 };
 
 function getWebappName(pathname) {
@@ -16,7 +36,7 @@ function getWebappName(pathname) {
 
 function getReferringSiteData(urlQueryParamName) {
 
-  // figure out component site referring user to login page
+  // figure out site referring user to login page
   var redirectUri = getUrlParams()[urlQueryParamName];
   var baseUrl, cancelUrl, project;
   if (redirectUri == null || redirectUri == '') {
@@ -28,7 +48,7 @@ function getReferringSiteData(urlQueryParamName) {
   var hostParts = url.host.split('.');
   var project = hostParts[hostParts.length - 2];
 
-  if (project == 'globus' || project == 'globusgenomics') {
+  if (!knownProjects.includes(project)) {
     return defaultSiteData;
   }
 

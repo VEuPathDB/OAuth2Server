@@ -1,7 +1,6 @@
 $(function() {
 
   var siteData = getReferringSiteData("redirectUri");
-  var project = siteData.project;
   var baseUrl = siteData.baseUrl;
   var cancelUrl = siteData.cancelUrl;
 
