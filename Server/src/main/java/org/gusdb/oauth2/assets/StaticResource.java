@@ -1,6 +1,8 @@
 package org.gusdb.oauth2.assets;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -63,7 +65,7 @@ public class StaticResource {
   public StreamingOutput getStreamingOutput() {
     return (!_isValid ? null : out -> {
       try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(_resourceName)) {
-        IoUtil.transferStream(out, in);
+        transferStream(out, in);
       }
     });
   }
@@ -74,4 +76,30 @@ public class StaticResource {
       ResponseType.text.getMimeType());
   }
 
+  /**
+   * NOTE: this is a copy of the transferStream method in FgpUtil (sans logging)
+   * 
+   * Transfers data from input stream to the output stream until no more data
+   * is available, then closes input stream (but not output stream).
+   * 
+   * @param outputStream output stream data is written to
+   * @param inputStream input stream data is read from
+   * @throws IOException if problem reading/writing data occurs
+   */
+  public static void transferStream(OutputStream outputStream, InputStream inputStream)
+      throws IOException {
+    try {
+      byte[] buffer = new byte[10240]; // send 10kb at a time
+      int bytesRead = inputStream.read(buffer);
+      while (bytesRead != -1) {
+        outputStream.write(buffer, 0, bytesRead);
+        bytesRead = inputStream.read(buffer);
+      }
+      outputStream.flush();
+    }
+    finally {
+      // only close input stream; container will close output stream
+      inputStream.close();
+    }
+  }
 }
