@@ -57,11 +57,21 @@
 
 .component-links {
   text-align: center;
+  border-top: 2px gray;
 }
 
 .component-links img {
   height: 28px;
   padding: 0 6px;
+}
+
+.separation-bar {
+  display: inline-block;
+  padding: 0 6px;
+  height: 28px;
+  width: 5px;
+  border-radius: 2px;
+  color: gray;
 }
 
 .form-container .input-button {
