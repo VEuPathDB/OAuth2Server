@@ -30,6 +30,12 @@
   margin-right: 60px;
 }
 
+/* override default oauth style */
+.form-container {
+  border: 0;
+  padding: 0 0 15px;
+}
+
 .form-container label {
   display: inline-block;
   margin-right: 10px;
