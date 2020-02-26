@@ -61,9 +61,14 @@
   text-decoration: underline;
 }
 
-.component-links {
+.component-link-wrapper {
   text-align: center;
-  border-top: 2px gray;
+}
+
+.component-links {
+  display: inline-block;
+  border-top: 2px solid #d3d3d3;
+  padding: 10px 0;
 }
 
 .component-links img {
@@ -73,11 +78,9 @@
 
 .separation-bar {
   display: inline-block;
-  padding: 0 6px;
-  height: 28px;
-  width: 5px;
-  border-radius: 2px;
-  color: gray;
+  height: 30px;
+  width: 2px;
+  background-color: #d3d3d3;
 }
 
 .form-container .input-button {
