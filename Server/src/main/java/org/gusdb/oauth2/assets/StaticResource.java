@@ -42,7 +42,7 @@ public class StaticResource {
       LOG.trace("Is response type '" + responseType + "' in valid types? " + VALID_TYPES.contains(responseType));
       if (VALID_TYPES.contains(responseType)) {
         // make sure we can actually access this resource
-        LOG.debug("Resource type and name look valid.  Make sure system can find resource on classpath with path: " + resourceName);
+        LOG.info("Resource type and name look valid.  Make sure system can find resource on classpath with path: " + resourceName);
         URL resource = Thread.currentThread().getContextClassLoader().getResource(resourceName);
         isValid = (resource != null);
       }
@@ -53,6 +53,7 @@ public class StaticResource {
     catch (IllegalArgumentException e) {
       isValid = false;
     }
+    LOG.info("StaticResource object created for " + name + ", isValid="+ isValid);
     _resourceName = resourceName;
     _isValid = isValid;
     _responseType = responseType;
@@ -64,9 +65,13 @@ public class StaticResource {
 
   public StreamingOutput getStreamingOutput() {
     return (!_isValid ? null : out -> {
+      LOG.info("Opening resource " + _resourceName);
       try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(_resourceName)) {
+        LOG.info("Transfer starting");
         transferStream(out, in);
+        LOG.info("Transfer ended");
       }
+      LOG.info("Resource closed");
     });
   }
 
