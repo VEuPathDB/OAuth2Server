@@ -89,10 +89,9 @@ public class OAuthService {
       return Response.notAcceptable(Collections.<Variant>emptyList()).build();
     }
     StaticResource resource = new StaticResource(name);
-    if (resource.isValid()) {
-      return Response.ok(resource.getStreamingOutput()).type(resource.getMimeType()).build();
-    }
-    return Response.status(Status.NOT_FOUND).build();
+    return resource.getStreamingOutput()
+        .map(stream -> Response.ok(stream).type(resource.getMimeType()).build())
+        .orElse(Response.status(Status.NOT_FOUND).build());
   }
 
   @POST
