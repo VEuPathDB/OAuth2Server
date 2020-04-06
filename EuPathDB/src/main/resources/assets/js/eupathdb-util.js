@@ -1,6 +1,7 @@
 
 var knownProjects = [
   "eupathdb",
+  "veupathdb",
   "amoebadb",
   "cryptodb",
   "fungidb",
