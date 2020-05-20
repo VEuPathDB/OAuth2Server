@@ -4,8 +4,8 @@
       "appender": [{
         "type": "RollingFile",
         "name": "oauth-log",
-        "fileName": "${sys:catalina.base}/logs/oauth/oauth.log",
-        "filePattern": "${sys:catalina.base}/logs/oauth/oauth-%d{yyyy-MM-dd}-%i.log",
+        "fileName": "${sys:catalina.base}/logs/oauth/oauth.log4j",
+        "filePattern": "${sys:catalina.base}/logs/oauth/oauth-%d{yyyy-MM-dd}-%i.log4j",
         "append": "true",
         "PatternLayout": { "pattern": "%-9r [%-5p] [%d{yyyy/MM/dd|HH:mm:ss}] - %C:%L - %m%n" },
         "Policies": {
