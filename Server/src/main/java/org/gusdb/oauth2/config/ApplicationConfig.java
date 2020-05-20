@@ -16,10 +16,10 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
 {
@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 */
 public class ApplicationConfig {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ApplicationConfig.class);
+  private static final Logger LOG = LogManager.getLogger(ApplicationConfig.class);
 
   private static final String NL = System.lineSeparator();
 

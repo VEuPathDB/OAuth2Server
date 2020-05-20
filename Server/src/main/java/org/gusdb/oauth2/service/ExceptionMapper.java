@@ -7,14 +7,14 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.Provider;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.server.ParamException.PathParamException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Provider
 public class ExceptionMapper implements javax.ws.rs.ext.ExceptionMapper<Exception> {
 
-  private static Logger LOG = LoggerFactory.getLogger(ExceptionMapper.class);
+  private static Logger LOG = LogManager.getLogger(ExceptionMapper.class);
 
   @Override
   public Response toResponse(Exception e) {

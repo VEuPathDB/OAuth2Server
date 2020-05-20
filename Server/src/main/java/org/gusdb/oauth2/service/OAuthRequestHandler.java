@@ -13,6 +13,8 @@ import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.oltu.oauth2.as.issuer.MD5Generator;
 import org.apache.oltu.oauth2.as.issuer.OAuthIssuer;
 import org.apache.oltu.oauth2.as.issuer.OAuthIssuerImpl;
@@ -34,12 +36,10 @@ import org.gusdb.oauth2.service.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.TokenStore.AuthCodeData;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OAuthRequestHandler {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OAuthRequestHandler.class);
+  private static final Logger LOG = LogManager.getLogger(OAuthRequestHandler.class);
 
   public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username, int expirationSecs)
       throws URISyntaxException, OAuthSystemException {

@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages state on the OAuth server.  This includes OAuth server sessions,
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TokenStore {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TokenStore.class);
+  private static final Logger LOG = LogManager.getLogger(TokenStore.class);
 
   /*
    * HttpSession contains the username (string used in username field of

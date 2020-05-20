@@ -7,13 +7,13 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpSession;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.service.util.AuthzRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Session {
 
-  private static final Logger LOG = LoggerFactory.getLogger(Session.class);
+  private static final Logger LOG = LogManager.getLogger(Session.class);
 
   private static final String SESSION_USERNAME_KEY = "username";
   private static final String SESSION_FORM_ID_MAP_KEY = "formIdMap";

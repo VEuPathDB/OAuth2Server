@@ -16,13 +16,13 @@ import javax.json.JsonValue;
 import javax.json.JsonWriter;
 import javax.json.stream.JsonGenerator;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.UserInfo;
 import org.gusdb.oauth2.service.TokenStore.AccessTokenData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -30,7 +30,7 @@ import io.jsonwebtoken.impl.TextCodec;
 
 public class IdTokenFactory {
 
-  private static final Logger LOG = LoggerFactory.getLogger(IdTokenFactory.class);
+  private static final Logger LOG = LogManager.getLogger(IdTokenFactory.class);
 
   public static enum IdTokenFields {
     iss, // issuer of this token

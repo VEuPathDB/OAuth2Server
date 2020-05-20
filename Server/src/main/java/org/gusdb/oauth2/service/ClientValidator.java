@@ -6,15 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
 import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
 import org.gusdb.oauth2.config.AllowedClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ClientValidator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ClientValidator.class);
+  private static final Logger LOG = LogManager.getLogger(ClientValidator.class);
 
   private final Map<String, AllowedClient> _clientMap = new HashMap<>();
   private final boolean _validateDomains;

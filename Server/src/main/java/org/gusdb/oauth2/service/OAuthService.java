@@ -39,6 +39,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Variant;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
 import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
@@ -51,13 +53,11 @@ import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Path("/")
 public class OAuthService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OAuthService.class);
+  private static final Logger LOG = LogManager.getLogger(OAuthService.class);
 
   // supported paths
   private static final String LOGIN_PATH = "login";

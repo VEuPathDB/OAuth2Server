@@ -3,8 +3,8 @@ package org.gusdb.oauth2.server;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Application listener closes resources on the client-provided Authenticator
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ApplicationListener implements ServletContextListener {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ApplicationListener.class);
+  private static final Logger LOG = LogManager.getLogger(ApplicationListener.class);
 
   @Override
   public void contextInitialized(ServletContextEvent event) {
