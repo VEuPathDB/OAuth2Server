@@ -2,16 +2,16 @@ package org.gusdb.oauth2.wdk;
 
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.MapBuilder;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.accountdb.UserProfile;
 import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestAuthenticator extends AccountDbAuthenticator {
 
-  private static Logger LOG = LoggerFactory.getLogger(TestAuthenticator.class);
+  private static Logger LOG = LogManager.getLogger(TestAuthenticator.class);
 
   // maps from username -> [ userid, password ]
   private static final Map<String, TwoTuple<Long, String[]>> USERS =

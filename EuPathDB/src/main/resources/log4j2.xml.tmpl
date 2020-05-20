@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Appenders>
+
+    <RollingFile name="oauth-log" fileName="${catalina.base}/logs/oauth/oauth.log4j" append="true">
+      <!-- ipAddress provided by org.apidb.apicommon.controller.log4j.MDCServletFilter -->
+      <PatternLayout pattern="%-9r [%-5p] [%d{dd/MMM/yyyy|HH:mm:ss}] - %C:%L - %m%n"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="1"/>
+    </RollingFile>
+
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout pattern="%-9r [%-5p] [%d{dd/MMM/yyyy|HH:mm:ss}] - %C:%L - %m%n"/>
+    </Console>
+
+  </Appenders>
+  <Loggers>
+
+    <Logger name="org.apache" level="warn"/>
+    <!-- info level required to log stdout/stderr -->
+    <Logger name="org.apache.catalina.core" level="info"/>
+
+    <Logger name="org.gusdb" level="info"/>
+    <Logger name="org.gusdb.oauth2.assets.StaticResource" level="info"/>
+
+    <!-- everything else goes to debug log -->
+    <Root level="warn">
+      <AppenderRef ref="oauth-log"/>
+    </Root>
+
+  </Loggers>
+</Configuration>
+

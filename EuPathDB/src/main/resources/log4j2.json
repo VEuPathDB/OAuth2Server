@@ -1,0 +1,41 @@
+{
+  "Configuration": {
+    "Appenders": {
+      "RollingFile": {
+        "name": "oauth-log",
+        "fileName": "${catalina.base}/logs/oauth/oauth.log4j",
+        "append": "true",
+        "PatternLayout": { "pattern": "%-9r [%-5p] [%d{dd/MMM/yyyy|HH:mm:ss}] - %C:%L - %m%n" },
+        "Policies": {
+          "TimeBasedTriggeringPolicy": { "modulate": "true" },
+          "SizeBasedTriggeringPolicy": { "size": "100 MB" }
+        },
+        "DefaultRolloverStrategy": { "max": "1" }
+      },
+      "Console": {
+        "name": "STDOUT",
+        "target": "SYSTEM_OUT",
+        "PatternLayout": { "pattern": "%-9r [%-5p] [%d{dd/MMM/yyyy|HH:mm:ss}] - %C:%L - %m%n" }
+      }
+    },
+    "Loggers": {
+      "Logger": [{
+        "name": "org.apache",
+        "level": "warn"
+      },{
+        "name": "org.apache.catalina.core",
+        "level": "info"
+      },{
+        "name": "org.gusdb",
+        "level": "info"
+      },{
+        "name": "org.gusdb.oauth2.assets.StaticResource",
+        "level": "info"
+      }],
+      "Root": {
+        "level": "warn",
+        "AppenderRef": { "ref": "oauth-log" }
+      }
+    }
+  }
+}

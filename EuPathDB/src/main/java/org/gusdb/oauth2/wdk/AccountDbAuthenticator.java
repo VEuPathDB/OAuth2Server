@@ -8,6 +8,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.apache.log4j.Logger;
 import org.gusdb.fgputil.MapBuilder;
 import org.gusdb.fgputil.accountdb.AccountManager;
 import org.gusdb.fgputil.accountdb.UserProfile;
@@ -18,12 +19,10 @@ import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AccountDbAuthenticator implements Authenticator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AccountDbAuthenticator.class);
+  private static final Logger LOG = Logger.getLogger(AccountDbAuthenticator.class);
 
   private static enum JsonKey {
     login,
