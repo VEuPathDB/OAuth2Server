@@ -1,7 +1,8 @@
 {
   "Configuration": {
     "Appenders": {
-      "RollingFile": {
+      "appender": [{
+        "type": "RollingFile",
         "name": "oauth-log",
         "fileName": "${catalina.base}/logs/oauth/oauth.log4j",
         "filePattern": "${catalina.base}/logs/oauth/${date:yyyy-MM-dd}-%i.oauth.log4j",
@@ -11,13 +12,13 @@
           "TimeBasedTriggeringPolicy": { "modulate": "true" },
           "SizeBasedTriggeringPolicy": { "size": "100 MB" }
         },
-        "DefaultRolloverStrategy": { "max": "1" }
-      },
-      "Console": {
+        "DefaultRolloverStrategy": { "max": "3" }
+      },{
+        "type": "Console",
         "name": "STDOUT",
         "target": "SYSTEM_OUT",
         "PatternLayout": { "pattern": "%-9r [%-5p] [%d{dd/MMM/yyyy|HH:mm:ss}] - %C:%L - %m%n" }
-      }
+      }]
     },
     "Loggers": {
       "Logger": [{
