@@ -1,6 +1,5 @@
 
 var knownProjects = [
-  "eupathdb",
   "veupathdb",
   "amoebadb",
   "cryptodb",
@@ -9,21 +8,21 @@ var knownProjects = [
   "microsporidiadb",
   "piroplasmadb",
   "plasmodb",
+  "schistodb",
   "toxodb",
   "trichdb",
   "tritrypdb",
-  "schistodb",
   "hostdb",
+  "vectorbase",
   "orthomcl",
   "clinepidb",
-  "microbiomedb",
-  "vectorbase"
+  "microbiomedb"
 ];
 
 var defaultSiteData = {
-  project: 'eupathdb',
-  baseUrl: 'https://eupathdb.org/eupathdb',
-  cancelUrl: 'https://eupathdb.org/eupathdb'
+  project: 'veupathdb',
+  baseUrl: 'https://veupathdb.org/veupathdb',
+  cancelUrl: 'https://veupathdb.org/veupathdb'
 };
 
 function getWebappName(pathname) {
