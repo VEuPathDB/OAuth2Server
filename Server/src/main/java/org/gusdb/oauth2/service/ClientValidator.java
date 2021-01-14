@@ -87,4 +87,9 @@ public class ClientValidator {
     }
     return false;
   }
+
+  public boolean isValidQueryClient(String clientId, String clientSecret) {
+    AllowedClient client = _clientMap.get(clientId);
+    return client != null && client.getSecret().equals(clientSecret);
+  }
 }

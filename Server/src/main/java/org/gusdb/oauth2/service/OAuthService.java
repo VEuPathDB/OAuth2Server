@@ -43,6 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.oltu.oauth2.as.request.OAuthAuthzRequest;
 import org.apache.oltu.oauth2.as.request.OAuthTokenRequest;
+import org.apache.oltu.oauth2.common.OAuth;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.ParameterStyle;
@@ -68,6 +69,7 @@ public class OAuthService {
   private static final String CHANGE_PASSWORD_PATH = "changePassword";
   private static final String DISCOVERY_PATH = "discovery";
   private static final String JWKS_PATH = "jwks";
+  private static final String ACCOUNT_QUERY_PATH = "query";
 
   private static final String FORM_ID_PARAM_NAME = "form_id";
   private static enum LoginFormStatus { failed, error, accessdenied; }
@@ -390,5 +392,31 @@ public class OAuthService {
           .build()
           .toString()))
           .build();
+  }
+
+  @POST
+  @Path(ACCOUNT_QUERY_PATH)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response queryAccountData(String body) {
+    try {
+      LOG.debug("Received body from client: " + body);
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      String clientId = input.getString(OAuth.OAUTH_CLIENT_ID);
+      String clientSecret = input.getString(OAuth.OAUTH_CLIENT_SECRET);
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      if (!clientValidator.isValidQueryClient(clientId, clientSecret)) {
+        return Response.status(Status.FORBIDDEN).build();
+      }
+      Authenticator auth = OAuthServlet.getAuthenticator(_context);
+      JsonObject responseObject = auth.executeQuery(input.getJsonObject("query"));
+      return Response.ok(responseObject.toString()).build();
+    }
+    catch (UnsupportedOperationException e) {
+      return Response.status(Status.NOT_IMPLEMENTED).build();
+    }
+    catch (NullPointerException | ClassCastException | JsonParsingException e) {
+      return Response.status(Status.BAD_REQUEST).build();
+    }
   }
 }

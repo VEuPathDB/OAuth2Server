@@ -4,6 +4,7 @@ import java.util.Map;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
+import javax.json.stream.JsonParsingException;
 
 /**
  * Provides access to a custom user store to authenticate users and provide
@@ -127,5 +128,18 @@ public interface Authenticator {
    * added as a listener in web.xml.
    */
   public void close();
+
+  /**
+   * Executes an arbitrary query against the account data store for an approved
+   * and authenticated client
+   * 
+   * @param querySpec configuration of the query
+   * @return query response
+   * @throws UnsupportedOperationException if queries are not supported by this
+   * authenticator implementation
+   * @throws JsonParsingException if querySpec is invalid
+   */
+  public JsonObject executeQuery(JsonObject querySpec)
+      throws UnsupportedOperationException, JsonParsingException;
 
 }

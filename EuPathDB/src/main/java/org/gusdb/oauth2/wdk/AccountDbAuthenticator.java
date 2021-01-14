@@ -7,6 +7,7 @@ import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
+import javax.json.stream.JsonParsingException;
 
 import org.apache.log4j.Logger;
 import org.gusdb.fgputil.MapBuilder;
@@ -144,5 +145,26 @@ public class AccountDbAuthenticator implements Authenticator {
   public void overwritePassword(String username, String newPassword) throws Exception {
     UserProfile profile = getUserProfile(username);
     new AccountManager(_accountDb, _schema, USER_PROPERTIES).updatePassword(profile.getUserId(), newPassword);
+  }
+
+  @Override
+  public JsonObject executeQuery(JsonObject querySpec)
+      throws UnsupportedOperationException, JsonParsingException {
+    long requestedUserId = Long.valueOf(querySpec.getInt("userId"));
+    UserProfile user = new AccountManager(_accountDb, _schema, USER_PROPERTIES)
+        .getUserProfile(requestedUserId);
+    if (user == null) {
+      return Json.createObjectBuilder()
+          .add("found", false)
+          .build();
+    }
+    else {
+      return Json.createObjectBuilder()
+          .add("found", true)
+          .add("email", user.getEmail())
+          .add("name", getDisplayName(user.getProperties()))
+          .add("organization", user.getProperties().get("organization"))
+          .build();
+    }
   }
 }
