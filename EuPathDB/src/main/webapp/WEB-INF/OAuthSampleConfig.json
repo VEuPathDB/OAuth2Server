@@ -25,6 +25,10 @@
       "clientId": "apolloClients",
       "clientSecret": "12345",
       "clientDomains": [ "localhost" ]
+    },{
+      "clientId": "apolloPatch",
+      "clientSecret": "12345",
+      "clientDomains": [ "localhost" ]
     }
   ]
 }
