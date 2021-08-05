@@ -35,10 +35,12 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   private static final List<UserPropertyName> USER_PROPERTIES = Arrays.asList(new UserPropertyName[] {
+      new UserPropertyName("username", "username", false),
       new UserPropertyName("firstName", "first_name", true),
       new UserPropertyName("middleName", "middle_name", false),
       new UserPropertyName("lastName", "last_name", true),
-      new UserPropertyName("organization", "organization", true)
+      new UserPropertyName("organization", "organization", true),
+      new UserPropertyName("interests", "interests", false)
   });
 
   private DatabaseInstance _accountDb;
@@ -111,7 +113,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   // protected so TestAuthenticator can override
   protected UserProfile getUserProfile(String username) {
-    return new AccountManager(_accountDb, _schema, USER_PROPERTIES).getUserProfile(username);
+    return new AccountManager(_accountDb, _schema, USER_PROPERTIES).getUserProfileByUsernameOrEmail(username);
   }
 
   private static String getDisplayName(Map<String,String> userProperties) {
