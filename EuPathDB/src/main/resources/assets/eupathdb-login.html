@@ -16,8 +16,14 @@
       <h2 style="font-weight:normal">Please log in</h2>
       <form method="POST" action="../login">
         <div><span class="message"></span></div>
-        <div class="input-line"><label>Email:</label><input type="text" name="username"/></div>
-        <div class="input-line"><label>Password:</label><input type="password" name="password"/></div>
+        <div class="input-line">
+          <label title="Use either your username or email to login. You can add or change these on your profile page.">Email:</label>
+          <input type="text" name="username"/>
+        </div>
+        <div class="input-line">
+          <label>Password:</label>
+          <input type="password" name="password"/>
+        </div>
         <input class="input-button" type="submit" value="Login"/>
         <input class="input-button cancel-button" type="button" value="Cancel"/>
         <div class="input-line external-links">
