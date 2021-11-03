@@ -142,4 +142,13 @@ public interface Authenticator {
   public JsonObject executeQuery(JsonObject querySpec)
       throws UnsupportedOperationException, JsonParsingException;
 
+  /**
+   * Allows authenticator to log successful logins in an application specific way
+   *
+   * @param username username that successfully logged in
+   * @param clientId ID of OAuth client performing login
+   * @param redirectUri URL auth response will be sent to
+   */
+  public void logSuccessfulLogin(String username, String clientId, String redirectUri);
+
 }

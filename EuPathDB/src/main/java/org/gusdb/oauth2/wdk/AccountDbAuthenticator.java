@@ -1,5 +1,6 @@
 package org.gusdb.oauth2.wdk;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,10 @@ import org.gusdb.oauth2.InitializationException;
 public class AccountDbAuthenticator implements Authenticator {
 
   private static final Logger LOG = Logger.getLogger(AccountDbAuthenticator.class);
+
+  // create specially scoped Logger to write the login recording log
+  private static class LoginLogger {}
+  private static final Logger LOGIN_LOG = Logger.getLogger(LoginLogger.class);
 
   private static enum JsonKey {
     login,
@@ -167,6 +172,31 @@ public class AccountDbAuthenticator implements Authenticator {
           .add("name", getDisplayName(user.getProperties()))
           .add("organization", user.getProperties().get("organization"))
           .build();
+    }
+  }
+
+  @Override
+  public void logSuccessfulLogin(String username, String clientId, String redirectUri) {
+    LOGIN_LOG.info(clientId + " " + getHost(redirectUri) + " " + getUserId(username) + " " + username);
+  }
+
+  private String getUserId(String username) {
+    try {
+      return getUserInfo(username).getUserId();
+    }
+    catch (Exception e) {
+      LOG.error("Unable to look up user info for user " + username, e);
+      return "error";
+    }
+  }
+
+  private static String getHost(String uriStr) {
+    try {
+      return new URI(uriStr).getHost();
+    }
+    catch(Exception e) {
+      LOG.error("Unable to parse passed URI: " + uriStr);
+      return "unknown";
     }
   }
 }

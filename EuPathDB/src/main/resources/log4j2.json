@@ -5,9 +5,20 @@
         "type": "RollingFile",
         "name": "oauth-log",
         "fileName": "${sys:catalina.base}/logs/oauth/oauth.log",
-        "filePattern": "${sys:catalina.base}/logs/oauth/oauth.log.%i.log4j",
+        "filePattern": "${sys:catalina.base}/logs/oauth/oauth.log.%i",
         "append": "true",
         "PatternLayout": { "pattern": "%-9r [%-5p] [%d{yyyy/MM/dd|HH:mm:ss}] - %C:%L - %m%n" },
+        "Policies": {
+          "SizeBasedTriggeringPolicy": { "size": "100 MB" }
+        },
+        "DefaultRolloverStrategy": { "max": "100" }
+      },{
+        "type": "RollingFile",
+        "name": "login-log",
+        "fileName": "${sys:catalina.base}/logs/oauth/logins.log",
+        "filePattern": "${sys:catalina.base}/logs/oauth/logins.log.%i",
+        "append": "true",
+        "PatternLayout": { "pattern": "[%d{yyyy/MM/dd|HH:mm:ss}] %m%n" },
         "Policies": {
           "SizeBasedTriggeringPolicy": { "size": "100 MB" }
         },
@@ -32,6 +43,10 @@
       },{
         "name": "org.gusdb.oauth2.assets.StaticResource",
         "level": "info"
+      },{
+        "name": "org.gusdb.oauth2.wdk.AccountDbAuthenticator.LoginLogger",
+        "level": "info",
+        "AppenderRef": { "ref": "login-log" }
       }],
       "Root": {
         "level": "warn",

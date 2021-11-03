@@ -123,6 +123,7 @@ public class OAuthService {
           return Response.seeOther(new URI(RESOURCE_PREFIX +
               config.getLoginSuccessPage())).build();
         }
+        authenticator.logSuccessfulLogin(username, originalRequest.getClientId(), originalRequest.getRedirectUri());
         return OAuthRequestHandler.handleAuthorizationRequest(originalRequest,
             username, config.getTokenExpirationSecs());
       }
