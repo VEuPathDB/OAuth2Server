@@ -123,8 +123,7 @@ public class OAuthService {
           return Response.seeOther(new URI(RESOURCE_PREFIX +
               config.getLoginSuccessPage())).build();
         }
-        LOG.info("remote=" + _request.getRemoteAddr() + ", local=" + _request.getLocalAddr());
-        authenticator.logSuccessfulLogin(username, originalRequest.getClientId(), originalRequest.getRedirectUri());
+        authenticator.logSuccessfulLogin(username, originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
         return OAuthRequestHandler.handleAuthorizationRequest(originalRequest,
             username, config.getTokenExpirationSecs());
       }

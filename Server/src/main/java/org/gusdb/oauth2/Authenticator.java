@@ -148,7 +148,8 @@ public interface Authenticator {
    * @param username username that successfully logged in
    * @param clientId ID of OAuth client performing login
    * @param redirectUri URL auth response will be sent to
+   * @param requestingIpAddress IP address making the request
    */
-  public void logSuccessfulLogin(String username, String clientId, String redirectUri);
+  public void logSuccessfulLogin(String username, String clientId, String redirectUri, String requestingIpAddress);
 
 }

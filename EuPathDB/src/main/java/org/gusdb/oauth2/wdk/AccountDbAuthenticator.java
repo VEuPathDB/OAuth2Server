@@ -178,8 +178,8 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public void logSuccessfulLogin(String username, String clientId, String redirectUri) {
-    LOGIN_LOG.info(clientId + " " + getHost(redirectUri) + " " + getUserId(username) + " " + username);
+  public void logSuccessfulLogin(String username, String clientId, String redirectUri, String requestingIpAddress) {
+    LOGIN_LOG.info(requestingIpAddress + " " + clientId + " " + getHost(redirectUri) + " " + getUserId(username) + " " + username);
   }
 
   private String getUserId(String username) {
