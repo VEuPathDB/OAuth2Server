@@ -68,7 +68,7 @@ public class StaticResource {
   }
 
   private void log(String s) {
-    LOG.info(_ordinal + " (" + _name + "): " + s);
+    LOG.debug(_ordinal + " (" + _name + "): " + s);
   }
 
   public boolean isValid() {
