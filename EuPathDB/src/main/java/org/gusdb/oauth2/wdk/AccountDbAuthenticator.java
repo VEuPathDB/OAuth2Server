@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.wdk;
 
+import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +30,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   // create specially scoped Logger to write the login recording log
   private static class LoginLogger {}
-  private static final Logger LOGIN_LOG = Logger.getLogger(LoginLogger.class);
+  private static final Logger LOGIN_LOG = Logger.getLogger(getInnerClassLog4jName(LoginLogger.class));
 
   private static enum JsonKey {
     login,
