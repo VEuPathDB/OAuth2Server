@@ -48,7 +48,7 @@ function getReferringSiteData(urlQueryParamName) {
   var hostParts = url.host.split('.');
   var project = hostParts[hostParts.length - 2];
 
-  if (!knownProjects.includes(project)) {
+  if (!knownProjects.includes(project) || redirectUri.includes("apollo")) {
     return defaultSiteData;
   }
 
