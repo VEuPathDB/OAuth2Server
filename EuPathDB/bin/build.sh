@@ -16,14 +16,13 @@
 ##    also specified (2-arg execution).  Uses ~/.m2/repository
 ##    if not specified.
 ##
-##################################################################
-
-# change to 'false' to have Maven run unit tests
-skipJavaUnitTests=true
-
-# change to 'false' to update to latest
-skipSvnUpdate=true
-
+##  To download VEuPathDB-authored dependendencies from their
+##  Github Packages repo, the following environment variables
+##  must be set to a user with the required permission:
+##
+##  $GITHUB_USERNAME=<github_user>
+##  $GITHUB_TOKEN=<github_access_token>
+##
 ##################################################################
 
 # define die for easy exits
@@ -52,39 +51,11 @@ fi
 # find OAuth2Server project dir and go there
 scriptDir=$(cd "$(dirname "$0")" && pwd)
 cd "$scriptDir/../.."
-projectDir="$(pwd)"
-echo "Found OAuth2Server project at $projectDir"
-
-# get latest OAuth code from subversion
-echo "Updating OAuth2Server"
-if [ "$skipSvnUpdate" == "true" ]; then
-  echo "...update skipped"
-else
-  svn update || die "Unable to update OAuth2Server codebase to latest"
-fi
-
-# see if FgpUtil exists yet; check out or update, then build
-if [ -d "../FgpUtil" ]; then
-  cd ../FgpUtil
-  echo "Updating FgpUtil"
-  if [ "$skipSvnUpdate" == "true" ]; then
-    echo "...update skipped"
-  else
-    svn update || die "Unable to update FgpUtil codebase to latest"
-  fi
-else
-  cd ..
-  echo "Checking out FgpUtil"
-  svn co https://cbilsvn.pmacs.upenn.edu/svn/gus/FgpUtil/trunk FgpUtil || die "Unable to check out FgpUtil"
-  cd FgpUtil
-fi
-echo "Building FgpUtil"
-mvn clean install $altMavenRepoOption -DskipTests=$skipJavaUnitTests || die "Build of FgpUtil failed.  Cannot build OAuth2Server without FgpUtil"
+echo "Found OAuth2Server project at $(pwd)"
 
 # build server
-cd "$projectDir"
 echo "Building OAuth2Server"
-cmd="mvn clean install $altMavenRepoOption -DskipTests=$skipJavaUnitTests $configFileOption"
+cmd="mvn clean install --settings ./settings.xml $altMavenRepoOption $configFileOption"
 echo "$cmd"
 $cmd
 

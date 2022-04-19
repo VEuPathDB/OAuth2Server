@@ -12,9 +12,12 @@
   <artifactId>oauth2-eupathdb</artifactId>
   <packaging>war</packaging>
 
-  <!-- Expect this property to be passed in -->
   <properties>
+    
+    <!-- Expect this property to be passed in -->
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
+
+    <fgputil.version>2.2</fgputil.version>
   </properties>
 
   <dependencies>
@@ -27,16 +30,19 @@
     <dependency>
       <groupId>org.gusdb</groupId>
       <artifactId>fgputil-accountdb</artifactId>
+      <version>${fgputil.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.gusdb</groupId>
       <artifactId>fgputil-core</artifactId>
+      <version>${fgputil.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.gusdb</groupId>
       <artifactId>fgputil-db</artifactId>
+      <version>${fgputil.version}</version>
     </dependency>
 
     <dependency>
