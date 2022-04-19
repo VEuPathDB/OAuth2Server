@@ -16,11 +16,13 @@
 ##    also specified (2-arg execution).  Uses ~/.m2/repository
 ##    if not specified.
 ##
-##################################################################
-
-# change to 'false' to have Maven run unit tests
-skipJavaUnitTests=true
-
+##  To download VEuPathDB-authored dependendencies from their
+##  Github Packages repo, the following environment variables
+##  must be set to a user with the required permission:
+##
+##  $GITHUB_USERNAME=<github_user>
+##  $GITHUB_TOKEN=<github_access_token>
+##
 ##################################################################
 
 # define die for easy exits
@@ -53,7 +55,7 @@ echo "Found OAuth2Server project at $(pwd)"
 
 # build server
 echo "Building OAuth2Server"
-cmd="mvn clean install $altMavenRepoOption -DskipTests=$skipJavaUnitTests $configFileOption"
+cmd="mvn clean install --settings ./settings.xml $altMavenRepoOption $configFileOption"
 echo "$cmd"
 $cmd
 
