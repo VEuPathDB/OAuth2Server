@@ -53,11 +53,17 @@ scriptDir=$(cd "$(dirname "$0")" && pwd)
 cd "$scriptDir/../.."
 echo "Found OAuth2Server project at $(pwd)"
 
+# download standard settings.xml
+curl -O https://raw.githubusercontent.com/VEuPathDB/base-pom/main/settings.xml
+
 # build server
 echo "Building OAuth2Server"
 cmd="mvn clean install --settings ./settings.xml $altMavenRepoOption $configFileOption"
 echo "$cmd"
 $cmd
+
+# remove downloaded settings.xml if present
+rm -f settings.xml
 
 # record duration
 endTime=`date +%s`
