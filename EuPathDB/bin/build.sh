@@ -54,7 +54,7 @@ cd "$scriptDir/../.."
 echo "Found OAuth2Server project at $(pwd)"
 
 # download standard settings.xml
-curl -O https://raw.githubusercontent.com/VEuPathDB/base-pom/main/settings.xml
+curl -O https://raw.githubusercontent.com/VEuPathDB/maven-release-tools/main/settings.xml
 
 # build server
 echo "Building OAuth2Server"
