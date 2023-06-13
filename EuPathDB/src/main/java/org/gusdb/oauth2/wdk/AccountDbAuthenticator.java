@@ -107,11 +107,17 @@ public class AccountDbAuthenticator implements Authenticator {
       public Map<String, JsonValue> getSupplementalFields() {
         JsonObject json = Json.createObjectBuilder()
             .add("name", getDisplayName(profile.getProperties()))
+            .add("firstName", profile.getProperties().get("firstName"))
+            .add("middleName", profile.getProperties().get("middleName"))
+            .add("lastName", profile.getProperties().get("lastName"))
             .add("organization", profile.getProperties().get("organization"))
             .build();
         // convert JSON object to map of String -> JsonValue
         return new MapBuilder<String, JsonValue>()
             .put("name", json.getJsonString("name"))
+            .put("firstName", json.getJsonString("firstName"))
+            .put("middleName", json.getJsonString("middleName"))
+            .put("lastName", json.getJsonString("lastName"))
             .put("organization", json.getJsonString("organization"))
             .toMap();
       }

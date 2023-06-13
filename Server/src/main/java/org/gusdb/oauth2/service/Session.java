@@ -9,6 +9,7 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.oauth2.service.token.TokenStore;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 
 public class Session {

@@ -52,6 +52,9 @@ import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
+import org.gusdb.oauth2.service.token.IdTokenFactory;
+import org.gusdb.oauth2.service.token.Signatures;
+import org.gusdb.oauth2.service.token.Signatures.TokenSigner;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
 
@@ -65,10 +68,13 @@ public class OAuthService {
   private static final String LOGOUT_PATH = "logout";
   private static final String AUTHORIZATION_PATH = "authorize";
   private static final String TOKEN_PATH = "token";
+  private static final String BEARER_TOKEN_PATH = "bearer_token";
+  private static final String GUEST_TOKEN_PATH = "guest_token";
   private static final String USER_INFO_PATH = "user";
   private static final String CHANGE_PASSWORD_PATH = "changePassword";
   private static final String DISCOVERY_PATH = "discovery";
   private static final String JWKS_PATH = "jwks";
+  private static final String PUBLIC_KEY_PATH = "public_key";
   private static final String ACCOUNT_QUERY_PATH = "query";
 
   private static final String FORM_ID_PARAM_NAME = "form_id";
@@ -254,6 +260,18 @@ public class OAuthService {
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
+    return getOidcTokenResponse(formParams, Signatures.SECRET_KEY_SIGNER);
+  }
+
+  @POST
+  @Path(BEARER_TOKEN_PATH)
+  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getBearerToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
+    return getOidcTokenResponse(formParams, Signatures.ASYMMETRIC_KEY_SIGNER);
+  }
+
+  private Response getOidcTokenResponse(MultivaluedMap<String,String> formParams, TokenSigner signingStrategy) throws OAuthSystemException {
     try {
       // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
       HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
@@ -266,7 +284,7 @@ public class OAuthService {
       }
       ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
       return OAuthRequestHandler.handleTokenRequest(oauthRequest,
-          OAuthServlet.getAuthenticator(_context), config);
+          OAuthServlet.getAuthenticator(_context), config, signingStrategy);
     }
     catch (OAuthProblemException e) {
       LOG.error("Problem with authorize request: ", e);
@@ -381,18 +399,16 @@ public class OAuthService {
   public Response getJwksJson() {
     return Response.ok(
       OAuthRequestHandler.prettyPrintJsonObject(
-        Json.createObjectBuilder()
-          .add("keys", Json.createArrayBuilder()
-            .add(Json.createObjectBuilder()
-              .add("kty", "RSA")
-              .add("n", "<your_client_secret>")
-              .add("alg", "HS512")
-              .add("kid", "0")
-              .build())
-            .build())
-          .build()
-          .toString()))
-          .build();
+        Signatures.getJwksContent(
+          OAuthServlet.getApplicationConfig(_context)
+        ).toString())).build();
+  }
+
+  @GET
+  @Path(PUBLIC_KEY_PATH)
+  @Produces(MediaType.TEXT_PLAIN)
+  public Response getPublicKey() {
+    return Response.ok(OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic()).build();
   }
 
   @POST

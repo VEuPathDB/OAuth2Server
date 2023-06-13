@@ -32,8 +32,11 @@ import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.config.ApplicationConfig;
-import org.gusdb.oauth2.service.TokenStore.AccessTokenData;
-import org.gusdb.oauth2.service.TokenStore.AuthCodeData;
+import org.gusdb.oauth2.service.token.IdTokenFactory;
+import org.gusdb.oauth2.service.token.Signatures.TokenSigner;
+import org.gusdb.oauth2.service.token.TokenStore;
+import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
+import org.gusdb.oauth2.service.token.TokenStore.AuthCodeData;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
 
@@ -72,7 +75,7 @@ public class OAuthRequestHandler {
   }
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
-      Authenticator authenticator, ApplicationConfig config) throws OAuthSystemException {
+      Authenticator authenticator, ApplicationConfig config, TokenSigner tokenSigner) throws OAuthSystemException {
     int expirationSecs = config.getTokenExpirationSecs();
     boolean isOpenIdConnect = config.useOpenIdConnect();
     try {
@@ -109,9 +112,9 @@ public class OAuthRequestHandler {
 
       // if configured to send id_token with access token response, create and add it
       if (isOpenIdConnect) {
-        responseBuilder.setParam("id_token", IdTokenFactory.createJwtFromJson(
-            IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs),
-            config.getSecretMap().get(tokenData.authCodeData.clientId)));
+        JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
+        String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData);
+        responseBuilder.setParam("id_token", signedToken);
       }
 
       OAuthResponse response = responseBuilder.buildJSONMessage();

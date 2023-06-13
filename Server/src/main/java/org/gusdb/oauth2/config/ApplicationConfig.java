@@ -3,6 +3,7 @@ package org.gusdb.oauth2.config;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.crypto.SecretKey;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -20,6 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.service.token.Signatures;
 
 /**
 {
@@ -27,6 +30,7 @@ import org.gusdb.oauth2.assets.StaticResource;
   "validateDomains": true,
   "tokenExpirationSecs": 3600,
   "useOpenIdConnect": true,
+  "keyPairRandomSeed": 12345,
   "loginFormPage": "login.html", // optional, login.html is default
   "loginSuccessPage": "success.html", // optional, success.html is default
   "authenticatorClass": "org.gusdb.oauth2.wdk.UserDbAuthenticator",
@@ -77,7 +81,8 @@ public class ApplicationConfig {
     allowAnonymousLogin,
     validateDomains,
     useOpenIdConnect,
-    allowedClients
+    allowedClients,
+    keyPairRandomSeed
   }
 
   public static ApplicationConfig parseConfigFile(Path configFile) throws IOException, InitializationException {
@@ -111,9 +116,10 @@ public class ApplicationConfig {
         usedClientIds.add(client.getId());
         allowedClients.add(client);
       }
+      KeyPair asyncKeys = Signatures.getKeyPair(json.getString(JsonKey.keyPairRandomSeed.name()));
       return new ApplicationConfig(issuer, authClassName, authClassConfig, loginFormPage,
           loginSuccessPage, tokenExpirationSecs, allowAnonymousLogin, validateDomains,
-          useOpenIdConnect, allowedClients);
+          useOpenIdConnect, allowedClients, asyncKeys);
     }
     catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
       throw new InitializationException("Improperly constructed configuration object", e);
@@ -137,12 +143,14 @@ public class ApplicationConfig {
   private final boolean _validateDomains;
   private final boolean _useOpenIdConnect;
   private final List<AllowedClient> _allowedClients;
+  private final KeyPair _asyncKeys;
   // map from clientId -> clientSecret
   private final Map<String,String> _secretMap;
+  private final Map<String,SecretKey> _keyMap;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
       String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed,
-      boolean validateDomains, boolean useOpenIdConnect, List<AllowedClient> allowedClients) {
+      boolean validateDomains, boolean useOpenIdConnect, List<AllowedClient> allowedClients, KeyPair asyncKeys) {
     _issuer = issuer;
     _authClassName = authClassName;
     _authClassConfig = authClassConfig;
@@ -153,9 +161,12 @@ public class ApplicationConfig {
     _validateDomains = validateDomains;
     _useOpenIdConnect = useOpenIdConnect;
     _allowedClients = allowedClients;
+    _asyncKeys = asyncKeys;
     _secretMap = new HashMap<>();
+    _keyMap = new HashMap<>();
     for (AllowedClient client : _allowedClients) {
       _secretMap.put(client.getId(), client.getSecret());
+      _keyMap.put(client.getId(), client.getSigningKey());
     }
   }
 
@@ -199,8 +210,16 @@ public class ApplicationConfig {
     return _allowedClients;
   }
 
+  public KeyPair getAsyncKeys() {
+    return _asyncKeys;
+  }
+
   public Map<String,String> getSecretMap() {
     return _secretMap;
+  }
+
+  public Map<String,SecretKey> getKeyMap() {
+    return _keyMap;
   }
 
   @Override

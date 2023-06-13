@@ -1,8 +1,6 @@
-package org.gusdb.oauth2.service;
+package org.gusdb.oauth2.service.token;
 
-import java.io.StringWriter;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,10 +9,7 @@ import java.util.Set;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.json.JsonStructure;
 import javax.json.JsonValue;
-import javax.json.JsonWriter;
-import javax.json.stream.JsonGenerator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,11 +17,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.UserInfo;
-import org.gusdb.oauth2.service.TokenStore.AccessTokenData;
-
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.TextCodec;
+import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 
 public class IdTokenFactory {
 
@@ -73,7 +64,7 @@ public class IdTokenFactory {
     if (nonce != null && !nonce.isEmpty()) {
       jsonBuilder.add(IdTokenFields.nonce.name(), nonce);
     }
-    
+
     // get values from authenticator and use to populate remaining fields
     UserInfo user = getUserInfo(authenticator, tokenData.authCodeData.username);
     String userId = user.getUserId();
@@ -112,17 +103,6 @@ public class IdTokenFactory {
     return jsonBuilder.build();
   }
 
-  public static String createJwtFromJson(JsonObject data, String key) {
-    LOG.debug("Will create JWT using client secret '" + key +
-        "' from the following token body: " + prettyPrintJson(data));
-    // encode key
-    key = TextCodec.BASE64.encode(key);
-    String jwt = Jwts.builder().setPayload(data.toString())
-        .signWith(SignatureAlgorithm.HS512, key).compact();
-    LOG.debug("JWT created: " + jwt);
-    return jwt;
-  }
-
   private static UserInfo getUserInfo(Authenticator authenticator, String username) throws OAuthSystemException {
     try {
       return authenticator.getUserInfo(username);
@@ -133,13 +113,4 @@ public class IdTokenFactory {
     }
   }
 
-  private static String prettyPrintJson(JsonStructure json) {
-    Map<String, Boolean> config = new HashMap<>();
-    config.put(JsonGenerator.PRETTY_PRINTING, true);
-    StringWriter writer = new StringWriter();
-    try (JsonWriter jsonWriter = Json.createWriterFactory(config).createWriter(writer)) {
-      jsonWriter.write(json);
-    }
-    return writer.toString();
-  }
 }

@@ -12,6 +12,18 @@
   <artifactId>oauth2-server</artifactId>
   <packaging>jar</packaging>
 
+  <repositories>
+    <repository>
+      <id>veupathdb-raw</id>
+      <name>VEuPathDB Raw Dependencies</name>
+      <layout>default</layout>
+      <url>https://raw.githubusercontent.com/VEuPathDB/maven-packages/main/raw-packages</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <dependencies>
 
     <!-- JAX-RS/Jersey dependencies -->
@@ -46,9 +58,24 @@
       <artifactId>org.apache.oltu.oauth2.client</artifactId>
     </dependency>
 
+    <!-- Utilities to build and sign JWTs -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt</artifactId>
+      <artifactId>jjwt-api</artifactId>
+      <version>0.11.5</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+      <version>0.11.5</version>
+    </dependency>
+
+    <!-- Needed for ECDSA algorithm in pre Java-14 environments -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+      <version>1.70</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>

@@ -4,12 +4,14 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.crypto.SecretKey;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
+import org.gusdb.oauth2.service.token.Signatures;
 
 public class AllowedClient {
 
@@ -18,6 +20,7 @@ public class AllowedClient {
   private static enum JsonKey {
     clientId,
     clientSecret,
+    signingKey,
     clientDomains
   }
 
@@ -33,16 +36,19 @@ public class AllowedClient {
         domainList.add(clientDomains.getString(i));
       }
     }
-    return new AllowedClient(clientId, clientSecret, domainList);
+    SecretKey signingKey = Signatures.getValidatedSecretKey(json.getString(JsonKey.signingKey.name()));
+    return new AllowedClient(clientId, clientSecret, signingKey, domainList);
   }
 
   private String _id;
   private String _secret;
+  private SecretKey _signingKey;
   private Set<String> _domains;
 
-  public AllowedClient(String id, String secret, Set<String> domains) throws InitializationException {
+  public AllowedClient(String id, String secret, SecretKey signingKey, Set<String> domains) throws InitializationException {
     _id = id;
     _secret = secret;
+    _signingKey = signingKey;
     _domains = domains;
     if (_id == null || _id.isEmpty() ||
         _secret == null || _secret.isEmpty() ||
@@ -56,6 +62,7 @@ public class AllowedClient {
 
   public String getId() { return _id; }
   public String getSecret() { return _secret; }
+  public SecretKey getSigningKey() { return _signingKey; }
   public Set<String> getDomains() { return _domains; }
 
 }
