@@ -74,7 +74,6 @@ public class OAuthService {
   private static final String CHANGE_PASSWORD_PATH = "changePassword";
   private static final String DISCOVERY_PATH = "discovery";
   private static final String JWKS_PATH = "jwks";
-  private static final String PUBLIC_KEY_PATH = "public_key";
   private static final String ACCOUNT_QUERY_PATH = "query";
 
   private static final String FORM_ID_PARAM_NAME = "form_id";
@@ -292,6 +291,36 @@ public class OAuthService {
     }
   }
 
+  @POST
+  @Path(GUEST_TOKEN_PATH)
+  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getGuestToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
+    try {
+      // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
+      HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
+
+      LOG.info("Handling guest token request with the following params:" +
+        System.lineSeparator() + paramsToString(request));
+
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      String clientId = request.getParameter(OAuth.OAUTH_CLIENT_ID);
+      String clientSecret = request.getParameter(OAuth.OAUTH_CLIENT_SECRET);
+      if (!clientValidator.isValidGuestTokenClient(clientId, clientSecret)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+
+      return OAuthRequestHandler.handleGuestTokenRequest(
+          clientId,
+          OAuthServlet.getAuthenticator(_context),
+          OAuthServlet.getApplicationConfig(_context));
+    }
+    catch (OAuthProblemException e) {
+      LOG.error("Problem with authorize request: ", e);
+      return new OAuthResponseFactory().buildInvalidRequestResponse(e);
+    }
+  }
+
   private static String paramsToString(HttpServletRequest request) {
     Map<String, String[]> params = request.getParameterMap();
     StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
@@ -402,13 +431,6 @@ public class OAuthService {
         Signatures.getJwksContent(
           OAuthServlet.getApplicationConfig(_context)
         ).toString())).build();
-  }
-
-  @GET
-  @Path(PUBLIC_KEY_PATH)
-  @Produces(MediaType.TEXT_PLAIN)
-  public Response getPublicKey() {
-    return Response.ok(OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic()).build();
   }
 
   @POST

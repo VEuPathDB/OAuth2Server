@@ -37,6 +37,11 @@ public class ClientValidator {
         isValidRedirectUri(oauthRequest.getClientId(), oauthRequest.getRedirectURI()));
   }
 
+  public boolean isValidGuestTokenClient(String clientId, String clientSecret) {
+    return clientId == null || clientSecret == null ? false :
+      isValidClientId(clientId) && isValidClientSecret(clientId, clientSecret);
+  }
+
   private boolean isValidClientId(String clientId) {
     boolean valid = _clientMap.containsKey(clientId);
     LOG.debug("Valid client ID [" + clientId + "]? " + valid);

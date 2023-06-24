@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,8 +19,7 @@ import javax.json.stream.JsonGenerator;
 
 import org.apache.logging.log4j.LogManager;
 import org.gusdb.oauth2.InitializationException;
-import org.gusdb.oauth2.config.ApplicationConfig;
-import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
+import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -42,11 +42,11 @@ public class Signatures {
      * signing strategy decides how to procure a key from the passed config and token data.
      *
      * @param tokenJson raw JSON that constitutes the JWT (claims as properties)
-     * @param config configuration of the application
+     * @param keyStore set of signing keys for this application
      * @param tokenData data associated with the token 
-     * @return
+     * @return signed token string
      */
-    String getSignedEncodedToken(JsonObject tokenJson, ApplicationConfig config, AccessTokenData tokenData);
+    String getSignedEncodedToken(JsonObject tokenJson, SigningKeyStore keyStore, IdTokenParams tokenData);
   }
 
   /**
@@ -73,8 +73,8 @@ public class Signatures {
     return EllipticCurveProvider.generateKeyPair(ASYMMETRIC_KEY_ALGORITHM, random);
   }
 
-  private static String createJwtFromJsonHmac(JsonObject tokenJson, ApplicationConfig config, AccessTokenData tokenData) {
-    Key key = config.getKeyMap().get(tokenData.authCodeData.clientId);
+  private static String createJwtFromJsonHmac(JsonObject tokenJson, SigningKeyStore keyStore, IdTokenParams tokenData) {
+    Key key = keyStore.getSecretKey(tokenData.getClientId());
     log("Will create JWT using HMAC from the following token body: " + prettyPrintJson(tokenJson));
     String jwt = Jwts.builder()
         .setPayload(tokenJson.toString())
@@ -84,8 +84,8 @@ public class Signatures {
     return jwt;
   }
 
-  private static String createJwtFromJsonEcdsa(JsonObject tokenJson, ApplicationConfig config, AccessTokenData tokenData) {
-    PrivateKey privateKey = config.getAsyncKeys().getPrivate();
+  private static String createJwtFromJsonEcdsa(JsonObject tokenJson, SigningKeyStore keyStore, IdTokenParams tokenData) {
+    PrivateKey privateKey = keyStore.getAsyncKeys().getPrivate();
     log("Will create JWT using ECDSA from the following token body: " + prettyPrintJson(tokenJson));
     String jwt = Jwts.builder()
         .setPayload(tokenJson.toString())
@@ -109,20 +109,29 @@ public class Signatures {
     return writer.toString();
   }
 
-  public static JsonObject getJwksContent(ApplicationConfig applicationConfig) {
+  public static JsonObject getJwksContent(SigningKeyStore keyStore) {
+    SecretKey someSecretKey = keyStore.getFirstSecretKey();
+    PublicKey publicKey = keyStore.getAsyncKeys().getPublic();
+    System.out.println(publicKey.getClass().getName());
     return Json.createObjectBuilder()
       .add("keys", Json.createArrayBuilder()
         .add(Json.createObjectBuilder()
-          .add("kty", "RSA")
-          .add("n", "<your_client_secret>")
-          .add("alg", Signatures.SECRET_KEY_ALGORITHM.getValue())
           .add("kid", "0")
+          .add("use", "sig")
+          .add("fmt", someSecretKey.getFormat())
+          .add("kty", "oct")
+          .add("alg", Signatures.SECRET_KEY_ALGORITHM.getValue())
+          .add("k", "<your_client_secret>")
           .build())
         .add(Json.createObjectBuilder()
-          .add("kty", "RSA")
-          .add("n", "<your_client_secret>")
+          .add("kid", "1")
+          .add("use", "sig")
+          .add("fmt", publicKey.getFormat())
+          .add("kty", "EC")
           .add("alg", Signatures.ASYMMETRIC_KEY_ALGORITHM.getValue())
-          .add("kid", "0")
+          .add("crv","P-521")
+          .add("x", "")
+          .add("y", "")
           .build())
         .build())
       .build();

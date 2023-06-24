@@ -18,6 +18,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.UserInfo;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
+import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 
 public class IdTokenFactory {
 
@@ -34,7 +35,8 @@ public class IdTokenFactory {
     nonce, // string value linking original auth request with ID token
     email, // user's email
     email_verified, // whether email is verified
-    preferred_username; // human-friendly display name for the user (may or may not be unique/stable)
+    preferred_username, // human-friendly display name for the user (may or may not be unique/stable)
+    is_guest; // whether the user represented by this token is a guest vs registered user
 
     public static Set<String> getNames() {
       Set<String> names = new HashSet<>();
@@ -49,28 +51,15 @@ public class IdTokenFactory {
       AccessTokenData tokenData, String issuer, int expirationSecs)
           throws OAuthProblemException, OAuthSystemException {
 
-    // OpenID Connect claims that we support
-    long now = new Date().getTime() / 1000;
-    JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
-      .add(IdTokenFields.iss.name(), issuer)
-      .add(IdTokenFields.aud.name(), tokenData.authCodeData.clientId)
-      .add(IdTokenFields.azp.name(), tokenData.authCodeData.clientId)
-      .add(IdTokenFields.auth_time.name(), tokenData.authCodeData.creationTime)
-      .add(IdTokenFields.iat.name(), now)
-      .add(IdTokenFields.exp.name(), now + expirationSecs);
-
-    // add nonce if client sent as part of original authentication request
-    String nonce = tokenData.authCodeData.nonce;
-    if (nonce != null && !nonce.isEmpty()) {
-      jsonBuilder.add(IdTokenFields.nonce.name(), nonce);
-    }
+    // get base object (common to ID and guest tokens)
+    JsonObjectBuilder jsonBuilder = getBaseJson(tokenData.authCodeData, issuer, expirationSecs, false);
 
     // get values from authenticator and use to populate remaining fields
-    UserInfo user = getUserInfo(authenticator, tokenData.authCodeData.username);
+    UserInfo user = getUserInfo(authenticator, tokenData.authCodeData.getUsername());
     String userId = user.getUserId();
     if (userId == null || userId.isEmpty())
       throw OAuthProblemException.error("Authenticator returned null or empty " +
-          "user ID for username [" + tokenData.authCodeData.username + "].");
+          "user ID for username [" + tokenData.authCodeData.getUsername() + "].");
     jsonBuilder.add(IdTokenFields.sub.name(), userId);
 
     // add user's email if returned by Authenticator
@@ -99,6 +88,42 @@ public class IdTokenFactory {
         jsonBuilder.add(entry.getKey(), entry.getValue());
       }
     }
+
+    return jsonBuilder.build();
+  }
+
+  private static JsonObjectBuilder getBaseJson(IdTokenParams params, String issuer, int expirationSecs, boolean isGuest) {
+    // OpenID Connect claims that we support
+    long now = new Date().getTime() / 1000;
+    JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
+      .add(IdTokenFields.iss.name(), issuer)
+      .add(IdTokenFields.aud.name(), params.getClientId())
+      .add(IdTokenFields.azp.name(), params.getClientId())
+      .add(IdTokenFields.auth_time.name(), params.getCreationTime())
+      .add(IdTokenFields.iat.name(), now)
+      .add(IdTokenFields.exp.name(), now + expirationSecs)
+      .add(IdTokenFields.is_guest.name(), isGuest);
+
+    // add nonce if client sent as part of original authentication request
+    String nonce = params.getNonce();
+    if (nonce != null && !nonce.isEmpty()) {
+      jsonBuilder.add(IdTokenFields.nonce.name(), nonce);
+    }
+    return jsonBuilder;
+  }
+
+  public static JsonObject createGuestTokenJson(Authenticator authenticator, String clientId, String issuer, int expirationSecs)
+      throws OAuthProblemException {
+
+    if (!authenticator.supportsGuests()) {
+      throw OAuthProblemException.error("This token service does not support guest tokens.");
+    }
+
+    // get base object (common to ID and guest tokens)
+    JsonObjectBuilder jsonBuilder = getBaseJson(new IdTokenParams(clientId, null), issuer, expirationSecs, true);
+
+    // add user ID; other claims are optional
+    jsonBuilder.add(IdTokenFields.sub.name(), authenticator.getNextGuestId());
 
     return jsonBuilder.build();
   }

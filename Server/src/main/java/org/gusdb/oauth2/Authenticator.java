@@ -152,4 +152,19 @@ public interface Authenticator {
    */
   public void logSuccessfulLogin(String username, String clientId, String redirectUri, String requestingIpAddress);
 
+  /**
+   * Returns true if getNextGuestId() is implemented to produce guest IDs.  If this method
+   * returns false, the guest token endpoint of this OIDC server will throw an error
+   */
+  public default boolean supportsGuests() {
+    return false;
+  }
+
+  /**
+   * @return a new guest ID
+   */
+  public default JsonValue getNextGuestId() {
+    throw new UnsupportedOperationException("This authenticator does not support guests.");
+  }
+
 }

@@ -33,10 +33,12 @@ import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.service.token.IdTokenFactory;
+import org.gusdb.oauth2.service.token.Signatures;
 import org.gusdb.oauth2.service.token.Signatures.TokenSigner;
 import org.gusdb.oauth2.service.token.TokenStore;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.AuthCodeData;
+import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
 
@@ -76,11 +78,8 @@ public class OAuthRequestHandler {
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
       Authenticator authenticator, ApplicationConfig config, TokenSigner tokenSigner) throws OAuthSystemException {
-    int expirationSecs = config.getTokenExpirationSecs();
-    boolean isOpenIdConnect = config.useOpenIdConnect();
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
-      OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
       // do checking for different grant types
       GrantType grantType = getGrantType(oauthRequest);
       switch (grantType) {
@@ -101,8 +100,11 @@ public class OAuthRequestHandler {
           return responses.buildInvalidGrantTypeResponse();
       }
 
+      OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
       final String accessToken = oauthIssuerImpl.accessToken();
       AccessTokenData tokenData = TokenStore.addAccessToken(accessToken, oauthRequest.getCode());
+
+      int expirationSecs = config.getTokenExpirationSecs();
 
       OAuthTokenResponseBuilder responseBuilder =
           OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)
@@ -111,17 +113,20 @@ public class OAuthRequestHandler {
           .setExpiresIn(String.valueOf(expirationSecs));
 
       // if configured to send id_token with access token response, create and add it
-      if (isOpenIdConnect) {
+      if (config.useOpenIdConnect()) {
         JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
-        String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData);
+        String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData.authCodeData);
         responseBuilder.setParam("id_token", signedToken);
       }
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
+
       if (LOG.isDebugEnabled()) {
         LOG.debug("Processed token request successfully.  Returning: " + prettyPrintJsonObject(response.getBody()));
       }
+
       return Response.status(response.getResponseStatus()).entity(response.getBody()).build();
+
     }
     catch (OAuthProblemException e) {
       LOG.error("Problem responding to token request", e);
@@ -168,5 +173,33 @@ public class OAuthRequestHandler {
     properties.put(JsonGenerator.PRETTY_PRINTING, true);
     Json.createWriterFactory(properties).createWriter(stringWriter).writeObject(obj);
     return stringWriter.toString();
+  }
+
+  public static Response handleGuestTokenRequest(String clientId, Authenticator authenticator, ApplicationConfig config)
+      throws OAuthSystemException, OAuthProblemException {
+
+    OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
+    final String accessToken = oauthIssuerImpl.accessToken();
+
+    int expirationSecs = config.getTokenExpirationSecs();
+
+    OAuthTokenResponseBuilder responseBuilder =
+        OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)
+        .setTokenType("Bearer")
+        .setAccessToken(accessToken)
+        .setExpiresIn(String.valueOf(expirationSecs));
+
+    JsonObject tokenJson = IdTokenFactory.createGuestTokenJson(authenticator, clientId, config.getIssuer(), expirationSecs);
+    String signedToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, config, new IdTokenParams(clientId, null));
+
+    responseBuilder.setParam("id_token", signedToken);
+
+    OAuthResponse response = responseBuilder.buildJSONMessage();
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Processed token request successfully.  Returning: " + prettyPrintJsonObject(response.getBody()));
+    }
+
+    return Response.status(response.getResponseStatus()).entity(response.getBody()).build();
   }
 }

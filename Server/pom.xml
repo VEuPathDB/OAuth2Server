@@ -12,18 +12,6 @@
   <artifactId>oauth2-server</artifactId>
   <packaging>jar</packaging>
 
-  <repositories>
-    <repository>
-      <id>veupathdb-raw</id>
-      <name>VEuPathDB Raw Dependencies</name>
-      <layout>default</layout>
-      <url>https://raw.githubusercontent.com/VEuPathDB/maven-packages/main/raw-packages</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
   <dependencies>
 
     <!-- JAX-RS/Jersey dependencies -->
@@ -68,6 +56,12 @@
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
       <version>0.11.5</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-orgjson</artifactId>
+      <version>0.11.5</version>
+      <scope>runtime</scope>
     </dependency>
 
     <!-- Needed for ECDSA algorithm in pre Java-14 environments -->
