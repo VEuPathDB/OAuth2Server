@@ -18,14 +18,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwt;
-import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.impl.DefaultClaims;
-import io.jsonwebtoken.impl.DefaultHeader;
 import io.jsonwebtoken.impl.TextCodec;
 import io.jsonwebtoken.io.Decoders;
 
+// suppress deprecation warnings; we know the legacy method is deprecated- that's why we're testing the new method :)
+@SuppressWarnings("deprecation")
 public class TokenSigningValidationTest {
 
   // symmetric token config
@@ -85,8 +83,7 @@ public class TokenSigningValidationTest {
 
     // encode the key as a base64 string
     byte[] unencodedKey = CLIENT_SECRET.getBytes(StandardCharsets.UTF_8);
-    byte[] encodedKey = Base64.getEncoder().encode(unencodedKey);
-    String encodedKeyStr = new String(encodedKey, StandardCharsets.UTF_8);
+    String encodedKeyStr = Base64.getEncoder().encodeToString(unencodedKey);
     System.out.println("new   : " + encodedKeyStr);
 
     // convert the key back to bytes
@@ -113,10 +110,11 @@ public class TokenSigningValidationTest {
 
     // encode the public key for distribution
     byte[] encodedKey = KEY_STORE.getAsyncKeys().getPublic().getEncoded();
-    String encodedKeyStr = new String(encodedKey, StandardCharsets.UTF_8);
+    String encodedKeyStr = Base64.getEncoder().encodeToString(encodedKey);
 
     // convert the key to a public key object
-    byte[] publicBytes = Base64.getDecoder().decode(encodedKeyStr.getBytes(StandardCharsets.UTF_8));
+    byte[] publicBytes = Base64.getDecoder().decode(encodedKeyStr);
+    Assert.assertArrayEquals(encodedKey, publicBytes);
     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
     KeyFactory keyFactory = KeyFactory.getInstance("EC");
     PublicKey publicKey = keyFactory.generatePublic(keySpec);
