@@ -1,5 +1,6 @@
 package org.gusdb.oauth2.service;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.PublicKey;
@@ -41,6 +42,14 @@ public class TokenSigningValidationTest {
     try {
       SigningKeyStore keyStore = new SigningKeyStore(KEY_PAIR_RANDOM_SEED);
       keyStore.addClientSigningKey(CLIENT_ID, CLIENT_SECRET);
+      byte[] privateKeyBytes = keyStore.getAsyncKeys().getPrivate().getEncoded();
+      byte[] publicKeyBytes = keyStore.getAsyncKeys().getPublic().getEncoded();
+      System.out.println("Generated the following key pair in base64:\nprivate\n" +
+          new String(Base64.getEncoder().encode(privateKeyBytes), StandardCharsets.UTF_8) + "\npublic\n" +
+          new String(Base64.getEncoder().encode(publicKeyBytes), StandardCharsets.UTF_8));
+      System.out.println("Generated the following key pair in hex:\nprivate\n" +
+          String.format("%040x", new BigInteger(1, privateKeyBytes)) + "\npublic\n" +
+          String.format("%040x", new BigInteger(1, publicKeyBytes)));
       return keyStore;
     }
     catch (InitializationException e) {
