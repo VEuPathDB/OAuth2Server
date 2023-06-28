@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.interfaces.ECPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +19,7 @@ import javax.json.stream.JsonGenerator;
 
 import org.apache.logging.log4j.LogManager;
 import org.gusdb.oauth2.InitializationException;
+import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation.ECCoordinateStrings;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 
 import io.jsonwebtoken.Jwts;
@@ -110,9 +111,15 @@ public class Signatures {
   }
 
   public static JsonObject getJwksContent(SigningKeyStore keyStore) {
+
+    // get one of the HMAC keys to get its properties (but not the key value)
     SecretKey someSecretKey = keyStore.getFirstSecretKey();
-    PublicKey publicKey = keyStore.getAsyncKeys().getPublic();
-    System.out.println(publicKey.getClass().getName());
+
+    // get the public key and be able to represent it as base64 or as xy coordinates
+    ECPublicKey publicKey = (ECPublicKey)keyStore.getAsyncKeys().getPublic();
+    ECPublicKeyRepresentation publicKeyRep = new ECPublicKeyRepresentation(publicKey);
+    ECCoordinateStrings publicKeyCoords = publicKeyRep.getCoordinates();
+
     return Json.createObjectBuilder()
       .add("keys", Json.createArrayBuilder()
         .add(Json.createObjectBuilder()
@@ -130,10 +137,14 @@ public class Signatures {
           .add("kty", "EC")
           .add("alg", Signatures.ASYMMETRIC_KEY_ALGORITHM.getValue())
           .add("crv","P-521")
-          .add("x", "")
-          .add("y", "")
+          .add("x", publicKeyCoords.getX())
+          .add("y", publicKeyCoords.getY())
+          // Note: some clients may find it easier to use the base-64 encoded
+          //       key vs coordinates, so including here as an extra property
+          .add("k", publicKeyRep.getBase64String())
           .build())
         .build())
       .build();
   }
+
 }

@@ -2,9 +2,8 @@ package org.gusdb.oauth2.service;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
 import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
 import java.util.function.Supplier;
 
@@ -12,6 +11,8 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.gusdb.oauth2.InitializationException;
+import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation;
+import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation.ECCoordinateStrings;
 import org.gusdb.oauth2.service.token.Signatures;
 import org.gusdb.oauth2.service.token.SigningKeyStore;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
@@ -111,22 +112,45 @@ public class TokenSigningValidationTest {
   }
 
   @Test
-  public void testAsymmetricTokenValidator() throws Exception {
+  public void testAsymmetricKeyTokenValidator() throws Exception {
 
     // create a signed token
     String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, ID_TOKEN_PARAMS);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key for distribution
-    byte[] encodedKey = KEY_STORE.getAsyncKeys().getPublic().getEncoded();
-    String encodedKeyStr = Base64.getEncoder().encodeToString(encodedKey);
+    String encodedKeyStr = new ECPublicKeyRepresentation((ECPublicKey)KEY_STORE.getAsyncKeys().getPublic()).getBase64String();
 
-    // convert the key to a public key object
-    byte[] publicBytes = Base64.getDecoder().decode(encodedKeyStr);
-    Assert.assertArrayEquals(encodedKey, publicBytes);
-    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
-    KeyFactory keyFactory = KeyFactory.getInstance("EC");
-    PublicKey publicKey = keyFactory.generatePublic(keySpec);
+    // convert the key string to a public key object
+    PublicKey publicKey = new ECPublicKeyRepresentation(encodedKeyStr).getPublicKey();
+
+    // verify signature and create claims object
+    Claims claims = Jwts.parserBuilder()
+        .setSigningKey(publicKey)
+        .build()
+        .parseClaimsJws(asymmetricToken)
+        .getBody();
+
+    // check subject claim
+    Assert.assertTrue(claims.containsKey("sub"));
+    Assert.assertEquals("myUserId", claims.getSubject());
+
+  }
+
+  @Test
+  public void testAsymmetricCoordinatesTokenValidator() throws Exception {
+
+    // create a signed token
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, ID_TOKEN_PARAMS);
+    System.out.println(Signatures.getJwksContent(KEY_STORE));
+
+    // encode the public key into coordinates for distribution
+    ECCoordinateStrings publicKeyCoords = new ECPublicKeyRepresentation((ECPublicKey)KEY_STORE.getAsyncKeys().getPublic()).getCoordinates();
+    String x = publicKeyCoords.getX();
+    String y = publicKeyCoords.getY();
+
+    // convert the coordinate strings ito a public key object
+    PublicKey publicKey = new ECPublicKeyRepresentation(x, y).getPublicKey();
 
     // verify signature and create claims object
     Claims claims = Jwts.parserBuilder()
