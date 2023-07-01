@@ -18,9 +18,7 @@ import javax.json.JsonWriter;
 import javax.json.stream.JsonGenerator;
 
 import org.apache.logging.log4j.LogManager;
-import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation.ECCoordinateStrings;
-import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -44,10 +42,10 @@ public class Signatures {
      *
      * @param tokenJson raw JSON that constitutes the JWT (claims as properties)
      * @param keyStore set of signing keys for this application
-     * @param tokenData data associated with the token 
+     * @param clientId client ID
      * @return signed token string
      */
-    String getSignedEncodedToken(JsonObject tokenJson, SigningKeyStore keyStore, IdTokenParams tokenData);
+    String getSignedEncodedToken(JsonObject tokenJson, SigningKeyStore keyStore, String clientId);
   }
 
   /**
@@ -58,24 +56,24 @@ public class Signatures {
    * @return validated key object created from the input
    * @throws InitializationException 
    */
-  public static SecretKey getValidatedSecretKey(String secretKey) throws InitializationException {
+  public static SecretKey getValidatedSecretKey(String secretKey) throws CryptoException {
     SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     if (!key.getAlgorithm().equals(SECRET_KEY_ALGORITHM.getJcaName())) {
-      throw new InitializationException("Signing key '" + secretKey + "' is not compatible with " + SECRET_KEY_ALGORITHM.getJcaName());
+      throw new CryptoException("Signing key '" + secretKey + "' is not compatible with " + SECRET_KEY_ALGORITHM.getJcaName());
     }
     return key;
   }
 
-  public static KeyPair getKeyPair(String seed) throws InitializationException {
+  public static KeyPair getKeyPair(String seed) throws CryptoException {
     if (seed == null || seed.length() < MINIMUM_SEED_LENGTH) {
-      throw new InitializationException("Asynchronous key pair generation seed must be present and greater than " + MINIMUM_SEED_LENGTH + " characters");
+      throw new CryptoException("Asynchronous key pair generation seed must be present and greater than " + MINIMUM_SEED_LENGTH + " characters");
     }
     SecureRandom random = new SecureRandom(seed.getBytes(StandardCharsets.UTF_8));
     return EllipticCurveProvider.generateKeyPair(ASYMMETRIC_KEY_ALGORITHM, random);
   }
 
-  private static String createJwtFromJsonHmac(JsonObject tokenJson, SigningKeyStore keyStore, IdTokenParams tokenData) {
-    Key key = keyStore.getSecretKey(tokenData.getClientId());
+  private static String createJwtFromJsonHmac(JsonObject tokenJson, SigningKeyStore keyStore, String clientId) {
+    Key key = keyStore.getSecretKey(clientId);
     log("Will create JWT using HMAC from the following token body: " + prettyPrintJson(tokenJson));
     String jwt = Jwts.builder()
         .setPayload(tokenJson.toString())
@@ -85,7 +83,7 @@ public class Signatures {
     return jwt;
   }
 
-  private static String createJwtFromJsonEcdsa(JsonObject tokenJson, SigningKeyStore keyStore, IdTokenParams tokenData) {
+  private static String createJwtFromJsonEcdsa(JsonObject tokenJson, SigningKeyStore keyStore, String clientId) {
     PrivateKey privateKey = keyStore.getAsyncKeys().getPrivate();
     log("Will create JWT using ECDSA from the following token body: " + prettyPrintJson(tokenJson));
     String jwt = Jwts.builder()

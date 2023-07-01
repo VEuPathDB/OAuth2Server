@@ -14,7 +14,16 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Objects;
 
+/**
+ * Handles conversion of EC-521 public key to the following formats:
+ * - ECPublicKey object
+ * - Base64 encoded string
+ * - X and Y EC Coordinates
+ *
+ * @author rdoherty
+ */
 public class ECPublicKeyRepresentation {
 
   public interface ECCoordinateStrings {
@@ -101,7 +110,7 @@ public class ECPublicKeyRepresentation {
   // Needed until we upgrade JJWT past 0.11.5; copied and modified from
   // https://github.com/jwtk/jjwt/blob/992d75d0b4ef4349646a89b75c5e6a3bcf9aa8b2/impl/src/main/java/io/jsonwebtoken/impl/security/AbstractEcJwkFactory.java#L76
   private static String toOctetString(int fieldSize, BigInteger coordinate) {
-    byte[] bytes = new BigIntegerUBytesConverter().applyTo(coordinate);
+    byte[] bytes = convertToUBytes(coordinate);
     int mlen = (int) Math.ceil(fieldSize / 8d);
     if (mlen > bytes.length) {
         byte[] m = new byte[mlen];
@@ -110,5 +119,31 @@ public class ECPublicKeyRepresentation {
     }
     return Base64.getUrlEncoder().encodeToString(bytes);
   }
+
+  // Needed until we can upgrade JJWT from 0.11.5; copied and modified from
+  // https://github.com/jwtk/jjwt/blob/master/impl/src/main/java/io/jsonwebtoken/impl/lang/BigIntegerUBytesConverter.java
+  private static byte[] convertToUBytes(BigInteger bigInt) {
+    Objects.requireNonNull(bigInt, "BigInteger argument cannot be null.");
+    if (BigInteger.ZERO.compareTo(bigInt) > 0) {
+        throw new IllegalArgumentException(NEGATIVE_MSG);
+    }
+
+    final int bitLen = bigInt.bitLength();
+    final byte[] bytes = bigInt.toByteArray();
+    // round bitLen. This gives the minimal number of bytes necessary to represent an unsigned byte array:
+    final int unsignedByteLen = Math.max(1, (bitLen + 7) / Byte.SIZE);
+
+    if (bytes.length == unsignedByteLen) { // already in the form we need
+        return bytes;
+    }
+    //otherwise, we need to strip the sign byte (start copying at index 1 instead of 0):
+    byte[] ubytes = new byte[unsignedByteLen];
+    System.arraycopy(bytes, 1, ubytes, 0, unsignedByteLen);
+    return ubytes;
+  }
+
+   private static final String NEGATIVE_MSG =
+       "JWA Base64urlUInt values MUST be >= 0 (non-negative) per the 'Base64urlUInt' definition in " +
+           "[JWA RFC 7518, Section 2](https://www.rfc-editor.org/rfc/rfc7518.html#section-2)";
 
 }

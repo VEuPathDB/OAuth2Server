@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>OAuth2 - Basic Server</name>
-  <artifactId>oauth2-server</artifactId>
+  <name>OAuth2 - Shared Library</name>
+  <artifactId>oauth2-shared</artifactId>
   <packaging>jar</packaging>
 
   <parent>
@@ -14,40 +14,7 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>org.gusdb</groupId>
-      <artifactId>oauth2-shared</artifactId>
-    </dependency>
-
-    <!-- JAX-RS/Jersey dependencies -->
-    <dependency>
-      <groupId>org.glassfish.jersey.containers</groupId>
-      <artifactId>jersey-container-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.jersey.inject</groupId>
-      <artifactId>jersey-hk2</artifactId>
-    </dependency>
-
-    <!-- OAuth dependencies -->
-    <dependency>
-      <groupId>org.apache.oltu.oauth2</groupId>
-      <artifactId>org.apache.oltu.oauth2.common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.oltu.oauth2</groupId>
-      <artifactId>org.apache.oltu.oauth2.authzserver</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.oltu.oauth2</groupId>
-      <artifactId>org.apache.oltu.oauth2.resourceserver</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.oltu.oauth2</groupId>
-      <artifactId>org.apache.oltu.oauth2.client</artifactId>
-    </dependency>
-
-    <!-- Utilities to build and sign JWTs -->
+      <!-- Utilities to build and sign JWTs -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
@@ -69,27 +36,16 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- JSON support -->
     <dependency>
       <groupId>javax.json</groupId>
       <artifactId>javax.json-api</artifactId>
       <scope>compile</scope>
     </dependency>
-
     <dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>javax.json</artifactId>
       <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>javax.activation</groupId>
-      <artifactId>activation</artifactId>
     </dependency>
 
     <dependency>
@@ -100,8 +56,8 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>
-
 </project>

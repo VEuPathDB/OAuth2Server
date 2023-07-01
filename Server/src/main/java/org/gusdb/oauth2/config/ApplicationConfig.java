@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.service.token.CryptoException;
 import org.gusdb.oauth2.service.token.SigningKeyStore;
 
 /**
@@ -119,7 +120,7 @@ public class ApplicationConfig extends SigningKeyStore {
           loginSuccessPage, tokenExpirationSecs, allowAnonymousLogin, validateDomains,
           useOpenIdConnect, allowedClients, keyPairRandomSeed);
     }
-    catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
+    catch (ClassCastException | NullPointerException | IllegalArgumentException | CryptoException e) {
       throw new InitializationException("Improperly constructed configuration object", e);
     }
   }
@@ -146,7 +147,7 @@ public class ApplicationConfig extends SigningKeyStore {
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
       String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed,
-      boolean validateDomains, boolean useOpenIdConnect, List<AllowedClient> allowedClients, String keyPairRandomSeed) throws InitializationException {
+      boolean validateDomains, boolean useOpenIdConnect, List<AllowedClient> allowedClients, String keyPairRandomSeed) throws CryptoException {
     super(keyPairRandomSeed);
     _issuer = issuer;
     _authClassName = authClassName;

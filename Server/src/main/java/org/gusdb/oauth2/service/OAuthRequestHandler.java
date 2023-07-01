@@ -38,7 +38,6 @@ import org.gusdb.oauth2.service.token.Signatures.TokenSigner;
 import org.gusdb.oauth2.service.token.TokenStore;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.AuthCodeData;
-import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
 
@@ -115,7 +114,7 @@ public class OAuthRequestHandler {
       // if configured to send id_token with access token response, create and add it
       if (config.useOpenIdConnect()) {
         JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
-        String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData.authCodeData);
+        String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData.authCodeData.getClientId());
         responseBuilder.setParam("id_token", signedToken);
       }
 
@@ -190,7 +189,7 @@ public class OAuthRequestHandler {
         .setExpiresIn(String.valueOf(expirationSecs));
 
     JsonObject tokenJson = IdTokenFactory.createGuestTokenJson(authenticator, clientId, config.getIssuer(), expirationSecs);
-    String signedToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, config, new IdTokenParams(clientId, null));
+    String signedToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, config, clientId);
 
     responseBuilder.setParam("id_token", signedToken);
 

@@ -2,22 +2,22 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.gusdb</groupId>
-    <artifactId>oauth2</artifactId>
-    <version>1.0.0</version>
-  </parent>
-
   <name>OAuth2 - EuPathDB Server</name>
   <artifactId>oauth2-eupathdb</artifactId>
   <packaging>war</packaging>
+
+  <parent>
+    <groupId>org.gusdb</groupId>
+    <artifactId>oauth2</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+  </parent>
 
   <properties>
     
     <!-- Expect this property to be passed in -->
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
 
-    <fgputil.version>2.3</fgputil.version>
+    <fgputil.version>2.12.9</fgputil.version>
   </properties>
 
   <dependencies>

@@ -10,12 +10,11 @@ import java.util.function.Supplier;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.gusdb.oauth2.InitializationException;
+import org.gusdb.oauth2.service.token.CryptoException;
 import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation;
 import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation.ECCoordinateStrings;
 import org.gusdb.oauth2.service.token.Signatures;
 import org.gusdb.oauth2.service.token.SigningKeyStore;
-import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,19 +52,16 @@ public class TokenSigningValidationTest {
           String.format("%040x", new BigInteger(1, publicKeyBytes)));
       return keyStore;
     }
-    catch (InitializationException e) {
+    catch (CryptoException e) {
       throw new RuntimeException(e);
     }
   }).get();
-
-  // params to sign tokens
-  private static final IdTokenParams ID_TOKEN_PARAMS = new IdTokenParams(CLIENT_ID, null);
 
   @Test
   public void testLegacySymmetricTokenValidator() throws Exception {
 
     // create a signed token
-    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, ID_TOKEN_PARAMS);
+    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
 
     // encode the key as a base64 string
     String encodedKey = TextCodec.BASE64.encode(CLIENT_SECRET);
@@ -89,7 +85,7 @@ public class TokenSigningValidationTest {
   public void testNewSymmetricTokenValidator() throws Exception {
 
     // create a signed token
-    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, ID_TOKEN_PARAMS);
+    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
 
     // encode the key as a base64 string
     byte[] unencodedKey = CLIENT_SECRET.getBytes(StandardCharsets.UTF_8);
@@ -115,7 +111,7 @@ public class TokenSigningValidationTest {
   public void testAsymmetricKeyTokenValidator() throws Exception {
 
     // create a signed token
-    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, ID_TOKEN_PARAMS);
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key for distribution
@@ -141,7 +137,7 @@ public class TokenSigningValidationTest {
   public void testAsymmetricCoordinatesTokenValidator() throws Exception {
 
     // create a signed token
-    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, ID_TOKEN_PARAMS);
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key into coordinates for distribution

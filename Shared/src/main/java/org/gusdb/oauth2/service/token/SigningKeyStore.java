@@ -6,19 +6,17 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
-import org.gusdb.oauth2.InitializationException;
-
 public class SigningKeyStore {
 
   private final KeyPair _asyncKeys;
   private final Map<String,SecretKey> _clientSecretKeys;
 
-  public SigningKeyStore(String asyncKeysRandomSeed) throws InitializationException {
+  public SigningKeyStore(String asyncKeysRandomSeed) throws CryptoException {
     _asyncKeys = Signatures.getKeyPair(asyncKeysRandomSeed);
     _clientSecretKeys = new HashMap<>();
   }
 
-  public void addClientSigningKey(String clientId, String rawSigningKey) throws InitializationException {
+  public void addClientSigningKey(String clientId, String rawSigningKey) throws CryptoException {
     SecretKey signingKey = Signatures.getValidatedSecretKey(rawSigningKey);
     _clientSecretKeys.put(clientId, signingKey);
   }
