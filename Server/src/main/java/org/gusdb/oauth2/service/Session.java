@@ -17,6 +17,7 @@ public class Session {
   private static final Logger LOG = LogManager.getLogger(Session.class);
 
   private static final String SESSION_USERNAME_KEY = "username";
+  private static final String SESSION_USERID_KEY = "userid";
   private static final String SESSION_FORM_ID_MAP_KEY = "formIdMap";
 
   private final HttpSession _session;
@@ -40,6 +41,14 @@ public class Session {
 
   public void setUsername(String username) {
     _session.setAttribute(SESSION_USERNAME_KEY, username);
+  }
+
+  public String getUserId() {
+    return (String)_session.getAttribute(SESSION_USERID_KEY);
+  }
+
+  public void setUserId(String userId) {
+    _session.setAttribute(SESSION_USERID_KEY, userId);
   }
 
   public AuthzRequest getOriginalRequest(String formId) {
@@ -77,4 +86,5 @@ public class Session {
     }
     _session.invalidate();
   }
+
 }

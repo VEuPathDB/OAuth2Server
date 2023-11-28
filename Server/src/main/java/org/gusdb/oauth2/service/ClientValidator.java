@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,8 +39,21 @@ public class ClientValidator {
   }
 
   public boolean isValidGuestTokenClient(String clientId, String clientSecret) {
-    return clientId == null || clientSecret == null ? false :
-      isValidClientId(clientId) && isValidClientSecret(clientId, clientSecret);
+    return isClientAllowed(clientId, clientSecret, cli -> cli.allowGuestObtainment());
+  }
+
+  public boolean isValidProfileEditClient(String clientId, String clientSecret) {
+    return isClientAllowed(clientId, clientSecret, cli -> cli.allowProfileEdits());
+  }
+
+  public boolean isValidROPCGrantClient(String clientId, String clientSecret) {
+    return isClientAllowed(clientId, clientSecret, cli -> cli.allowROPCGrant());
+  }
+
+  private boolean isClientAllowed(String clientId, String clientSecret, Function<AllowedClient,Boolean> predicate) {
+    return clientId != null && clientSecret != null
+      && isValidClientId(clientId) && isValidClientSecret(clientId, clientSecret)
+      && predicate.apply(_clientMap.get(clientId));
   }
 
   private boolean isValidClientId(String clientId) {

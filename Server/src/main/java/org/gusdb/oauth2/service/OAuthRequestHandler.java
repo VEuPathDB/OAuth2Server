@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
@@ -31,21 +32,22 @@ import org.apache.oltu.oauth2.common.message.types.ResponseType;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
+import org.gusdb.oauth2.Authenticator.UserInfo;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.service.token.IdTokenFactory;
-import org.gusdb.oauth2.service.token.Signatures;
-import org.gusdb.oauth2.service.token.Signatures.TokenSigner;
 import org.gusdb.oauth2.service.token.TokenStore;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.AuthCodeData;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
+import org.gusdb.oauth2.shared.token.Signatures;
+import org.gusdb.oauth2.shared.token.Signatures.TokenSigner;
 
 public class OAuthRequestHandler {
 
   private static final Logger LOG = LogManager.getLogger(OAuthRequestHandler.class);
 
-  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username, int expirationSecs)
+  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username, String userId, int expirationSecs)
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
@@ -65,7 +67,7 @@ public class OAuthRequestHandler {
     LOG.debug("Generating authorization code...");
     final String authorizationCode = oauthIssuerImpl.authorizationCode();
     TokenStore.addAuthCode(new AuthCodeData(authorizationCode,
-        oauthRequest.getClientId(), username, oauthRequest.getNonce()));
+        oauthRequest.getClientId(), username, userId, oauthRequest.getNonce()));
     builder.setCode(authorizationCode);
 
     String redirectURI = oauthRequest.getRedirectUri();
@@ -146,23 +148,38 @@ public class OAuthRequestHandler {
 
   public static Response handleUserInfoRequest(OAuthAccessResourceRequest oauthRequest,
       Authenticator authenticator, String issuer, int expirationSecs)
-          throws OAuthSystemException, OAuthProblemException {
+          throws OAuthSystemException {
     String accessToken = oauthRequest.getAccessToken();
     AccessTokenData tokenData = TokenStore.getTokenData(accessToken);
 
     // Validate the access token
     if (tokenData == null) {
-      // Return the OAuth error message
-      OAuthResponse oauthResponse = OAuthRSResponse.errorResponse(HttpServletResponse.SC_UNAUTHORIZED).setError(
-          OAuthError.ResourceResponse.INVALID_TOKEN).buildHeaderMessage();
-
-      // return Response.status(Response.Status.UNAUTHORIZED).build();
-      return Response.status(Response.Status.UNAUTHORIZED).header(OAuth.HeaderType.WWW_AUTHENTICATE,
-          oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE)).build();
+      // create the OAuth error message
+      OAuthResponse oauthResponse = OAuthRSResponse
+          .errorResponse(HttpServletResponse.SC_UNAUTHORIZED)
+          .setError(OAuthError.ResourceResponse.INVALID_TOKEN)
+          .buildHeaderMessage();
+      // convert to jax-rs response
+      String authenticateHeaderValue = oauthResponse.getHeader(OAuth.HeaderType.WWW_AUTHENTICATE);
+      return Response
+          .status(Response.Status.UNAUTHORIZED)
+          .header(OAuth.HeaderType.WWW_AUTHENTICATE, authenticateHeaderValue)
+          .build();
     }
 
-    JsonObject idTokenData = IdTokenFactory.createIdTokenJson(authenticator, tokenData, issuer, expirationSecs);
-    return Response.status(Response.Status.OK).entity(idTokenData.toString()).build();
+    return handleUserInfoRequest(authenticator, tokenData.authCodeData.getUserId(), false);
+  }
+
+  public static Response handleUserInfoRequest(Authenticator authenticator, String userId, boolean isGuest) {
+    try {
+      UserInfo user = isGuest ? authenticator.getGuestProfileInfo(userId) : authenticator.getProfileInfo(userId);
+      JsonObjectBuilder json = IdTokenFactory.getBaseJson(userId, isGuest);
+      IdTokenFactory.appendProfileFields(json, user);
+      return Response.status(Response.Status.OK).entity(json.build().toString()).build();
+    }
+    catch (Exception e) {
+      throw new RuntimeException("Unable to look up user profile information for user ID " + userId, e);
+    }
   }
 
   public static String prettyPrintJsonObject(String json) {

@@ -1,6 +1,8 @@
 package org.gusdb.oauth2;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -17,7 +19,7 @@ import javax.json.stream.JsonParsingException;
 public interface Authenticator {
 
   /**
-   * Provides access to user's ID and email
+   * Provides methods for standard user information plus supplemental fields
    * 
    * @author rdoherty
    */
@@ -86,21 +88,22 @@ public interface Authenticator {
   public void initialize(JsonObject configJson) throws InitializationException;
 
   /**
-   * Replies true if the passed credentials identify a valid user, else false.
+   * Replies with a non-empty optional containing the user ID of a user
+   * if the passed credentials identify a valid user, else an empty optional.
    * The passed strings are not checked for SQL-injection or other hacks.
    * 
    * @param username entered username
    * @param password entered password
-   * @return true if passed creds identify a user, else false
+   * @return user ID if passed creds identify a user, else empty
    * @throws Exception if something goes wrong during validation
    */
-  public boolean isCredentialsValid(String username, String password) throws Exception;
+  public Optional<String> isCredentialsValid(String username, String password) throws Exception;
 
   /**
-   * Returns implementation-specific user information.  Only the user ID field
-   * of the returned object is required.  Email and EmailVerified are optional.
-   * Authenticator implementations can also add supplemental fields in the
-   * supplementalFields property of the returned object.
+   * Returns implementation-specific user information used to populate an ID
+   * token.  Only the user ID field of the returned object is required.  Email
+   * and EmailVerified are optional. Authenticator implementations can also add
+   * supplemental fields in the supplementalFields property of the returned object.
    * 
    * This information is used to populate an OpenID Connect ID token, which is
    * returned for /token requests if the "includeUserInfoWithToken" config value
@@ -108,14 +111,69 @@ public interface Authenticator {
    * token.
    * 
    * @param username username for which to get user information
-   * @return user information
+   * @return user information to populate an ID token
    * @throws Exception if something goes wrong while fetching user info
    */
-  public UserInfo getUserInfo(String username) throws Exception;
+  public UserInfo getTokenInfo(String username) throws Exception;
+
+  /**
+   * Returns implementation-specific user information used to populate a user
+   * profile object.  Only the user ID field of the returned object is required.  Email
+   * and EmailVerified are optional. Authenticator implementations can also add
+   * supplemental fields in the supplementalFields property of the returned object.
+   * 
+   * This information is returned by the /user endpoint if a valid token is presented
+   * as part of the request.  To keep OIDC/bearer tokens small, this method can/should
+   * contain a more comprehensive profile and/or any larger fields than the UserInfo
+   * returned by the getTokenInfo() method.
+   * 
+   * @param username userId for which to get user information
+   * @return user information returned by the /user endpoint
+   * @throws Exception if something goes wrong while fetching user info
+   */
+  public UserInfo getProfileInfo(String userId) throws Exception;
+
+  /**
+   * Returns the user profile (returned by the /user endpoint) for a guest user.  The
+   * default method stubs empty values for all methods except getUserId() which returns
+   * the passed value, and getPreferredUsername() which returns "guest-" + getUserId()
+   *
+   * @param userId user ID of the guest user
+   * @return user profile for a guest user with the passed ID
+   */
+  public default UserInfo getGuestProfileInfo(String userId) {
+    return new UserInfo() {
+
+      @Override
+      public String getUserId() {
+        return userId;
+      }
+
+      @Override
+      public String getEmail() {
+        return null;
+      }
+
+      @Override
+      public boolean isEmailVerified() {
+        return false;
+      }
+
+      @Override
+      public String getPreferredUsername() {
+        return "guest-" + getUserId();
+      }
+
+      @Override
+      public Map<String, JsonValue> getSupplementalFields() {
+        return Collections.emptyMap();
+      }
+    };
+  }
 
   /**
    * Overwrites user's password in the system.  The passed strings are not
-   * checked for SQL-injection or other hacks.
+   * checked for SQL-injection or other hacks prior to calling this method.
    * 
    * @param username username of user whose password should be overwritten
    * @param newPassword new password for the user
@@ -163,7 +221,7 @@ public interface Authenticator {
   /**
    * @return a new guest ID
    */
-  public default JsonValue getNextGuestId() {
+  public default String getNextGuestId() {
     throw new UnsupportedOperationException("This authenticator does not support guests.");
   }
 

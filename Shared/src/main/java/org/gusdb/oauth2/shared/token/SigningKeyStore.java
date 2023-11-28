@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.service.token;
+package org.gusdb.oauth2.shared.token;
 
 import java.security.KeyPair;
 import java.util.HashMap;

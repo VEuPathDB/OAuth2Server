@@ -19,6 +19,16 @@
       <artifactId>oauth2-shared</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+    </dependency>
+
   </dependencies>
 
 </project>

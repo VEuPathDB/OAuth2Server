@@ -3,17 +3,19 @@ package org.gusdb.oauth2.wdk;
 import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
 
 import java.net.URI;
-import java.util.Arrays;
+import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 
 import org.apache.log4j.Logger;
-import org.gusdb.fgputil.MapBuilder;
 import org.gusdb.fgputil.accountdb.AccountManager;
 import org.gusdb.fgputil.accountdb.UserProfile;
 import org.gusdb.fgputil.accountdb.UserPropertyName;
@@ -41,14 +43,14 @@ public class AccountDbAuthenticator implements Authenticator {
     schema
   }
 
-  private static final List<UserPropertyName> USER_PROPERTIES = Arrays.asList(new UserPropertyName[] {
+  private static final List<UserPropertyName> USER_PROPERTY_DEFS = List.of(
       new UserPropertyName("username", "username", false),
       new UserPropertyName("firstName", "first_name", true),
       new UserPropertyName("middleName", "middle_name", false),
       new UserPropertyName("lastName", "last_name", true),
       new UserPropertyName("organization", "organization", true),
       new UserPropertyName("interests", "interests", false)
-  });
+  );
 
   private DatabaseInstance _accountDb;
   private String _schema;
@@ -62,24 +64,35 @@ public class AccountDbAuthenticator implements Authenticator {
         configJson.getString(JsonKey.password.name()),
         (short)configJson.getInt(JsonKey.poolSize.name()));
     String schema = configJson.getString(JsonKey.schema.name());
-    if (!schema.isEmpty() && !schema.endsWith(".")) schema += ".";
     initialize(dbConfig, schema);
   }
 
   protected void initialize(ConnectionPoolConfig dbConfig, String schema) {
     LOG.info("Initializing database using: " + dbConfig);
     _accountDb = new DatabaseInstance(dbConfig, true);
+    if (!schema.isEmpty() && !schema.endsWith(".")) schema += ".";
     _schema = schema;
   }
 
   // WDK uses email and password
   @Override
-  public boolean isCredentialsValid(String username, String password) throws Exception {
-    return new AccountManager(_accountDb, _schema, USER_PROPERTIES).getUserProfile(username, password) != null;
+  public Optional<String> isCredentialsValid(String username, String password) throws Exception {
+    return Optional.ofNullable(
+        new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(username, password))
+      .map(profile -> profile.getUserId().toString());
   }
 
   @Override
-  public UserInfo getUserInfo(final String username) throws Exception {
+  public UserInfo getTokenInfo(final String username) throws Exception {
+    return getUserInfo(username, false);
+  }
+
+  @Override
+  public UserInfo getProfileInfo(final String username) throws Exception {
+    return getUserInfo(username, true);
+  }
+
+  private UserInfo getUserInfo(final String username, final boolean forProfile) {
     final UserProfile profile = getUserProfile(username);
     if (profile == null) {
       throw new IllegalStateException("User could not be found even though already authenticated.");
@@ -105,28 +118,30 @@ public class AccountDbAuthenticator implements Authenticator {
       }
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
-        JsonObject json = Json.createObjectBuilder()
+        JsonObjectBuilder builder = Json.createObjectBuilder()
             .add("name", getDisplayName(profile.getProperties()))
+            .add("organization", profile.getProperties().get("organization"));
+        if (forProfile) builder
             .add("firstName", profile.getProperties().get("firstName"))
             .add("middleName", profile.getProperties().get("middleName"))
             .add("lastName", profile.getProperties().get("lastName"))
-            .add("organization", profile.getProperties().get("organization"))
-            .build();
+            .add("username", profile.getProperties().get("username"))
+            .add("interests", profile.getProperties().get("interests"));
+        JsonObject json = builder.build();
         // convert JSON object to map of String -> JsonValue
-        return new MapBuilder<String, JsonValue>()
-            .put("name", json.getJsonString("name"))
-            .put("firstName", json.getJsonString("firstName"))
-            .put("middleName", json.getJsonString("middleName"))
-            .put("lastName", json.getJsonString("lastName"))
-            .put("organization", json.getJsonString("organization"))
-            .toMap();
+        Map<String,JsonValue> map = new HashMap<>();
+        for (String key : json.keySet()) {
+          // we know they are all strings 
+          map.put(key, json.getJsonString(key));
+        }
+        return map;
       }
     };
   }
 
   // protected so TestAuthenticator can override
-  protected UserProfile getUserProfile(String username) {
-    return new AccountManager(_accountDb, _schema, USER_PROPERTIES).getUserProfileByUsernameOrEmail(username);
+  protected UserProfile getUserProfile(String userId) {
+    return new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(Long.valueOf(userId));
   }
 
   private static String getDisplayName(Map<String,String> userProperties) {
@@ -145,6 +160,24 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
+  public boolean supportsGuests() {
+    return true;
+  }
+
+  /**
+   * @return a new guest ID
+   */
+  @Override
+  public String getNextGuestId() {
+    try {
+      return new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).createGuestAccount("guest").getUserId().toString();
+    }
+    catch (SQLException e) {
+      throw new RuntimeException("Unable to generate next guest ID", e);
+    }
+  }
+
+    @Override
   public void close() {
     if (_accountDb != null) {
       try {
@@ -159,14 +192,14 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public void overwritePassword(String username, String newPassword) throws Exception {
     UserProfile profile = getUserProfile(username);
-    new AccountManager(_accountDb, _schema, USER_PROPERTIES).updatePassword(profile.getUserId(), newPassword);
+    new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).updatePassword(profile.getUserId(), newPassword);
   }
 
   @Override
   public JsonObject executeQuery(JsonObject querySpec)
       throws UnsupportedOperationException, JsonParsingException {
     long requestedUserId = Long.valueOf(querySpec.getInt("userId"));
-    UserProfile user = new AccountManager(_accountDb, _schema, USER_PROPERTIES)
+    UserProfile user = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS)
         .getUserProfile(requestedUserId);
     if (user == null) {
       return Json.createObjectBuilder()
@@ -190,7 +223,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   private String getUserId(String username) {
     try {
-      return getUserInfo(username).getUserId();
+      return getTokenInfo(username).getUserId();
     }
     catch (Exception e) {
       LOG.error("Unable to look up user info for user " + username, e);

@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.service.token;
+package org.gusdb.oauth2.shared.token;
 
 public class CryptoException extends Exception {
 

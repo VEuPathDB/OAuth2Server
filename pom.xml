@@ -15,9 +15,10 @@
     <version>2.17-SNAPSHOT</version>
   </parent>
 
+  <!-- Manage versions of libs specific to OAuth/tokens-->
   <properties>
     <jjwt.version>0.11.5</jjwt.version>
-    <oltu.version>1.0.0</oltu.version>
+    <oltu.version>1.0.2</oltu.version>
   </properties>
 
   <modules>
@@ -34,6 +35,11 @@
       <dependency>
         <groupId>org.gusdb</groupId>
         <artifactId>oauth2-shared</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.gusdb</groupId>
+        <artifactId>oauth2-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

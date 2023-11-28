@@ -1,7 +1,6 @@
 package org.gusdb.oauth2.service.token;
 
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -19,49 +18,37 @@ import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.UserInfo;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
+import org.gusdb.oauth2.shared.token.IdTokenFields;
 
 public class IdTokenFactory {
 
   private static final Logger LOG = LogManager.getLogger(IdTokenFactory.class);
 
-  public static enum IdTokenFields {
-    iss, // issuer of this token
-    sub, // subject (unique user ID)
-    aud, // audience (client ID of consumer)
-    azp, // authorized parth (same as aud in our case)
-    auth_time, // time of authentication (Unix integer seconds)
-    iat, // time of issuance (Unix integer seconds)
-    exp, // time of expiration (Unix integer seconds)
-    nonce, // string value linking original auth request with ID token
-    email, // user's email
-    email_verified, // whether email is verified
-    preferred_username, // human-friendly display name for the user (may or may not be unique/stable)
-    is_guest; // whether the user represented by this token is a guest vs registered user
-
-    public static Set<String> getNames() {
-      Set<String> names = new HashSet<>();
-      for (IdTokenFields val : values()) {
-        names.add(val.name());
-      }
-      return names;
-    }
-  }
-
   public static JsonObject createIdTokenJson(Authenticator authenticator,
       AccessTokenData tokenData, String issuer, int expirationSecs)
           throws OAuthProblemException, OAuthSystemException {
 
-    // get base object (common to ID and guest tokens)
-    JsonObjectBuilder jsonBuilder = getBaseJson(tokenData.authCodeData, issuer, expirationSecs, false);
-
-    // get values from authenticator and use to populate remaining fields
-    UserInfo user = getUserInfo(authenticator, tokenData.authCodeData.getUsername());
+    // get values from authenticator and use to populate fields
+    UserInfo user = getUserInfoForToken(authenticator, tokenData.authCodeData.getUsername());
     String userId = user.getUserId();
     if (userId == null || userId.isEmpty())
       throw OAuthProblemException.error("Authenticator returned null or empty " +
           "user ID for username [" + tokenData.authCodeData.getUsername() + "].");
-    jsonBuilder.add(IdTokenFields.sub.name(), userId);
 
+    // get base object (common to ID and guest tokens, and user profiles)
+    JsonObjectBuilder json = getBaseJson(userId, false);
+    appendOidcFields(json, tokenData.authCodeData, issuer, expirationSecs);
+    appendProfileFields(json, user);
+    return json.build();
+  }
+
+  public static JsonObjectBuilder getBaseJson(String userId, boolean isGuest) {
+    return Json.createObjectBuilder()
+      .add(IdTokenFields.sub.name(), userId)
+      .add(IdTokenFields.is_guest.name(), isGuest);
+  }
+
+  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user) {
     // add user's email if returned by Authenticator
     String email = user.getEmail();
     if (email != null && !email.isEmpty()) {
@@ -88,21 +75,19 @@ public class IdTokenFactory {
         jsonBuilder.add(entry.getKey(), entry.getValue());
       }
     }
-
-    return jsonBuilder.build();
+    return jsonBuilder;
   }
 
-  private static JsonObjectBuilder getBaseJson(IdTokenParams params, String issuer, int expirationSecs, boolean isGuest) {
+  private static JsonObjectBuilder appendOidcFields(JsonObjectBuilder jsonBuilder, IdTokenParams params, String issuer, int expirationSecs) {
     // OpenID Connect claims that we support
     long now = new Date().getTime() / 1000;
-    JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
+    jsonBuilder
       .add(IdTokenFields.iss.name(), issuer)
       .add(IdTokenFields.aud.name(), params.getClientId())
       .add(IdTokenFields.azp.name(), params.getClientId())
       .add(IdTokenFields.auth_time.name(), params.getCreationTime())
       .add(IdTokenFields.iat.name(), now)
-      .add(IdTokenFields.exp.name(), now + expirationSecs)
-      .add(IdTokenFields.is_guest.name(), isGuest);
+      .add(IdTokenFields.exp.name(), now + expirationSecs);
 
     // add nonce if client sent as part of original authentication request
     String nonce = params.getNonce();
@@ -119,18 +104,16 @@ public class IdTokenFactory {
       throw OAuthProblemException.error("This token service does not support guest tokens.");
     }
 
-    // get base object (common to ID and guest tokens)
-    JsonObjectBuilder jsonBuilder = getBaseJson(new IdTokenParams(clientId, null), issuer, expirationSecs, true);
-
-    // add user ID; other claims are optional
-    jsonBuilder.add(IdTokenFields.sub.name(), authenticator.getNextGuestId());
-
-    return jsonBuilder.build();
+    // get base object (common to ID and guest tokens, and user profiles)
+    String guestUserId = authenticator.getNextGuestId();
+    JsonObjectBuilder json = getBaseJson(guestUserId, true);
+    appendOidcFields(json, new IdTokenParams(clientId, null), issuer, expirationSecs);
+    return json.build();
   }
 
-  private static UserInfo getUserInfo(Authenticator authenticator, String username) throws OAuthSystemException {
+  private static UserInfo getUserInfoForToken(Authenticator authenticator, String username) throws OAuthSystemException {
     try {
-      return authenticator.getUserInfo(username);
+      return authenticator.getTokenInfo(username);
     }
     catch (Exception e) {
       LOG.error("Unable to retrieve user info for usernaem '" + username + "'", e);

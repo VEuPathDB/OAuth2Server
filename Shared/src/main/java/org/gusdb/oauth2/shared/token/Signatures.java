@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.service.token;
+package org.gusdb.oauth2.shared.token;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +18,7 @@ import javax.json.JsonWriter;
 import javax.json.stream.JsonGenerator;
 
 import org.apache.logging.log4j.LogManager;
-import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation.ECCoordinateStrings;
+import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation.ECCoordinateStrings;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

@@ -20,8 +20,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
-import org.gusdb.oauth2.service.token.CryptoException;
-import org.gusdb.oauth2.service.token.SigningKeyStore;
+import org.gusdb.oauth2.shared.token.CryptoException;
+import org.gusdb.oauth2.shared.token.SigningKeyStore;
 
 /**
 {
@@ -48,7 +48,10 @@ import org.gusdb.oauth2.service.token.SigningKeyStore;
     {
       "clientId": "apiComponentSite",
       "clientSecret": "12345",
-      "clientDomains": [ "localhost" ]
+      "clientDomains": [ "localhost" ],
+      "allowProfileEdits": true,
+      "allowROPCGrant": true,
+      "allowGuestObtainment": true
     },{
       "clientId: "globusGenomics",
       "clientSecret": "12345",

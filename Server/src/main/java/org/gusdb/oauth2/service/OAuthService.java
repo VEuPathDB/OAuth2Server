@@ -9,10 +9,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.Key;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.json.Json;
@@ -50,13 +52,17 @@ import org.apache.oltu.oauth2.common.message.types.ParameterStyle;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
-import org.gusdb.oauth2.service.token.IdTokenFactory;
-import org.gusdb.oauth2.service.token.Signatures;
-import org.gusdb.oauth2.service.token.Signatures.TokenSigner;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
+import org.gusdb.oauth2.shared.token.IdTokenFields;
+import org.gusdb.oauth2.shared.token.Signatures;
+import org.gusdb.oauth2.shared.token.Signatures.TokenSigner;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 
 @Path("/")
 public class OAuthService {
@@ -68,8 +74,8 @@ public class OAuthService {
   private static final String LOGOUT_PATH = "logout";
   private static final String AUTHORIZATION_PATH = "authorize";
   private static final String TOKEN_PATH = "token";
-  private static final String BEARER_TOKEN_PATH = "bearer_token";
-  private static final String GUEST_TOKEN_PATH = "guest_token";
+  private static final String BEARER_TOKEN_PATH = "bearer-token";
+  private static final String GUEST_TOKEN_PATH = "guest-token";
   private static final String USER_INFO_PATH = "user";
   private static final String CHANGE_PASSWORD_PATH = "changePassword";
   private static final String DISCOVERY_PATH = "discovery";
@@ -118,10 +124,14 @@ public class OAuthService {
         return Response.seeOther(getLoginUri(formId, "", LoginFormStatus.accessdenied)).build();
       }
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-      boolean validCreds = authenticator.isCredentialsValid(username, password);
-      if (validCreds) {
+      Optional<String> validUserId = authenticator.isCredentialsValid(username, password);
+      if (validUserId.isPresent()) {
         LOG.info("Authentication successful.  Setting session username to " + username);
+
+        // add username and userId to session to save a lookup later if /auth endpoint is hit with a known client session
         session.setUsername(username);
+        session.setUserId(validUserId.get());
+
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
         if (originalRequest == null) {
           // formId doesn't exist on this session; give user generic success page
@@ -129,8 +139,7 @@ public class OAuthService {
               config.getLoginSuccessPage())).build();
         }
         authenticator.logSuccessfulLogin(username, originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
-        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest,
-            username, config.getTokenExpirationSecs());
+        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username, validUserId.get(), config.getTokenExpirationSecs());
       }
       else {
         return Response.seeOther(getLoginUri(formId,
@@ -213,7 +222,7 @@ public class OAuthService {
         // user is already logged in; respond with auth code for user
         ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
-            session.getUsername(), config.getTokenExpirationSecs());
+            session.getUsername(), session.getUserId(), config.getTokenExpirationSecs());
       }
       else {
         // no one is logged in; generate form ID and send
@@ -336,14 +345,40 @@ public class OAuthService {
   @Path(USER_INFO_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getUserInfo() throws OAuthSystemException {
-    try {
-      ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
-      OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
-      return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, OAuthServlet.getAuthenticator(_context), config.getIssuer(), config.getTokenExpirationSecs());
+
+    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+    String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+    Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+
+    // Two authentication techniques here (preferring #1)
+    //   1. Use Authentication header to find bearer token and validate to access user information beyond that in the bearer token
+    //   2. (legacy) OAuth2.0 resource request, uses non-bearer, non-OIDC OAuth2 token to access user information
+
+    // option 1
+    if (authHeader != null) {
+      String bearerToken = OAuthClient.getTokenFromAuthHeader(authHeader);
+      Key publicKey = config.getAsyncKeys().getPublic();
+      // verify signature and create claims object
+      Claims claims = Jwts.parserBuilder()
+          .setSigningKey(publicKey)
+          .build()
+          .parseClaimsJws(bearerToken)
+          .getBody();
+      String userId = claims.getSubject();
+      boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
+      return OAuthRequestHandler.handleUserInfoRequest(authenticator, userId, isGuest);
     }
-    catch (OAuthProblemException e) {
-      LOG.error("Problem with user request: ", e);
-      return new OAuthResponseFactory().buildInvalidRequestResponse(e);
+
+    // option 2
+    else {
+      try {
+        OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
+        return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, authenticator, config.getIssuer(), config.getTokenExpirationSecs());
+      }
+      catch (OAuthProblemException e) {
+        LOG.error("Problem with user request: ", e);
+        return new OAuthResponseFactory().buildInvalidRequestResponse(e);
+      }
     }
   }
 
@@ -368,7 +403,7 @@ public class OAuthService {
     Authenticator auth = OAuthServlet.getAuthenticator(_context);
     try {
       LOG.debug("Trying creds: " + username + "/" + password);
-      if (!auth.isCredentialsValid(username, password)) {
+      if (auth.isCredentialsValid(username, password).isEmpty()) {
         // wrong password given for the passed user
         return Response.status(Status.FORBIDDEN).build();
       }
@@ -392,8 +427,11 @@ public class OAuthService {
     JsonArray responseTypes = buildArray("code", "id_token");
     JsonArray grantTypes = buildArray("authorization_code");
     JsonArray subjectTypes = buildArray("public");
-    JsonArray supportedAlgorithms = buildArray("HS512");
-    JsonArray claims = buildArray(IdTokenFactory.IdTokenFields
+    JsonArray supportedAlgorithms = buildArray(
+        Signatures.ASYMMETRIC_KEY_ALGORITHM.getValue(),
+        Signatures.SECRET_KEY_ALGORITHM.getValue()
+    );
+    JsonArray claims = buildArray(IdTokenFields
         .getNames().toArray(new String[0]));
     return Response.ok(
       OAuthRequestHandler.prettyPrintJsonObject(
@@ -401,6 +439,7 @@ public class OAuthService {
           .add("issuer", OAuthServlet.getApplicationConfig(_context).getIssuer())
           .add("authorization_endpoint", baseUrl + AUTHORIZATION_PATH)
           .add("token_endpoint", baseUrl + TOKEN_PATH)
+          .add("bearer_token_endpoint", baseUrl + BEARER_TOKEN_PATH)
           .add("userinfo_endpoint", baseUrl + USER_INFO_PATH)
           .add("jwks_uri", baseUrl + JWKS_PATH)
           .add("response_types_supported", responseTypes)

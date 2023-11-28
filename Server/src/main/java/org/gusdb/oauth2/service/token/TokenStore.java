@@ -63,11 +63,13 @@ public class TokenStore {
 
     private final String _authCode;
     private final String _username;
+    private final String _userId;
 
-    public AuthCodeData(String authCode, String clientId, String username, String nonce) {
+    public AuthCodeData(String authCode, String clientId, String username, String userId, String nonce) {
       super(clientId, nonce);
       _authCode = authCode;
       _username = username;
+      _userId = userId;
     }
 
     @Override
@@ -98,6 +100,10 @@ public class TokenStore {
 
     public String getUsername() {
       return _username;
+    }
+
+    public String getUserId() {
+      return _userId;
     }
   }
 

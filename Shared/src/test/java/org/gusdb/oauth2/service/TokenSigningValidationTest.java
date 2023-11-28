@@ -10,11 +10,11 @@ import java.util.function.Supplier;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.gusdb.oauth2.service.token.CryptoException;
-import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation;
-import org.gusdb.oauth2.service.token.ECPublicKeyRepresentation.ECCoordinateStrings;
-import org.gusdb.oauth2.service.token.Signatures;
-import org.gusdb.oauth2.service.token.SigningKeyStore;
+import org.gusdb.oauth2.shared.token.CryptoException;
+import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation;
+import org.gusdb.oauth2.shared.token.Signatures;
+import org.gusdb.oauth2.shared.token.SigningKeyStore;
+import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation.ECCoordinateStrings;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,6 +22,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.impl.TextCodec;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.SignatureException;
 
 // suppress deprecation warnings; we know the legacy method is deprecated- that's why we're testing the new method :)
 @SuppressWarnings("deprecation")
@@ -55,6 +56,13 @@ public class TokenSigningValidationTest {
     catch (CryptoException e) {
       throw new RuntimeException(e);
     }
+  }).get();
+
+  private static final String BAD_PUBLIC_KEY = ((Supplier<String>)() -> {
+    try {
+      return Base64.getEncoder().encodeToString(new SigningKeyStore(KEY_PAIR_RANDOM_SEED + 1).getAsyncKeys().getPublic().getEncoded());
+    }
+    catch (Exception e) { throw new RuntimeException(e); }
   }).get();
 
   @Test
@@ -109,7 +117,15 @@ public class TokenSigningValidationTest {
 
   @Test
   public void testAsymmetricKeyTokenValidator() throws Exception {
+    testAsymmetricKeyTokenValidator(false);
+  }
 
+  @Test(expected=SignatureException.class)
+  public void testAsymmetricKeyTokenValidatorFail() throws Exception {
+    testAsymmetricKeyTokenValidator(true);
+  }
+
+  public static void testAsymmetricKeyTokenValidator(boolean fail) throws Exception {
     // create a signed token
     String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
@@ -117,8 +133,11 @@ public class TokenSigningValidationTest {
     // encode the public key for distribution
     String encodedKeyStr = new ECPublicKeyRepresentation((ECPublicKey)KEY_STORE.getAsyncKeys().getPublic()).getBase64String();
 
+    // add salt if failure desired
+    if (fail) encodedKeyStr += "af";
+
     // convert the key string to a public key object
-    PublicKey publicKey = new ECPublicKeyRepresentation(encodedKeyStr).getPublicKey();
+    PublicKey publicKey = new ECPublicKeyRepresentation(fail ? BAD_PUBLIC_KEY : encodedKeyStr).getPublicKey();
 
     // verify signature and create claims object
     Claims claims = Jwts.parserBuilder()

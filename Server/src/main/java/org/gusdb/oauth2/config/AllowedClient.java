@@ -19,7 +19,10 @@ public class AllowedClient {
     clientId,
     clientSecret,
     signingKey,
-    clientDomains
+    clientDomains,
+    allowProfileEdits,
+    allowROPCGrant,
+    allowGuestObtainment;
   }
 
   public static AllowedClient createFromJson(JsonObject json) throws InitializationException {
@@ -35,15 +38,21 @@ public class AllowedClient {
       }
     }
     String signingKey = json.getString(JsonKey.signingKey.name());
-    return new AllowedClient(clientId, clientSecret, signingKey, domainList);
+    boolean allowProfileEdits = json.getBoolean(JsonKey.allowProfileEdits.name(), false);
+    boolean allowROPCGrant = json.getBoolean(JsonKey.allowROPCGrant.name(), false);
+    boolean allowGuestObtainment = json.getBoolean(JsonKey.allowGuestObtainment.name(), false);
+    return new AllowedClient(clientId, clientSecret, signingKey, domainList, allowProfileEdits, allowROPCGrant, allowGuestObtainment);
   }
 
-  private String _id;
-  private String _secret;
-  private String _signingKey;
-  private Set<String> _domains;
+  private final String _id;
+  private final String _secret;
+  private final String _signingKey;
+  private final Set<String> _domains;
+  private final boolean _allowProfileEdits;
+  private final boolean _allowROPCGrant;
+  private final boolean _allowGuestObtainment;
 
-  public AllowedClient(String id, String secret, String signingKey, Set<String> domains) throws InitializationException {
+  public AllowedClient(String id, String secret, String signingKey, Set<String> domains, boolean allowProfileEdits, boolean allowROPCGrant, boolean allowGuestObtainment) throws InitializationException {
     _id = id;
     _secret = secret;
     _signingKey = signingKey;
@@ -55,6 +64,9 @@ public class AllowedClient {
         _domains.iterator().next().isEmpty()) {
       throw new InitializationException("clientId and clientSecret must be populated, and  for each allowed client");
     }
+    _allowProfileEdits = allowProfileEdits;
+    _allowROPCGrant = allowROPCGrant;
+    _allowGuestObtainment = allowGuestObtainment;
     LOG.debug("Creating AllowedClient " + id + "/" + secret + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
@@ -62,5 +74,8 @@ public class AllowedClient {
   public String getSecret() { return _secret; }
   public String getSigningKey() { return _signingKey; }
   public Set<String> getDomains() { return _domains; }
+  public boolean allowProfileEdits() { return _allowProfileEdits; }
+  public boolean allowROPCGrant() { return _allowROPCGrant; }
+  public boolean allowGuestObtainment() { return _allowGuestObtainment; }
 
 }
