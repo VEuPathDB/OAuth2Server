@@ -22,7 +22,6 @@
   </properties>
 
   <modules>
-    <module>Shared</module>
     <module>Client</module>
     <module>Server</module>
     <module>EuPathDB</module>
@@ -32,11 +31,6 @@
     <dependencies>
 
       <!-- Internal dependencies -->
-      <dependency>
-        <groupId>org.gusdb</groupId>
-        <artifactId>oauth2-shared</artifactId>
-        <version>${project.version}</version>
-      </dependency>
       <dependency>
         <groupId>org.gusdb</groupId>
         <artifactId>oauth2-client</artifactId>

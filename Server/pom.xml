@@ -16,10 +16,6 @@
 
     <dependency>
       <groupId>org.gusdb</groupId>
-      <artifactId>oauth2-shared</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.gusdb</groupId>
       <artifactId>oauth2-client</artifactId>
     </dependency>
 

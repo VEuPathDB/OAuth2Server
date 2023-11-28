@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>OAuth2 - Sample Client</name>
+  <name>OAuth2 - Client Library and Sample Web Client</name>
   <artifactId>oauth2-client</artifactId>
   <packaging>jar</packaging>
 
@@ -15,18 +15,59 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.gusdb</groupId>
-      <artifactId>oauth2-shared</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
     </dependency>
 
+    <!-- Using org.json for external APIs in anticipation of nixing javax.json internally -->
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
+    </dependency>
+
+      <!-- Utilities to build and sign JWTs -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-orgjson</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Needed for ECDSA algorithm in pre Java-14 environments -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- JSON support -->
+    <dependency>
+      <groupId>javax.json</groupId>
+      <artifactId>javax.json-api</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.json</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>
