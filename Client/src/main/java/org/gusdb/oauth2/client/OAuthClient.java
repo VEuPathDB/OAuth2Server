@@ -124,57 +124,40 @@ public class OAuthClient {
     return body.toString();
   }
 
-  public ValidatedToken getValidatedAuthToken(OAuthConfig oauthConfig, String authCode, String redirectUri) {
+  public ValidatedToken getAuthTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
 
     // get legacy token, signed with HMAC using client secret as the key
     String token = getTokenFromAuthCode(Endpoints.AUTH_TOKEN, oauthConfig, authCode, redirectUri);
-    String key = oauthConfig.getOauthClientSecret();
 
-    // encode the key as a base64 string
-    byte[] unencodedKey = key.getBytes(StandardCharsets.UTF_8);
-    String encodedKeyStr = Base64.getEncoder().encodeToString(unencodedKey);
-
-    // convert the key back to bytes
-    byte[] keyBytes = Base64.getDecoder().decode(encodedKeyStr);
-
-    // verify signature and create claims object
-    Claims claims = Jwts.parserBuilder()
-        .setSigningKey(keyBytes)
-        .build()
-        .parseClaimsJws(token)
-        .getBody();
-
-    validateClaims(claims);
-
-    return newValidatedToken(TokenType.AUTH, token, claims);
+    // validate signature and return parsed claims
+    return getValidatedHmacSignedToken(oauthConfig, token);
   }
 
-  public ValidatedToken getValidatedBearerToken(OAuthConfig oauthConfig, String authCode, String redirectUri) {
+  public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
 
     // get bearer token, signed with ECDSA using public/private key pair
     String token = getTokenFromAuthCode(Endpoints.BEARER_TOKEN, oauthConfig, authCode, redirectUri);
-    String key = getPublicSigningKey(oauthConfig.getOauthUrl());
 
-    // convert the key string to a public key object
-    PublicKey publicKey = new ECPublicKeyRepresentation(key).getPublicKey();
-
-    // verify signature and create claims object
-    Claims claims = Jwts.parserBuilder()
-        .setSigningKey(publicKey)
-        .build()
-        .parseClaimsJws(token)
-        .getBody();
-
-    validateClaims(claims);
-
-    return newValidatedToken(TokenType.BEARER, token, claims);
+    // validate signature and return parsed claims
+    return getValidatedEcdsaSignedToken(oauthConfig, token);
   }
 
-  private void validateClaims(Claims claims) {
-    // TODO: add validation of claims
-    //claims.getIssuer()
-    //claims.getAudience()
-    //claims.getExpiration()
+  public ValidatedToken getAuthTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password) {
+
+    // get legacy token, signed with HMAC using client secret as the key
+    String token = getTokenFromUsernamePassword(Endpoints.AUTH_TOKEN, oauthConfig, username, password);
+
+    // validate signature and return parsed claims
+    return getValidatedHmacSignedToken(oauthConfig, token);
+  }
+
+  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password) {
+
+    // get bearer token, signed with ECDSA using public/private key pair
+    String token = getTokenFromUsernamePassword(Endpoints.BEARER_TOKEN, oauthConfig, username, password);
+
+    // validate signature and return parsed claims
+    return getValidatedEcdsaSignedToken(oauthConfig, token);
   }
 
   private String getTokenFromAuthCode(String path, OAuthConfig oauthConfig, String authCode, String redirectUri) {
@@ -225,6 +208,66 @@ public class OAuthClient {
     }
   }
 
+  private String getTokenFromUsernamePassword(String path, OAuthConfig oauthConfig, String username, String password) {
+    try {
+      String oauthUrl = oauthConfig.getOauthUrl() + path;
+
+      
+    }
+    catch(Exception e) {
+      throw new RuntimeException("Unable to complete OAuth token request to fetch user id", e);
+    }
+  }
+
+  private ValidatedToken getValidatedHmacSignedToken(OAuthConfig oauthConfig, String token) {
+
+    String key = oauthConfig.getOauthClientSecret();
+
+    // encode the key as a base64 string
+    byte[] unencodedKey = key.getBytes(StandardCharsets.UTF_8);
+    String encodedKeyStr = Base64.getEncoder().encodeToString(unencodedKey);
+
+    // convert the key back to bytes
+    byte[] keyBytes = Base64.getDecoder().decode(encodedKeyStr);
+
+    // verify signature and create claims object
+    Claims claims = Jwts.parserBuilder()
+        .setSigningKey(keyBytes)
+        .build()
+        .parseClaimsJws(token)
+        .getBody();
+
+    validateClaims(claims);
+
+    return newValidatedToken(TokenType.AUTH, token, claims);
+  }
+
+  private ValidatedToken getValidatedEcdsaSignedToken(OAuthConfig oauthConfig, String token) {
+
+    String key = getPublicSigningKey(oauthConfig.getOauthUrl());
+
+    // convert the key string to a public key object
+    PublicKey publicKey = new ECPublicKeyRepresentation(key).getPublicKey();
+
+    // verify signature and create claims object
+    Claims claims = Jwts.parserBuilder()
+        .setSigningKey(publicKey)
+        .build()
+        .parseClaimsJws(token)
+        .getBody();
+
+    validateClaims(claims);
+
+    return newValidatedToken(TokenType.BEARER, token, claims);
+  }
+
+  private void validateClaims(Claims claims) {
+    // TODO: add validation of claims
+    //claims.getIssuer()
+    //claims.getAudience()
+    //claims.getExpiration()
+  }
+
   private SSLContext createSslContext() throws NoSuchAlgorithmException, KeyManagementException {
     SSLContext sslContext = SSLContext.getInstance("SSL");
     sslContext.init(null, new TrustManager[]{ _trustManager }, null);
@@ -238,16 +281,6 @@ public class OAuthClient {
          .append("[ ").append(entry.getValue().stream().collect(Collectors.joining(", "))).append(" ]").append(NL);
     }
     return str.append("}").append(NL).toString();
-  }
-
-  public ValidatedToken getValidatedAuthToken(OAuthConfig _config, String email, String password, String redirectUrl) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  public ValidatedToken getValidatedBearerToken(OAuthConfig _config, String email, String password, String redirectUrl) {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   private static String getAuthorizationHeaderValue(ValidatedToken token) {

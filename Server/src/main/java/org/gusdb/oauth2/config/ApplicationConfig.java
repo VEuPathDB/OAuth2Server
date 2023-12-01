@@ -49,7 +49,7 @@ import org.gusdb.oauth2.shared.token.SigningKeyStore;
       "clientId": "apiComponentSite",
       "clientSecret": "12345",
       "clientDomains": [ "localhost" ],
-      "allowProfileEdits": true,
+      "allowUserManagement": true,
       "allowROPCGrant": true,
       "allowGuestObtainment": true
     },{

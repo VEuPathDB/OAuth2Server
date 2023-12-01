@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -78,11 +79,14 @@ public class OAuthRequestHandler {
   }
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
-      Authenticator authenticator, ApplicationConfig config, TokenSigner tokenSigner) throws OAuthSystemException {
+      ClientValidator clientValidator, Authenticator authenticator,
+      ApplicationConfig config, TokenSigner tokenSigner) throws OAuthSystemException {
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
+      OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
       // do checking for different grant types
       GrantType grantType = getGrantType(oauthRequest);
+      String authCode;
       switch (grantType) {
         case AUTHORIZATION_CODE:
           if (!TokenStore.isValidAuthCode(oauthRequest.getCode(), oauthRequest.getClientId())) {
@@ -90,10 +94,27 @@ public class OAuthRequestHandler {
                 oauthRequest.getCode() + " for client " + oauthRequest.getClientId());
             return responses.buildBadAuthCodeResponse();
           }
+          authCode = oauthRequest.getCode();
           break;
         case PASSWORD:
-          // don't currently support password grant
-          return responses.buildInvalidGrantTypeResponse();
+          // for ROPC requests, client must be given special permission
+          if (!clientValidator.isValidROPCGrantClient(oauthRequest.getClientId(), oauthRequest.getClientSecret())) {
+            return new OAuthResponseFactory().buildInvalidClientResponse();
+          }
+          try {
+            Optional<String> userId = authenticator.isCredentialsValid(oauthRequest.getUsername(), oauthRequest.getPassword());
+            if (userId.isEmpty()) {
+              return new OAuthResponseFactory().buildInvalidUserPassResponse();
+            }
+
+            // valid credentials; stub an auth code to store the generated token
+            authCode = oauthIssuerImpl.authorizationCode();
+            TokenStore.addAuthCode(new AuthCodeData(authCode, oauthRequest.getClientId(), oauthRequest.getUsername(), userId.get(), null));
+          }
+          catch (Exception e) {
+            return new OAuthResponseFactory().buildServerErrorResponse();
+          }
+          break;
         case REFRESH_TOKEN:
           // refresh token is not supported in this implementation
           return responses.buildInvalidGrantTypeResponse();
@@ -101,9 +122,8 @@ public class OAuthRequestHandler {
           return responses.buildInvalidGrantTypeResponse();
       }
 
-      OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
       final String accessToken = oauthIssuerImpl.accessToken();
-      AccessTokenData tokenData = TokenStore.addAccessToken(accessToken, oauthRequest.getCode());
+      AccessTokenData tokenData = TokenStore.addAccessToken(accessToken, authCode);
 
       int expirationSecs = config.getTokenExpirationSecs();
 

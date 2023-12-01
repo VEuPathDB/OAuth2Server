@@ -287,11 +287,14 @@ public class OAuthService {
         System.lineSeparator() + paramsToString(request));
       OAuthTokenRequest oauthRequest = new OAuthTokenRequest(request);
       ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+
+      // client needs to be valid for all request types
       if (!clientValidator.isValidTokenClient(oauthRequest)) {
         return new OAuthResponseFactory().buildInvalidClientResponse();
       }
+
       ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
-      return OAuthRequestHandler.handleTokenRequest(oauthRequest,
+      return OAuthRequestHandler.handleTokenRequest(oauthRequest, clientValidator,
           OAuthServlet.getAuthenticator(_context), config, signingStrategy);
     }
     catch (OAuthProblemException e) {

@@ -43,7 +43,7 @@ public class ClientValidator {
   }
 
   public boolean isValidProfileEditClient(String clientId, String clientSecret) {
-    return isClientAllowed(clientId, clientSecret, cli -> cli.allowProfileEdits());
+    return isClientAllowed(clientId, clientSecret, cli -> cli.allowUserManagement());
   }
 
   public boolean isValidROPCGrantClient(String clientId, String clientSecret) {
