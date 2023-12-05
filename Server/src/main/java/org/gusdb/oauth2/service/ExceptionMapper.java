@@ -30,10 +30,14 @@ public class ExceptionMapper implements javax.ws.rs.ext.ExceptionMapper<Exceptio
     }
 
     catch (WebApplicationException eApp) {
-      return eApp.getResponse();
+      // use the appropriate status code and return the message of the exception as the response body
+      return Response
+          .status(eApp.getResponse().getStatus())
+          .entity(eApp.getMessage()).build();
     }
 
     catch (Exception other) {
+      LOG.error("Error during request", other);
       return Response.serverError()
           .type(MediaType.TEXT_PLAIN)
           .entity("Internal Error")

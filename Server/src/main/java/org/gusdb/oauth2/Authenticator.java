@@ -1,5 +1,6 @@
 package org.gusdb.oauth2;
 
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -7,6 +8,8 @@ import java.util.Optional;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
+
+import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 /**
  * Provides access to a custom user store to authenticate users and provide
@@ -17,6 +20,12 @@ import javax.json.stream.JsonParsingException;
  * @author rdoherty
  */
 public interface Authenticator {
+
+  public static class RequestingUser extends AbstractMap.SimpleImmutableEntry<String, Boolean> {
+    public RequestingUser(String userId, boolean isGuest) { super(userId, isGuest); }
+    public String getUserId() { return getKey(); }
+    public boolean isGuest() { return getValue(); }
+  }
 
   /**
    * Provides methods for standard user information plus supplemental fields
@@ -224,5 +233,27 @@ public interface Authenticator {
   public default String getNextGuestId() {
     throw new UnsupportedOperationException("This authenticator does not support guests.");
   }
+
+  /**
+   * Creates a new account from the given request and returns a UserInfo object representing it
+   *
+   * @param userProps properties from which to create new account
+   * @param initialPassword initial password to associate with the account
+   * @return object representing the new user
+   * @throws IllegalArgumentException if input user props are invalid
+   * @throws RuntimeException if unable to complete the operation
+   */
+  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws IllegalArgumentException;
+
+  /**
+   * Modifies the user account for passed userId using the passed user props
+   *
+   * @param user user to modify
+   * @param userProps 
+   * @return object representing the modified user
+   * @throws IllegalArgumentException if input user props are invalid
+   * @throws RuntimeException if unable to complete the operation
+   */
+  public UserInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException;
 
 }

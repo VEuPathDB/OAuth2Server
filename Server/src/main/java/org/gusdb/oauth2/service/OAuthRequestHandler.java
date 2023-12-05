@@ -192,14 +192,23 @@ public class OAuthRequestHandler {
 
   public static Response handleUserInfoRequest(Authenticator authenticator, String userId, boolean isGuest) {
     try {
-      UserInfo user = isGuest ? authenticator.getGuestProfileInfo(userId) : authenticator.getProfileInfo(userId);
-      JsonObjectBuilder json = IdTokenFactory.getBaseJson(userId, isGuest);
-      IdTokenFactory.appendProfileFields(json, user);
-      return Response.status(Response.Status.OK).entity(json.build().toString()).build();
+      UserInfo user = isGuest
+          ? authenticator.getGuestProfileInfo(userId)
+          : authenticator.getProfileInfo(userId);
+      return Response
+          .status(Response.Status.OK)
+          .entity(getUserInfoResponseString(user, isGuest))
+          .build();
     }
     catch (Exception e) {
       throw new RuntimeException("Unable to look up user profile information for user ID " + userId, e);
     }
+  }
+
+  public static String getUserInfoResponseString(UserInfo user, boolean isGuest) {
+    JsonObjectBuilder json = IdTokenFactory.getBaseJson(user.getUserId(), isGuest);
+    IdTokenFactory.appendProfileFields(json, user);
+    return json.build().toString();
   }
 
   public static String prettyPrintJsonObject(String json) {

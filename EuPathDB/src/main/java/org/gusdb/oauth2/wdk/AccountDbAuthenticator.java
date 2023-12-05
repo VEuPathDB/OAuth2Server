@@ -23,8 +23,10 @@ import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
+import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
+import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 public class AccountDbAuthenticator implements Authenticator {
 
@@ -97,6 +99,10 @@ public class AccountDbAuthenticator implements Authenticator {
     if (profile == null) {
       throw new IllegalStateException("User could not be found even though already authenticated.");
     }
+    return createUserInfoObject(profile, true, forProfile);
+  }
+
+  private UserInfo createUserInfoObject(UserProfile profile, boolean isEmailVerified, boolean forProfile) {
     return new UserInfo() {
       @Override
       public String getUserId() {
@@ -105,11 +111,11 @@ public class AccountDbAuthenticator implements Authenticator {
       @Override
       public String getEmail() {
         // username is email address in Account DB
-        return username;
+        return profile.getEmail();
       }
       @Override
       public boolean isEmailVerified() {
-        return true;
+        return isEmailVerified;
       }
       @Override
       public String getPreferredUsername() {
@@ -240,4 +246,68 @@ public class AccountDbAuthenticator implements Authenticator {
       return "unknown";
     }
   }
+
+  @Override
+  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) {
+    AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    validateUserProps(accountMgr, userProps);
+    UserProfile newUser = Functions.mapException(
+        () -> accountMgr.createAccount(userProps.getEmail(), initialPassword, userProps),
+        e -> new RuntimeException(e)); // all exceptions at this point are 500s
+    return createUserInfoObject(newUser, false, true);
+  }
+
+  private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps) {
+
+    // check email for uniqueness and format
+    userProps.setEmail(validateAndFormatEmail(userProps.getEmail(), accountMgr));
+
+    // if user supplied a username, make sure it is unique
+    if (userProps.containsKey(AccountManager.USERNAME_PROPERTY_KEY)) {
+      String username = userProps.get(AccountManager.USERNAME_PROPERTY_KEY);
+      // check whether the username exists in the database already; if so, the operation fails
+      if (accountMgr.getUserProfileByUsername(username) != null) {
+        throw new IllegalArgumentException("The username '" + username + "' is already in use. " + "Please choose another one.");
+      }
+    }
+
+    // make sure required props are present; trimming of unsupported keys is done in AccountManager
+    // TODO: move this check into AccountManager
+    for (UserPropertyName prop : USER_PROPERTY_DEFS) {
+      if (prop.isRequired() && (!userProps.containsKey(prop.getName()) || userProps.get(prop.getName()).isBlank())) {
+        throw new IllegalArgumentException("User property '" + prop.getName() + "' cannot be empty.");
+      }
+    }
+  }
+
+  private static String validateAndFormatEmail(String email, AccountManager accountMgr) {
+    // trim and validate passed email address and extract stable name
+    if (email == null)
+      throw new IllegalArgumentException("The user's email cannot be empty.");
+    // format the info
+    email = AccountManager.trimAndLowercase(email);
+    if (email.isEmpty())
+      throw new IllegalArgumentException("The user's email cannot be empty.");
+    int atSignIndex = email.indexOf("@");
+    if (atSignIndex < 1) // must be present and not the first char
+      throw new IllegalArgumentException("The user's email address is invalid.");
+    // check whether the user exist in the database already; if email exists, the operation fails
+    if (accountMgr.getUserProfileByEmail(email) != null)
+      throw new IllegalArgumentException("The email '" + email + "' has already been registered. " + "Please choose another.");
+    return email;
+  }
+
+  @Override
+  public UserInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) {
+    AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    validateUserProps(accountMgr, userProps);
+    long userId = Long.valueOf(userIdStr);
+    Functions.mapException(
+        () -> accountMgr.saveUserProfile(userId, userProps.getEmail(), userProps),
+        e -> new RuntimeException(e)); // all exceptions at this point are 500s
+    // after saving, read object back out of DB
+    UserProfile user = accountMgr.getUserProfile(userId);
+    return createUserInfoObject(user, true, true);
+  }
+
 }

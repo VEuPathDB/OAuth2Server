@@ -10,7 +10,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -19,11 +23,13 @@ import javax.net.ssl.TrustManager;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +46,6 @@ import io.jsonwebtoken.Jwts;
 public class OAuthClient {
 
   private static final Logger LOG = LogManager.getLogger(OAuthClient.class);
-
   private static final String NL = System.lineSeparator();
 
   public enum TokenType {
@@ -48,25 +53,33 @@ public class OAuthClient {
     BEARER;
   }
 
-  public static TrustManager getTrustManager(KeyStoreConfig config) {
-    String keyStoreFile = config.getKeyStoreFile();
-    return (keyStoreFile.isEmpty() ? new KeyStoreTrustManager() :
-        new KeyStoreTrustManager(Paths.get(keyStoreFile), config.getKeyStorePassPhrase()));
-  }
-
   public interface ValidatedToken {
+    public static ValidatedToken build(TokenType type, String tokenValue, Claims claims) {
+      return new ValidatedToken() {
+        @Override public TokenType getTokenType()  { return type;       }
+        @Override public String getTokenValue()    { return tokenValue; }
+        @Override public Claims getTokenContents() { return claims;     }
+      };
+    }
     TokenType getTokenType();
     String getTokenValue();
     Claims getTokenContents();
   }
 
-  // private "constructor" of the interface above
-  private static ValidatedToken newValidatedToken(TokenType type, String tokenValue, Claims claims) {
-    return new ValidatedToken() {
-      @Override public TokenType getTokenType()  { return type;       }
-      @Override public String getTokenValue()    { return tokenValue; }
-      @Override public Claims getTokenContents() { return claims;     }
-    };
+  public static String getTokenFromAuthHeader(String authHeader) {
+    Objects.requireNonNull(authHeader);
+    String prefix = "Bearer ";
+    authHeader = authHeader.trim();
+    if (!authHeader.startsWith(prefix)) {
+      throw new NotAuthorizedException("Authentication header must send token of type '" + prefix.trim() + "'");
+    }
+    return authHeader.substring(0, prefix.length());
+  }
+
+  public static TrustManager getTrustManager(KeyStoreConfig config) {
+    String keyStoreFile = config.getKeyStoreFile();
+    return (keyStoreFile.isEmpty() ? new KeyStoreTrustManager() :
+        new KeyStoreTrustManager(Paths.get(keyStoreFile), config.getKeyStorePassPhrase()));
   }
 
   // manages SSL certs needed to connect to OAuth server (SSL required)
@@ -78,25 +91,24 @@ public class OAuthClient {
 
   private String getPublicSigningKey(String oauthBaseUrl) {
     String jwksEndpoint = oauthBaseUrl + Endpoints.JWKS;
-    try {
 
-      // get JWKS response from OAuth server
-      Response response = ClientBuilder.newBuilder()
+    // get JWKS response from OAuth server
+    try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
           .sslContext(createSslContext())
           .build()
           .target(jwksEndpoint)
           .request(MediaType.APPLICATION_JSON)
-          .get();
+          .get()) {
 
       // check for successful processing
       if (response.getStatus() != 200) {
-        String responseBody = !response.hasEntity() ? "<empty>" : readResponseBody((InputStream)response.getEntity());
+        String responseBody = !response.hasEntity() ? "<empty>" : readResponseBody(response);
         throw new RuntimeException("Failure to get JWKS information.  GET " + jwksEndpoint + " returned " + response.getStatus() + " with body: " + responseBody);
       }
 
       // parse response and find elliptic curve public key
-      JSONObject jwksJson = new JSONObject(readResponseBody((InputStream)response.getEntity()));
+      JSONObject jwksJson = new JSONObject(readResponseBody(response));
       return findECPublicKeyValue(jwksJson);
 
     }
@@ -118,16 +130,24 @@ public class OAuthClient {
     throw new RuntimeException("Unable to find EC key information in JWKS response: " + jwksJson.toString(2));
   }
 
-  private String readResponseBody(InputStream entity) throws IOException {
+  private String readResponseBody(Response response) throws IOException {
+    InputStream entity = (InputStream)response.getEntity();
     ByteArrayOutputStream body = new ByteArrayOutputStream();
     entity.transferTo(body);
-    return body.toString();
+    return body.toString(StandardCharsets.UTF_8);
+  }
+
+  public Consumer<MultivaluedMap<String, String>> getAuthCodeFormModifier(String authCode) {
+    return formData -> {
+      formData.add("grant_type", "authorization_code");
+      formData.add("code", authCode);
+    };
   }
 
   public ValidatedToken getAuthTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
 
     // get legacy token, signed with HMAC using client secret as the key
-    String token = getTokenFromAuthCode(Endpoints.AUTH_TOKEN, oauthConfig, authCode, redirectUri);
+    String token = getToken(Endpoints.AUTH_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
     return getValidatedHmacSignedToken(oauthConfig, token);
@@ -136,62 +156,66 @@ public class OAuthClient {
   public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
 
     // get bearer token, signed with ECDSA using public/private key pair
-    String token = getTokenFromAuthCode(Endpoints.BEARER_TOKEN, oauthConfig, authCode, redirectUri);
+    String token = getToken(Endpoints.BEARER_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
     return getValidatedEcdsaSignedToken(oauthConfig, token);
   }
 
-  public ValidatedToken getAuthTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password) {
+  public Consumer<MultivaluedMap<String, String>> getUserPassFormModifier(String username, String password) {
+    return formData -> {
+      formData.add("grant_type", "password");
+      formData.add("username", username);
+      formData.add("password", password);
+    };
+  }
+
+  public ValidatedToken getAuthTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
 
     // get legacy token, signed with HMAC using client secret as the key
-    String token = getTokenFromUsernamePassword(Endpoints.AUTH_TOKEN, oauthConfig, username, password);
+    String token = getToken(Endpoints.AUTH_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
     return getValidatedHmacSignedToken(oauthConfig, token);
   }
 
-  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password) {
+  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
 
     // get bearer token, signed with ECDSA using public/private key pair
-    String token = getTokenFromUsernamePassword(Endpoints.BEARER_TOKEN, oauthConfig, username, password);
+    String token = getToken(Endpoints.BEARER_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
     return getValidatedEcdsaSignedToken(oauthConfig, token);
   }
 
-  private String getTokenFromAuthCode(String path, OAuthConfig oauthConfig, String authCode, String redirectUri) {
-    try {
-      String oauthUrl = oauthConfig.getOauthUrl() + path;
+  private String getToken(String path, Consumer<MultivaluedMap<String, String>> formModifier, OAuthConfig oauthConfig, String redirectUri) {
 
-      // build form parameters for token request
-      MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
-      formData.add("grant_type", "authorization_code");
-      formData.add("code", authCode);
-      formData.add("redirect_uri", redirectUri);
-      formData.add("client_id", oauthConfig.getOauthClientId());
-      formData.add("client_secret", oauthConfig.getOauthClientSecret());
+    String oauthUrl = oauthConfig.getOauthUrl() + path;
 
-      LOG.info("Building token request with the following URL: " + oauthUrl +
-          " and params: " + dumpMultiMap(formData));
+    // build form parameters for token request
+    MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
+    formData.add("redirect_uri", redirectUri);
+    formData.add("client_id", oauthConfig.getOauthClientId());
+    formData.add("client_secret", oauthConfig.getOauthClientSecret());
 
-      // build request and get token response
-      Response response = ClientBuilder.newBuilder()
+    // add custom form params for this grant type
+    formModifier.accept(formData);
+
+    LOG.info("Building token request with the following URL: " + oauthUrl +
+        " and params: " + dumpMultiMap(formData));
+
+    // build request and get token response
+    try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
           .sslContext(createSslContext())
           .build()
           .target(oauthUrl)
           .request(MediaType.APPLICATION_JSON)
-          .post(Entity.form(formData));
+          .post(Entity.form(formData))) {
   
       if (response.getStatus() == 200) {
         // Success!  Read result into buffer and convert to JSON
-        InputStream resultStream = (InputStream)response.getEntity();
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        resultStream.transferTo(buffer);
-
-        
-        JSONObject json = new JSONObject(new String(buffer.toByteArray()));
+        JSONObject json = new JSONObject(readResponseBody(response));
         LOG.debug("Response received from OAuth server for token request: " + json.toString(2));
 
         // get id_token from object and decode to user ID
@@ -202,17 +226,6 @@ public class OAuthClient {
         throw new RuntimeException("OAuth2 token request failed with status " +
             response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase() + NL + response.getEntity());
       }
-    }
-    catch(Exception e) {
-      throw new RuntimeException("Unable to complete OAuth token request to fetch user id", e);
-    }
-  }
-
-  private String getTokenFromUsernamePassword(String path, OAuthConfig oauthConfig, String username, String password) {
-    try {
-      String oauthUrl = oauthConfig.getOauthUrl() + path;
-
-      
     }
     catch(Exception e) {
       throw new RuntimeException("Unable to complete OAuth token request to fetch user id", e);
@@ -239,7 +252,7 @@ public class OAuthClient {
 
     validateClaims(claims);
 
-    return newValidatedToken(TokenType.AUTH, token, claims);
+    return ValidatedToken.build(TokenType.AUTH, token, claims);
   }
 
   private ValidatedToken getValidatedEcdsaSignedToken(OAuthConfig oauthConfig, String token) {
@@ -258,7 +271,7 @@ public class OAuthClient {
 
     validateClaims(claims);
 
-    return newValidatedToken(TokenType.BEARER, token, claims);
+    return ValidatedToken.build(TokenType.BEARER, token, claims);
   }
 
   private void validateClaims(Claims claims) {
@@ -277,8 +290,10 @@ public class OAuthClient {
   private static String dumpMultiMap(MultivaluedMap<String, String> formData) {
     StringBuilder str = new StringBuilder("{").append(NL);
     for (Entry<String,List<String>> entry : formData.entrySet()) {
+      String value = entry.getKey().equals("password") ? "<hidden>" :
+        entry.getValue().stream().collect(Collectors.joining(", "));
       str.append("  ").append(entry.getKey()).append(": ")
-         .append("[ ").append(entry.getValue().stream().collect(Collectors.joining(", "))).append(" ]").append(NL);
+         .append("[ ").append(value).append(" ]").append(NL);
     }
     return str.append("}").append(NL).toString();
   }
@@ -290,40 +305,97 @@ public class OAuthClient {
     return "Bearer " + token.getTokenValue();
   }
 
-  public static String getTokenFromAuthHeader(String authHeader) {
-    Objects.requireNonNull(authHeader);
-    String prefix = "Bearer ";
-    authHeader = authHeader.trim();
-    if (!authHeader.startsWith(prefix)) {
-      throw new NotAuthorizedException("Authentication header must send token of type '" + prefix.trim() + "'");
-    }
-    return authHeader.substring(0, prefix.length());
-  }
-
   public JSONObject getUserData(OAuthConfig oauthConfig, ValidatedToken token) {
-    try {
-      String userEndpoint = oauthConfig.getOauthUrl() + Endpoints.USER_INFO;
-
-      // build request and get token response
-      Response response = ClientBuilder.newBuilder()
+    String userEndpoint = oauthConfig.getOauthUrl() + Endpoints.USER_INFO;
+    // build request and get JSON response
+    try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
           .sslContext(createSslContext())
           .build()
           .target(userEndpoint)
           .request(MediaType.APPLICATION_JSON)
           .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
-          .get();
+          .get()) {
 
-      if (response.getStatus() != 200) {
-        throw new RuntimeException("Unable to retrieve user info from OAuth server.  GET " + userEndpoint + " returned " + response.getStatus());
+      if (response.getStatus() == 200) {
+        return new JSONObject(readResponseBody(response));
       }
 
-      ByteArrayOutputStream body = new ByteArrayOutputStream();
-      ((InputStream)response.getEntity()).transferTo(body);
-      return new JSONObject(body.toString(StandardCharsets.UTF_8));
+      // otherwise request failed
+      throw new RuntimeException("Unable to retrieve user info from OAuth server.  GET " + userEndpoint + " returned " + response.getStatus());
+
     }
     catch (Exception e) {
       throw new RuntimeException("Unable to retrieve user info from OAuth server", e);
     }
   }
+
+  /**
+   * 
+   * @param oauthConfig
+   * @param userProperties
+   * @param initialPassword
+   * @return
+   * @throws IllegalArgumentException if passed user properties or initialPassword do not pass validation
+   */
+  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties, String initialPassword) throws IllegalArgumentException {
+    return performUserOperation(
+        oauthConfig, userProperties,
+        json -> json.put("initialPassword", initialPassword),
+        (builder,entity) -> builder.post(entity)
+    );
+  }
+
+  public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) {
+    return performUserOperation(
+        oauthConfig, userProperties,
+        json -> json, // no mods
+        (builder,entity) -> builder
+          .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
+          .put(entity)
+    );
+  }
+
+  private JSONObject performUserOperation(OAuthConfig oauthConfig, Map<String,String> userProperties,
+      Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) {
+
+    String userEndpoint = oauthConfig.getOauthUrl() + Endpoints.USER_INFO;
+
+    JSONObject initialJson = new JSONObject()
+        .put("clientCredentials", new JSONObject()
+            .put("clientId", oauthConfig.getOauthClientId())
+            .put("clientSecret", oauthConfig.getOauthClientSecret()))
+        .put("user", userProperties);
+
+    String requestJson = jsonModifier.apply(initialJson).toString();
+
+    // build request and get JSON response
+    try (Response response = responseSupplier.apply(
+        ClientBuilder.newBuilder()
+          .withConfig(new ClientConfig())
+          .sslContext(createSslContext())
+          .build()
+          .target(userEndpoint)
+          .request(MediaType.APPLICATION_JSON),
+         Entity.entity(requestJson, MediaType.APPLICATION_JSON))) {
+
+      // return new user's user info object
+      if (response.getStatus() == 200) {
+        return new JSONObject(readResponseBody(response));
+      }
+
+      // check for input validation issues
+      if (response.getStatusInfo().getFamily().equals(Status.Family.CLIENT_ERROR)) {
+        throw new IllegalArgumentException(readResponseBody(response));
+      }
+
+      // else server error
+      throw new RuntimeException("Unable to perform user operation on OAuth server.  GET " + userEndpoint + " returned " + response.getStatus());
+      
+    }
+    catch (Exception e) {
+      throw new RuntimeException("Unable to perform user operation on OAuth server", e);
+    }
+  }
+
 }

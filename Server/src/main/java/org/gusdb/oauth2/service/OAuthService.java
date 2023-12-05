@@ -24,11 +24,13 @@ import javax.json.JsonObject;
 import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -51,6 +53,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.ParameterStyle;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
+import org.gusdb.oauth2.Authenticator.RequestingUser;
 import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.config.ApplicationConfig;
@@ -347,9 +350,8 @@ public class OAuthService {
   @GET
   @Path(USER_INFO_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserInfo() throws OAuthSystemException {
+  public Response getAccount() throws OAuthSystemException {
 
-    ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
     String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
     Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
 
@@ -359,22 +361,14 @@ public class OAuthService {
 
     // option 1
     if (authHeader != null) {
-      String bearerToken = OAuthClient.getTokenFromAuthHeader(authHeader);
-      Key publicKey = config.getAsyncKeys().getPublic();
-      // verify signature and create claims object
-      Claims claims = Jwts.parserBuilder()
-          .setSigningKey(publicKey)
-          .build()
-          .parseClaimsJws(bearerToken)
-          .getBody();
-      String userId = claims.getSubject();
-      boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
-      return OAuthRequestHandler.handleUserInfoRequest(authenticator, userId, isGuest);
+      RequestingUser user = parseRequestingUser(authHeader);
+      return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(), user.isGuest());
     }
 
     // option 2
     else {
       try {
+        ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
         return OAuthRequestHandler.handleUserInfoRequest(oauthRequest, authenticator, config.getIssuer(), config.getTokenExpirationSecs());
       }
@@ -382,6 +376,91 @@ public class OAuthService {
         LOG.error("Problem with user request: ", e);
         return new OAuthResponseFactory().buildInvalidRequestResponse(e);
       }
+    }
+  }
+
+  private RequestingUser parseRequestingUser(String authHeader) {
+    String bearerToken = OAuthClient.getTokenFromAuthHeader(authHeader);
+    Key publicKey = OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic();
+    // verify signature and create claims object
+    Claims claims = Jwts.parserBuilder()
+        .setSigningKey(publicKey)
+        .build()
+        .parseClaimsJws(bearerToken)
+        .getBody();
+    String userId = claims.getSubject();
+    boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
+    return new RequestingUser(userId, isGuest);
+  }
+
+  @POST
+  @Path(USER_INFO_PATH)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response createAccount(String body) {
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      if (!isUserManagementClient(input)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      String initialPassword = input.getString("initialPassword", "").trim();
+      if (initialPassword.isEmpty()) {
+        throw new BadRequestException("Property 'initialPassword' must not be empty.");
+      }
+
+      // valid new user request from an allowed client
+      UserPropertiesRequest userProps = new UserPropertiesRequest(input.getJsonObject("user"));
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(authenticator.createUser(userProps, initialPassword), false)).build();
+    }
+    catch (JsonParsingException | ClassCastException e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
+    }
+    catch (IllegalArgumentException e) {
+      throw new BadRequestException(e.getMessage());
+    }
+  }
+
+  @PUT
+  @Path(USER_INFO_PATH)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response modifyAccount(String body) {
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      if (!isUserManagementClient(input)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      if (authHeader == null) {
+        return Response.status(Status.UNAUTHORIZED).build();
+      }
+      RequestingUser user = parseRequestingUser(authHeader);
+      if (user.isGuest()) {
+        return Response.status(Status.FORBIDDEN).build();
+      }
+
+      // non guest user with proper credentials from an allowed client
+      UserPropertiesRequest userProps = new UserPropertiesRequest(input.getJsonObject("user"));
+      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(authenticator.modifyUser(user.getUserId(), userProps), false)).build();
+      
+    }
+    catch (JsonParsingException | ClassCastException e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
+    }
+  }
+
+  private boolean isUserManagementClient(JsonObject parentObject) {
+    try {
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      JsonObject clientJson = parentObject.getJsonObject("clientCredentials");
+      return clientValidator.isValidProfileEditClient(
+          clientJson.getString("clientId"),
+          clientJson.getString("clientSecret"));
+    }
+    catch (Exception e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
     }
   }
 
