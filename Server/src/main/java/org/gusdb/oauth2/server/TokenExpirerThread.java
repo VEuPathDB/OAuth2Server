@@ -25,11 +25,11 @@ public class TokenExpirerThread implements Runnable {
   }
 
   private int _tokenExpirationSecs;
-  
+
   public TokenExpirerThread(int tokenExpirationSecs) {
     _tokenExpirationSecs = tokenExpirationSecs;
   }
-  
+
   @Override
   public void run() {
     TokenStore.removeExpiredTokens(_tokenExpirationSecs);
