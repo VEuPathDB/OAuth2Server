@@ -206,7 +206,7 @@ public class OAuthRequestHandler {
   }
 
   public static String getUserInfoResponseString(UserInfo user, boolean isGuest) {
-    JsonObjectBuilder json = IdTokenFactory.getBaseJson(user.getUserId(), isGuest);
+    JsonObjectBuilder json = IdTokenFactory.getBaseJson(user);
     IdTokenFactory.appendProfileFields(json, user);
     return json.build().toString();
   }

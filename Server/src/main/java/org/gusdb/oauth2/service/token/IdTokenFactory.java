@@ -36,22 +36,22 @@ public class IdTokenFactory {
           "user ID for username [" + tokenData.authCodeData.getUsername() + "].");
 
     // get base object (common to ID and guest tokens, and user profiles)
-    JsonObjectBuilder json = getBaseJson(userId, false);
+    JsonObjectBuilder json = getBaseJson(user);
     appendOidcFields(json, tokenData.authCodeData, issuer, expirationSecs);
     appendProfileFields(json, user);
     return json.build();
   }
 
-  public static JsonObjectBuilder getBaseJson(String userId, boolean isGuest) {
+  public static JsonObjectBuilder getBaseJson(UserInfo user) {
     return Json.createObjectBuilder()
-      .add(IdTokenFields.sub.name(), userId)
-      .add(IdTokenFields.is_guest.name(), isGuest);
+      .add(IdTokenFields.sub.name(), user.getUserId())
+      .add(IdTokenFields.is_guest.name(), user.isGuest());
   }
 
   public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user) {
     // add user's email if returned by Authenticator
     String email = user.getEmail();
-    if (email != null && !email.isEmpty()) {
+    if (email != null && !email.isBlank()) {
       jsonBuilder
         .add(IdTokenFields.email.name(), email)
         .add(IdTokenFields.email_verified.name(), user.isEmailVerified());
@@ -59,9 +59,16 @@ public class IdTokenFactory {
 
     // add user's preferred_username if returned by Authenticator
     String preferredUsername = user.getPreferredUsername();
-    if (preferredUsername != null && !preferredUsername.isEmpty()) {
+    if (preferredUsername != null && !preferredUsername.isBlank()) {
       jsonBuilder
         .add(IdTokenFields.preferred_username.name(), preferredUsername);
+    }
+
+    // add user signature if returned by Authenticator
+    String signature = user.getSignature();
+    if (signature != null && !signature.isBlank()) {
+      jsonBuilder
+        .add(IdTokenFields.signature.name(), signature);
     }
 
     // add any supplemental fields from Authenticator
@@ -106,7 +113,8 @@ public class IdTokenFactory {
 
     // get base object (common to ID and guest tokens, and user profiles)
     String guestUserId = authenticator.getNextGuestId();
-    JsonObjectBuilder json = getBaseJson(guestUserId, true);
+    UserInfo guestUser = authenticator.getGuestProfileInfo(guestUserId);
+    JsonObjectBuilder json = getBaseJson(guestUser);
     appendOidcFields(json, new IdTokenParams(clientId, null), issuer, expirationSecs);
     return json.build();
   }

@@ -15,7 +15,8 @@ public enum IdTokenFields {
     email, // user's email
     email_verified, // whether email is verified
     preferred_username, // human-friendly display name for the user (may or may not be unique/stable)
-    is_guest; // whether the user represented by this token is a guest vs registered user
+    is_guest, // whether the user represented by this token is a guest vs registered user
+    signature; // non-human-friendly, non-guessable stable ID for the user
   
   public static Set<String> getNames() {
     Set<String> names = new HashSet<>();

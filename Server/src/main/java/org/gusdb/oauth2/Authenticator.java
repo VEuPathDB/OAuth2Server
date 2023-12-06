@@ -1,7 +1,6 @@
 package org.gusdb.oauth2;
 
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,6 +43,13 @@ public interface Authenticator {
     public String getUserId();
 
     /**
+     * Whether the user is a guest user vs a registered user
+     *
+     * @return true if user is a guest, else false
+     */
+    public boolean isGuest();
+
+    /**
      * Returns user's email address; if this method returns a value, it will be
      * used as the "email" property of the OpenID Connect ID token.  If null
      * or an empty String is returned, the "email" property will be omitted.
@@ -73,6 +79,17 @@ public interface Authenticator {
      * @return users's preferred username
      */
     public String getPreferredUsername();
+
+
+    /**
+     * Returns a "user signature", meant to be a stable identifier that is not
+     * guessable (like numeric user ID) nor human readable (like stable ID aka
+     * preferredUsername).  This has only a few legacy purposes (maybe just user
+     * comment files) and should eventually be removed, but it remains for now.
+     *
+     * @return user signature
+     */
+    public String getSignature();
 
     /**
      * Returns supplemental fields to be included in the OpenID Connect ID
@@ -150,35 +167,7 @@ public interface Authenticator {
    * @param userId user ID of the guest user
    * @return user profile for a guest user with the passed ID
    */
-  public default UserInfo getGuestProfileInfo(String userId) {
-    return new UserInfo() {
-
-      @Override
-      public String getUserId() {
-        return userId;
-      }
-
-      @Override
-      public String getEmail() {
-        return null;
-      }
-
-      @Override
-      public boolean isEmailVerified() {
-        return false;
-      }
-
-      @Override
-      public String getPreferredUsername() {
-        return "guest-" + getUserId();
-      }
-
-      @Override
-      public Map<String, JsonValue> getSupplementalFields() {
-        return Collections.emptyMap();
-      }
-    };
-  }
+  public UserInfo getGuestProfileInfo(String userId);
 
   /**
    * Overwrites user's password in the system.  The passed strings are not

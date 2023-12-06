@@ -4,6 +4,7 @@ import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
 
 import java.net.URI;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +110,10 @@ public class AccountDbAuthenticator implements Authenticator {
         return String.valueOf(profile.getUserId());
       }
       @Override
+      public boolean isGuest() {
+        return profile.isGuest();
+      }
+      @Override
       public String getEmail() {
         // username is email address in Account DB
         return profile.getEmail();
@@ -121,6 +126,10 @@ public class AccountDbAuthenticator implements Authenticator {
       public String getPreferredUsername() {
         // stable value that EuPathDB can use to identify this user
         return profile.getStableId();
+      }
+      @Override
+      public String getSignature() {
+        return profile.getSignature();
       }
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
@@ -308,6 +317,12 @@ public class AccountDbAuthenticator implements Authenticator {
     // after saving, read object back out of DB
     UserProfile user = accountMgr.getUserProfile(userId);
     return createUserInfoObject(user, true, true);
+  }
+
+  @Override
+  public UserInfo getGuestProfileInfo(String userId) {
+    UserProfile guest = AccountManager.createGuestProfile("guest", Long.valueOf(userId), new Date());
+    return createUserInfoObject(guest, false, true);
   }
 
 }
