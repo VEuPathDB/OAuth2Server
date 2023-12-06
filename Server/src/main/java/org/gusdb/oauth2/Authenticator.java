@@ -136,7 +136,7 @@ public interface Authenticator {
    * contain a more comprehensive profile and/or any larger fields than the UserInfo
    * returned by the getTokenInfo() method.
    * 
-   * @param username userId for which to get user information
+   * @param userId user ID for which to get user information
    * @return user information returned by the /user endpoint
    * @throws Exception if something goes wrong while fetching user info
    */
@@ -248,8 +248,8 @@ public interface Authenticator {
   /**
    * Modifies the user account for passed userId using the passed user props
    *
-   * @param user user to modify
-   * @param userProps 
+   * @param userId ID of user to modify
+   * @param userProps properties to assign to the specified user
    * @return object representing the modified user
    * @throws IllegalArgumentException if input user props are invalid
    * @throws RuntimeException if unable to complete the operation

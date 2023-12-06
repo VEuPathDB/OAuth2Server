@@ -54,7 +54,7 @@ public class Signatures {
    *
    * @param secretKey raw text secret key
    * @return validated key object created from the input
-   * @throws InitializationException 
+   * @throws CryptoException if secret key is not compatible with the secret key algorithm
    */
   public static SecretKey getValidatedSecretKey(String secretKey) throws CryptoException {
     SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
