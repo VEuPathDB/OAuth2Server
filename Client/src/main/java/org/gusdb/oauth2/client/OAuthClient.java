@@ -49,7 +49,7 @@ public class OAuthClient {
   private static final String NL = System.lineSeparator();
 
   public enum TokenType {
-    AUTH,
+    ID,
     BEARER;
   }
 
@@ -71,7 +71,7 @@ public class OAuthClient {
     String prefix = "Bearer ";
     authHeader = authHeader.trim();
     if (!authHeader.startsWith(prefix)) {
-      throw new NotAuthorizedException("Authentication header must send token of type '" + prefix.trim() + "'");
+      throw new NotAuthorizedException(HttpHeaders.AUTHORIZATION + " header must send token of type '" + prefix.trim() + "'");
     }
     return authHeader.substring(0, prefix.length());
   }
@@ -144,10 +144,10 @@ public class OAuthClient {
     };
   }
 
-  public ValidatedToken getAuthTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
+  public ValidatedToken getIdTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
 
     // get legacy token, signed with HMAC using client secret as the key
-    String token = getToken(Endpoints.AUTH_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
+    String token = getToken(Endpoints.ID_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
     return getValidatedHmacSignedToken(oauthConfig, token);
@@ -170,10 +170,10 @@ public class OAuthClient {
     };
   }
 
-  public ValidatedToken getAuthTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
+  public ValidatedToken getIdTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
 
     // get legacy token, signed with HMAC using client secret as the key
-    String token = getToken(Endpoints.AUTH_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
+    String token = getToken(Endpoints.ID_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
     return getValidatedHmacSignedToken(oauthConfig, token);
@@ -232,7 +232,7 @@ public class OAuthClient {
     }
   }
 
-  private ValidatedToken getValidatedHmacSignedToken(OAuthConfig oauthConfig, String token) {
+  public ValidatedToken getValidatedHmacSignedToken(OAuthConfig oauthConfig, String token) {
 
     String key = oauthConfig.getOauthClientSecret();
 
@@ -252,10 +252,10 @@ public class OAuthClient {
 
     validateClaims(claims);
 
-    return ValidatedToken.build(TokenType.AUTH, token, claims);
+    return ValidatedToken.build(TokenType.ID, token, claims);
   }
 
-  private ValidatedToken getValidatedEcdsaSignedToken(OAuthConfig oauthConfig, String token) {
+  public ValidatedToken getValidatedEcdsaSignedToken(OAuthConfig oauthConfig, String token) {
 
     String key = getPublicSigningKey(oauthConfig.getOauthUrl());
 
@@ -330,42 +330,44 @@ public class OAuthClient {
     }
   }
 
-  /**
-   * 
-   * @param oauthConfig
-   * @param userProperties
-   * @param initialPassword
-   * @return
-   * @throws IllegalArgumentException if passed user properties or initialPassword do not pass validation
-   */
-  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties, String initialPassword) throws IllegalArgumentException {
+  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws IllegalArgumentException {
     return performUserOperation(
-        oauthConfig, userProperties,
-        json -> json.put("initialPassword", initialPassword),
+        Endpoints.USER_CREATE,
+        oauthConfig,
+        json -> json.put("user", userProperties),
         (builder,entity) -> builder.post(entity)
     );
   }
 
   public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) {
     return performUserOperation(
-        oauthConfig, userProperties,
-        json -> json, // no mods
+        Endpoints.USER_EDIT,
+        oauthConfig,
+        json -> json.put("user",  userProperties),
         (builder,entity) -> builder
           .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
           .put(entity)
     );
   }
 
-  private JSONObject performUserOperation(OAuthConfig oauthConfig, Map<String,String> userProperties,
+  public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) throws IllegalArgumentException {
+    return performUserOperation(
+        Endpoints.PASSWORD_RESET,
+        oauthConfig,
+        json -> json.put("loginName",  loginName),
+        (builder,entity) -> builder.post(entity)
+    );
+  }
+
+  private JSONObject performUserOperation(String endpoint, OAuthConfig oauthConfig,
       Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) {
 
-    String userEndpoint = oauthConfig.getOauthUrl() + Endpoints.USER_INFO;
+    String userEndpoint = oauthConfig.getOauthUrl() + endpoint;
 
     JSONObject initialJson = new JSONObject()
         .put("clientCredentials", new JSONObject()
             .put("clientId", oauthConfig.getOauthClientId())
-            .put("clientSecret", oauthConfig.getOauthClientSecret()))
-        .put("user", userProperties);
+            .put("clientSecret", oauthConfig.getOauthClientSecret()));
 
     String requestJson = jsonModifier.apply(initialJson).toString();
 

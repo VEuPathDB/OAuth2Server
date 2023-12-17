@@ -9,13 +9,15 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
+import javax.ws.rs.ForbiddenException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
-import org.gusdb.oauth2.Authenticator.UserInfo;
+import org.gusdb.oauth2.Authenticator.DataScope;
+import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.token.IdTokenFields;
@@ -104,6 +106,12 @@ public class IdTokenFactory {
     return jsonBuilder;
   }
 
+
+  public static JsonObjectBuilder appendPassword(JsonObjectBuilder jsonBuilder, String password) {
+    jsonBuilder.add(IdTokenFields.password.name(), password);
+    return jsonBuilder;
+  }
+
   public static JsonObject createGuestTokenJson(Authenticator authenticator, String clientId, String issuer, int expirationSecs)
       throws OAuthProblemException {
 
@@ -119,12 +127,15 @@ public class IdTokenFactory {
     return json.build();
   }
 
-  private static UserInfo getUserInfoForToken(Authenticator authenticator, String username) throws OAuthSystemException {
+  private static UserInfo getUserInfoForToken(Authenticator authenticator, String loginName) throws OAuthSystemException {
     try {
-      return authenticator.getTokenInfo(username);
+      return authenticator.getUserInfoByLoginName(loginName, DataScope.TOKEN).orElseThrow(() -> {
+        LOG.warn("Request made to get user token for login '" + loginName + "', which does not seem to exist.");
+        return new ForbiddenException();
+      });
     }
     catch (Exception e) {
-      LOG.error("Unable to retrieve user info for usernaem '" + username + "'", e);
+      LOG.error("Unable to retrieve user info for login name '" + loginName + "'", e);
       throw new OAuthSystemException(e);
     }
   }

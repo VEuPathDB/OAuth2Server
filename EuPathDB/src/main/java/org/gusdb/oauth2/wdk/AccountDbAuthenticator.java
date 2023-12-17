@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -27,6 +28,7 @@ import org.gusdb.fgputil.db.pool.SimpleDbConfig;
 import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
+import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 public class AccountDbAuthenticator implements Authenticator {
@@ -86,24 +88,45 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public UserInfo getTokenInfo(final String username) throws Exception {
-    return getUserInfo(username, false);
+  public Optional<UserInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception {
+    return getUserInfo(new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfileByUsernameOrEmail(loginName), scope);
   }
 
   @Override
-  public UserInfo getProfileInfo(final String username) throws Exception {
-    return getUserInfo(username, true);
+  public Optional<UserInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception {
+    return getUserInfo(new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(Long.valueOf(userId)), scope);
   }
 
-  private UserInfo getUserInfo(final String username, final boolean forProfile) {
-    final UserProfile profile = getUserProfile(username);
-    if (profile == null) {
-      throw new IllegalStateException("User could not be found even though already authenticated.");
+  @Override
+  public void resetPassword(String userId, String newPassword) {
+    new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).updatePassword(Long.valueOf(userId), newPassword);
+  }
+
+  @Override
+  public String generateNewPassword() {
+    // generate a random password of 12 characters, each in the range [0-9A-Za-z]
+    StringBuilder buffer = new StringBuilder();
+    Random rand = new Random();
+    for (int i = 0; i < 12; i++) {
+      int value = rand.nextInt(62);
+      if (value < 10) { // number
+        buffer.append(value);
+      }
+      else if (value < 36) { // upper case letters
+        buffer.append((char) ('A' + value - 10));
+      }
+      else { // lower case letters
+        buffer.append((char) ('a' + value - 36));
+      }
     }
-    return createUserInfoObject(profile, true, forProfile);
+    return buffer.toString();
   }
 
-  private UserInfo createUserInfoObject(UserProfile profile, boolean isEmailVerified, boolean forProfile) {
+  private Optional<UserInfo> getUserInfo(UserProfile profile, DataScope scope) {
+    return Optional.ofNullable(profile).map(p -> createUserInfoObject(p, true, scope));
+  }
+
+  private UserInfo createUserInfoObject(UserProfile profile, boolean isEmailVerified, DataScope scope) {
     return new UserInfo() {
       @Override
       public String getUserId() {
@@ -136,7 +159,7 @@ public class AccountDbAuthenticator implements Authenticator {
         JsonObjectBuilder builder = Json.createObjectBuilder()
             .add("name", getDisplayName(profile.getProperties()))
             .add("organization", profile.getProperties().get("organization"));
-        if (forProfile) builder
+        if (scope == DataScope.PROFILE) builder
             .add("firstName", profile.getProperties().get("firstName"))
             .add("middleName", profile.getProperties().get("middleName"))
             .add("lastName", profile.getProperties().get("lastName"))
@@ -232,18 +255,8 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public void logSuccessfulLogin(String username, String clientId, String redirectUri, String requestingIpAddress) {
-    LOGIN_LOG.info(requestingIpAddress + " " + clientId + " " + getHost(redirectUri) + " " + getUserId(username) + " " + username);
-  }
-
-  private String getUserId(String username) {
-    try {
-      return getTokenInfo(username).getUserId();
-    }
-    catch (Exception e) {
-      LOG.error("Unable to look up user info for user " + username, e);
-      return "error";
-    }
+  public void logSuccessfulLogin(String loginName, String userId, String clientId, String redirectUri, String requestingIpAddress) {
+    LOGIN_LOG.info(requestingIpAddress + " " + clientId + " " + getHost(redirectUri) + " " + userId + " " + loginName);
   }
 
   private static String getHost(String uriStr) {
@@ -263,7 +276,7 @@ public class AccountDbAuthenticator implements Authenticator {
     UserProfile newUser = Functions.mapException(
         () -> accountMgr.createAccount(userProps.getEmail(), initialPassword, userProps),
         e -> new RuntimeException(e)); // all exceptions at this point are 500s
-    return createUserInfoObject(newUser, false, true);
+    return createUserInfoObject(newUser, false, DataScope.PROFILE);
   }
 
   private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps) {
@@ -316,13 +329,13 @@ public class AccountDbAuthenticator implements Authenticator {
         e -> new RuntimeException(e)); // all exceptions at this point are 500s
     // after saving, read object back out of DB
     UserProfile user = accountMgr.getUserProfile(userId);
-    return createUserInfoObject(user, true, true);
+    return createUserInfoObject(user, true, DataScope.PROFILE);
   }
 
   @Override
   public UserInfo getGuestProfileInfo(String userId) {
     UserProfile guest = AccountManager.createGuestProfile("guest", Long.valueOf(userId), new Date());
-    return createUserInfoObject(guest, false, true);
+    return createUserInfoObject(guest, false, DataScope.PROFILE);
   }
 
 }

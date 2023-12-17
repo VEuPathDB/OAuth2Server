@@ -2,6 +2,7 @@ package org.gusdb.oauth2.service;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
@@ -15,6 +16,7 @@ import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation;
 import org.gusdb.oauth2.shared.token.Signatures;
 import org.gusdb.oauth2.shared.token.SigningKeyStore;
 import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation.ECCoordinateStrings;
+import org.gusdb.oauth2.shared.token.KeyGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,15 +24,23 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.impl.TextCodec;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.security.WeakKeyException;
 
 // suppress deprecation warnings; we know the legacy method is deprecated- that's why we're testing the new method :)
 @SuppressWarnings("deprecation")
 public class TokenSigningValidationTest {
 
   // symmetric token config
-  private static final String CLIENT_ID = "someClient";
-  private static final String CLIENT_SECRET = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+  private static final String MANUAL_CLIENT_ID_FAIL = "manualSecretClientFail";
+  private static final String MANUAL_CLIENT_SECRET_FAIL = "12345678901234567890123456";
+
+  private static final String MANUAL_CLIENT_ID = "manualSecretClient";
+  private static final String MANUAL_CLIENT_SECRET = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+
+  private static final String AUTO_CLIENT_ID = "autoSecretClient";
+  private static String AUTO_CLIENT_SECRET; // will be assigned during key store creation
 
   // asymmetric token config
   private static final String KEY_PAIR_RANDOM_SEED = "1234567890123456";
@@ -41,8 +51,18 @@ public class TokenSigningValidationTest {
   // key store object for signing JWT
   private static final SigningKeyStore KEY_STORE = ((Supplier<SigningKeyStore>)() -> {
     try {
+      // create a key store
       SigningKeyStore keyStore = new SigningKeyStore(KEY_PAIR_RANDOM_SEED);
-      keyStore.addClientSigningKey(CLIENT_ID, CLIENT_SECRET);
+
+      // assign manually generated HMAC client secrets
+      keyStore.addClientSigningKey(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL);
+      keyStore.addClientSigningKey(MANUAL_CLIENT_ID, MANUAL_CLIENT_SECRET);
+
+      // assign auto-generated HMAC client secret
+      Key key = Keys.secretKeyFor(Signatures.SECRET_KEY_ALGORITHM);
+      AUTO_CLIENT_SECRET = KeyGenerator.toOutputString(key);
+      keyStore.addClientSigningKey(AUTO_CLIENT_ID, AUTO_CLIENT_SECRET);
+      
       byte[] privateKeyBytes = keyStore.getAsyncKeys().getPrivate().getEncoded();
       byte[] publicKeyBytes = keyStore.getAsyncKeys().getPublic().getEncoded();
       System.out.println("Generated the following key pair in base64:\nprivate\n" +
@@ -65,15 +85,28 @@ public class TokenSigningValidationTest {
     catch (Exception e) { throw new RuntimeException(e); }
   }).get();
 
-  @Test
-  public void testLegacySymmetricTokenValidator() throws Exception {
+  @Test(expected = WeakKeyException.class)
+  public void testLegacySymmetricTokenValidatorManualFail() throws Exception {
+    testLegacySymmetricTokenValidator(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
+  }
 
+  @Test
+  public void testLegacySymmetricTokenValidatorManualSuccess() throws Exception {
+    testLegacySymmetricTokenValidator(MANUAL_CLIENT_ID, MANUAL_CLIENT_SECRET, "manual");
+  }
+
+  @Test
+  public void testLegacySymmetricTokenValidatorAuto() throws Exception {
+    testLegacySymmetricTokenValidator(AUTO_CLIENT_ID, AUTO_CLIENT_SECRET, "auto");
+  }
+
+  public void testLegacySymmetricTokenValidator(String clientId, String clientSecret, String testType) throws Exception {
     // create a signed token
-    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
+    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, clientId);
 
     // encode the key as a base64 string
-    String encodedKey = TextCodec.BASE64.encode(CLIENT_SECRET);
-    System.out.println("legacy: " + encodedKey);
+    String encodedKey = TextCodec.BASE64.encode(clientSecret);
+    System.out.println(testType + " legacy: " + encodedKey);
 
     // convert the key back to bytes
     byte[] keyBytes = Decoders.BASE64.decode(encodedKey);
@@ -90,15 +123,29 @@ public class TokenSigningValidationTest {
   }
 
   @Test
-  public void testNewSymmetricTokenValidator() throws Exception {
+  public void testNewSymmetricTokenValidatorManualFail() throws Exception {
+    testNewSymmetricTokenValidatorManual(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
+  }
+
+  @Test
+  public void testNewSymmetricTokenValidatorManual() throws Exception {
+    testNewSymmetricTokenValidatorManual(MANUAL_CLIENT_ID, MANUAL_CLIENT_SECRET, "manual");
+  }
+
+  @Test
+  public void testNewSymmetricTokenValidatorAuto() throws Exception {
+    testNewSymmetricTokenValidatorManual(AUTO_CLIENT_ID, AUTO_CLIENT_SECRET, "auto");
+  }
+
+  public void testNewSymmetricTokenValidatorManual(String clientId, String clientSecret, String testType) throws Exception {
 
     // create a signed token
-    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
+    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, clientId);
 
     // encode the key as a base64 string
-    byte[] unencodedKey = CLIENT_SECRET.getBytes(StandardCharsets.UTF_8);
+    byte[] unencodedKey = clientSecret.getBytes(StandardCharsets.UTF_8);
     String encodedKeyStr = Base64.getEncoder().encodeToString(unencodedKey);
-    System.out.println("new   : " + encodedKeyStr);
+    System.out.println(testType + " new: " + encodedKeyStr);
 
     // convert the key back to bytes
     byte[] keyBytes = Base64.getDecoder().decode(encodedKeyStr);
@@ -127,7 +174,7 @@ public class TokenSigningValidationTest {
 
   public static void testAsymmetricKeyTokenValidator(boolean fail) throws Exception {
     // create a signed token
-    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, MANUAL_CLIENT_ID);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key for distribution
@@ -156,7 +203,7 @@ public class TokenSigningValidationTest {
   public void testAsymmetricCoordinatesTokenValidator() throws Exception {
 
     // create a signed token
-    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, CLIENT_ID);
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, MANUAL_CLIENT_ID);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key into coordinates for distribution

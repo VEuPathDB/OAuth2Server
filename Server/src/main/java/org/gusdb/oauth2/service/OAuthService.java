@@ -53,8 +53,11 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.ParameterStyle;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
+import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.Authenticator.RequestingUser;
+import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.client.Endpoints;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
@@ -67,25 +70,12 @@ import org.gusdb.oauth2.shared.token.Signatures.TokenSigner;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 
-@Path("/")
 public class OAuthService {
 
   private static final Logger LOG = LogManager.getLogger(OAuthService.class);
 
-  // supported paths
-  private static final String LOGIN_PATH = "login";
-  private static final String LOGOUT_PATH = "logout";
-  private static final String AUTHORIZATION_PATH = "authorize";
-  private static final String TOKEN_PATH = "token";
-  private static final String BEARER_TOKEN_PATH = "bearer-token";
-  private static final String GUEST_TOKEN_PATH = "guest-token";
-  private static final String USER_INFO_PATH = "user";
-  private static final String CHANGE_PASSWORD_PATH = "changePassword";
-  private static final String DISCOVERY_PATH = "discovery";
-  private static final String JWKS_PATH = "jwks";
-  private static final String ACCOUNT_QUERY_PATH = "query";
-
   private static final String FORM_ID_PARAM_NAME = "form_id";
+
   private static enum LoginFormStatus { failed, error, accessdenied; }
 
   @Context
@@ -98,7 +88,7 @@ public class OAuthService {
   private HttpHeaders _headers;
 
   @GET
-  @Path(RESOURCE_PREFIX + "{name:.+}")
+  @Path(Endpoints.ASSETS + "{name:.+}")
   public Response getStaticFile(@PathParam("name") String name) {
     LOG.trace("Request made to fetch resource: " + name);
     if (name == null || name.isEmpty()) {
@@ -111,7 +101,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(LOGIN_PATH)
+  @Path(Endpoints.LOGIN)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   public Response attemptLogin(
       @FormParam("username") final String username,
@@ -141,7 +131,7 @@ public class OAuthService {
           return Response.seeOther(new URI(RESOURCE_PREFIX +
               config.getLoginSuccessPage())).build();
         }
-        authenticator.logSuccessfulLogin(username, originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
+        authenticator.logSuccessfulLogin(username, validUserId.get(), originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
         return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username, validUserId.get(), config.getTokenExpirationSecs());
       }
       else {
@@ -176,7 +166,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path(LOGOUT_PATH)
+  @Path(Endpoints.LOGOUT)
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) {
     // FIXME: cannot get CORS requests to work so logout can be async from a different domain
     // determine whether this request came from a valid page
@@ -210,7 +200,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path(AUTHORIZATION_PATH)
+  @Path(Endpoints.AUTHORIZE)
   public Response authorize() throws URISyntaxException, OAuthSystemException {
     try {
      LOG.info("Handling authorize request with the following params:" +
@@ -267,7 +257,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(TOKEN_PATH)
+  @Path(Endpoints.ID_TOKEN)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
@@ -275,7 +265,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(BEARER_TOKEN_PATH)
+  @Path(Endpoints.BEARER_TOKEN)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getBearerToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
@@ -307,7 +297,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(GUEST_TOKEN_PATH)
+  @Path(Endpoints.GUEST_TOKEN)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getGuestToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
@@ -348,7 +338,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path(USER_INFO_PATH)
+  @Path(Endpoints.USER_INFO)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getAccount() throws OAuthSystemException {
 
@@ -394,7 +384,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(USER_INFO_PATH)
+  @Path(Endpoints.USER_CREATE)
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response createAccount(String body) {
@@ -403,15 +393,13 @@ public class OAuthService {
       if (!isUserManagementClient(input)) {
         return new OAuthResponseFactory().buildInvalidClientResponse();
       }
-      String initialPassword = input.getString("initialPassword", "").trim();
-      if (initialPassword.isEmpty()) {
-        throw new BadRequestException("Property 'initialPassword' must not be empty.");
-      }
 
       // valid new user request from an allowed client
       UserPropertiesRequest userProps = new UserPropertiesRequest(input.getJsonObject("user"));
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(authenticator.createUser(userProps, initialPassword), false)).build();
+      String initialPassword = authenticator.generateNewPassword();
+      UserInfo newUser = authenticator.createUser(userProps, initialPassword);
+      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(newUser, Optional.of(initialPassword))).build();
     }
     catch (JsonParsingException | ClassCastException e) {
       throw new BadRequestException("Unable to parse client credentials", e);
@@ -422,7 +410,7 @@ public class OAuthService {
   }
 
   @PUT
-  @Path(USER_INFO_PATH)
+  @Path(Endpoints.USER_EDIT)
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response modifyAccount(String body) {
@@ -443,11 +431,38 @@ public class OAuthService {
 
       // non guest user with proper credentials from an allowed client
       UserPropertiesRequest userProps = new UserPropertiesRequest(input.getJsonObject("user"));
-      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(authenticator.modifyUser(user.getUserId(), userProps), false)).build();
-      
+      UserInfo modifiedUser = authenticator.modifyUser(user.getUserId(), userProps);
+      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(modifiedUser, Optional.empty())).build();
+
     }
     catch (JsonParsingException | ClassCastException e) {
       throw new BadRequestException("Unable to parse client credentials", e);
+    }
+  }
+
+  @POST
+  @Path(Endpoints.PASSWORD_RESET)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response resetPassword(String body) {
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      if (!isUserManagementClient(input)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      String loginName = input.getString("loginName");
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      UserInfo user = authenticator.getUserInfoByLoginName(loginName, DataScope.PROFILE)
+          .orElseThrow(() -> new BadRequestException("No user exists with login '" + loginName +"'."));
+      String newPassword = authenticator.generateNewPassword();
+      authenticator.resetPassword(user.getUserId(), newPassword);
+      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(user, Optional.of(newPassword))).build();
+    }
+    catch (JsonParsingException | ClassCastException e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
+    }
+    catch (Exception e) {
+      throw new RuntimeException("Unable to complete request", e);
     }
   }
 
@@ -465,7 +480,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(CHANGE_PASSWORD_PATH)
+  @Path(Endpoints.USER_CHANGE_PW)
   public Response changePassword(String body) {
 
     // parse request params
@@ -501,11 +516,11 @@ public class OAuthService {
   }
 
   @GET
-  @Path(DISCOVERY_PATH)
+  @Path(Endpoints.DISCOVERY)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getConfiguration() {
     String baseUrl = _request.getRequestURL().toString();
-    baseUrl = baseUrl.substring(0, baseUrl.indexOf(DISCOVERY_PATH));
+    baseUrl = baseUrl.substring(0, baseUrl.indexOf(Endpoints.DISCOVERY));
     JsonArray responseTypes = buildArray("code", "id_token");
     JsonArray grantTypes = buildArray("authorization_code");
     JsonArray subjectTypes = buildArray("public");
@@ -519,11 +534,11 @@ public class OAuthService {
       OAuthRequestHandler.prettyPrintJsonObject(
         Json.createObjectBuilder()
           .add("issuer", OAuthServlet.getApplicationConfig(_context).getIssuer())
-          .add("authorization_endpoint", baseUrl + AUTHORIZATION_PATH)
-          .add("token_endpoint", baseUrl + TOKEN_PATH)
-          .add("bearer_token_endpoint", baseUrl + BEARER_TOKEN_PATH)
-          .add("userinfo_endpoint", baseUrl + USER_INFO_PATH)
-          .add("jwks_uri", baseUrl + JWKS_PATH)
+          .add("authorization_endpoint", baseUrl + Endpoints.AUTHORIZE)
+          .add("token_endpoint", baseUrl + Endpoints.ID_TOKEN)
+          .add("bearer_token_endpoint", baseUrl + Endpoints.BEARER_TOKEN)
+          .add("userinfo_endpoint", baseUrl + Endpoints.USER_INFO)
+          .add("jwks_uri", baseUrl + Endpoints.JWKS)
           .add("response_types_supported", responseTypes)
           .add("grant_types_supported", grantTypes)
           .add("subject_types_supported", subjectTypes)
@@ -544,7 +559,7 @@ public class OAuthService {
   }
 
   @GET
-  @Path(JWKS_PATH)
+  @Path(Endpoints.JWKS)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getJwksJson() {
     return Response.ok(
@@ -555,7 +570,7 @@ public class OAuthService {
   }
 
   @POST
-  @Path(ACCOUNT_QUERY_PATH)
+  @Path(Endpoints.QUERY_USERS)
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response queryAccountData(String body) {

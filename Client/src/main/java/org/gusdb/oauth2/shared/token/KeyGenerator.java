@@ -45,7 +45,7 @@ public class KeyGenerator {
     }
   }
 
-  private static String toOutputString(Key key) {
+  public static String toOutputString(Key key) {
     return new String(Base64.getEncoder().encode(key.getEncoded()), StandardCharsets.UTF_8);
   }
 }

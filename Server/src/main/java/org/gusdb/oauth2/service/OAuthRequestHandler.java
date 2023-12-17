@@ -13,6 +13,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.Response;
 
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +34,8 @@ import org.apache.oltu.oauth2.common.message.types.ResponseType;
 import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
-import org.gusdb.oauth2.Authenticator.UserInfo;
+import org.gusdb.oauth2.Authenticator.DataScope;
+import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.service.token.IdTokenFactory;
 import org.gusdb.oauth2.service.token.TokenStore;
@@ -134,11 +136,9 @@ public class OAuthRequestHandler {
           .setExpiresIn(String.valueOf(expirationSecs));
 
       // if configured to send id_token with access token response, create and add it
-      if (config.useOpenIdConnect()) {
-        JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
-        String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData.authCodeData.getClientId());
-        responseBuilder.setParam("id_token", signedToken);
-      }
+      JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
+      String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData.authCodeData.getClientId());
+      responseBuilder.setParam("id_token", signedToken);
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
 
@@ -194,10 +194,13 @@ public class OAuthRequestHandler {
     try {
       UserInfo user = isGuest
           ? authenticator.getGuestProfileInfo(userId)
-          : authenticator.getProfileInfo(userId);
+          : authenticator.getUserInfoByUserId(userId, DataScope.PROFILE).orElseThrow(() -> {
+            LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist.");
+            return new ForbiddenException();
+          });
       return Response
           .status(Response.Status.OK)
-          .entity(getUserInfoResponseString(user, isGuest))
+          .entity(getUserInfoResponseString(user, Optional.empty()))
           .build();
     }
     catch (Exception e) {
@@ -205,9 +208,10 @@ public class OAuthRequestHandler {
     }
   }
 
-  public static String getUserInfoResponseString(UserInfo user, boolean isGuest) {
+  public static String getUserInfoResponseString(UserInfo user, Optional<String> password) {
     JsonObjectBuilder json = IdTokenFactory.getBaseJson(user);
     IdTokenFactory.appendProfileFields(json, user);
+    password.ifPresent(pw -> IdTokenFactory.appendPassword(json, pw));
     return json.build().toString();
   }
 

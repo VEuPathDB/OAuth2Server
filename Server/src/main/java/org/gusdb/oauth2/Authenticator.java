@@ -1,11 +1,9 @@
 package org.gusdb.oauth2;
 
 import java.util.AbstractMap;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.json.JsonObject;
-import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 
 import org.gusdb.oauth2.service.UserPropertiesRequest;
@@ -20,85 +18,41 @@ import org.gusdb.oauth2.service.UserPropertiesRequest;
  */
 public interface Authenticator {
 
+  public enum DataScope {
+    /**
+     * Indicates implementation-specific user information used to populate OIDC ID and
+     * bearer tokens.  Only the user ID field of the returned object is required.  Email
+     * and EmailVerified are optional. Authenticator implementations can also add
+     * supplemental fields in the supplementalFields property of the returned object.
+     *
+     * This information is used to populate both types of OpenIDConnect tokens.
+     * - ID tokens:     returned for /token requests
+     * - Bearer tokens: returned for /bearer-token requests
+     *
+     * To keep OIDC ID/bearer tokens small, this scope can/should produce a less
+     * comprehensive collection of fields than the PROFILE scope and omit any large fields.
+     */
+    TOKEN,
+
+    /**
+     * Indicates implementation-specific user information used to populate a user
+     * profile object.  Only the user ID field of the returned object is required.  Email
+     * and EmailVerified are optional. Authenticator implementations can also add
+     * supplemental fields in the supplementalFields property of the returned object.
+     *
+     * This information is returned by user requests (registration, info, edit requests)
+     * if a valid token is presented as part of the request.
+     *
+     * To keep OIDC ID/bearer tokens small, this scope can/should produce a more
+     * comprehensive collection of fields than the TOKEN scope and include any large fields.
+     */
+    PROFILE;
+  }
+
   public static class RequestingUser extends AbstractMap.SimpleImmutableEntry<String, Boolean> {
     public RequestingUser(String userId, boolean isGuest) { super(userId, isGuest); }
     public String getUserId() { return getKey(); }
     public boolean isGuest() { return getValue(); }
-  }
-
-  /**
-   * Provides methods for standard user information plus supplemental fields
-   * 
-   * @author rdoherty
-   */
-  public static interface UserInfo {
-    /**
-     * Returns system-unique and static ID for a user; this identifier should be
-     * suitable for representing a primary key for this user.  It will be
-     * used as the "sub" property of the OpenID Connect ID token.  If null
-     * or an empty value is returned, and exception will be thrown.
-     * 
-     * @return unique user ID
-     */
-    public String getUserId();
-
-    /**
-     * Whether the user is a guest user vs a registered user
-     *
-     * @return true if user is a guest, else false
-     */
-    public boolean isGuest();
-
-    /**
-     * Returns user's email address; if this method returns a value, it will be
-     * used as the "email" property of the OpenID Connect ID token.  If null
-     * or an empty String is returned, the "email" property will be omitted.
-     * 
-     * @return user's email address
-     */
-    public String getEmail();
-
-    /**
-     * Returns whether this user's email has been verified.  The value returned
-     * will be used as the "email_verified" property of the OpenID Connect ID
-     * token.  This will only be included, however, if the "email" property is
-     * also included.
-     * 
-     * @return whether the user's email address has been verified
-     */
-    public boolean isEmailVerified();
-
-    /**
-     * Returns a human-readable username for the user.  The value returned will
-     * be used as the "preferred_username" property of the OpenID Connect ID
-     * token.  If null or an empty String is returned, the "preferred_username"
-     * property will be omitted.  Per the spec, implementations are not required
-     * to make this value unique or stable.  However, they may depending on
-     * their need.
-     * 
-     * @return users's preferred username
-     */
-    public String getPreferredUsername();
-
-
-    /**
-     * Returns a "user signature", meant to be a stable identifier that is not
-     * guessable (like numeric user ID) nor human readable (like stable ID aka
-     * preferredUsername).  This has only a few legacy purposes (maybe just user
-     * comment files) and should eventually be removed, but it remains for now.
-     *
-     * @return user signature
-     */
-    public String getSignature();
-
-    /**
-     * Returns supplemental fields to be included in the OpenID Connect ID
-     * token.  Keys cannot override natively-supported fields, but any other
-     * value is valid.  Any JSON value is allowed.
-     * 
-     * @return supplemental fields to add to ID token
-     */
-    public Map<String,JsonValue> getSupplementalFields();
   }
 
   /**
@@ -118,46 +72,30 @@ public interface Authenticator {
    * if the passed credentials identify a valid user, else an empty optional.
    * The passed strings are not checked for SQL-injection or other hacks.
    * 
-   * @param username entered username
+   * @param loginName entered login value
    * @param password entered password
    * @return user ID if passed creds identify a user, else empty
    * @throws Exception if something goes wrong during validation
    */
-  public Optional<String> isCredentialsValid(String username, String password) throws Exception;
+  public Optional<String> isCredentialsValid(String loginName, String password) throws Exception;
 
   /**
-   * Returns implementation-specific user information used to populate an ID
-   * token.  Only the user ID field of the returned object is required.  Email
-   * and EmailVerified are optional. Authenticator implementations can also add
-   * supplemental fields in the supplementalFields property of the returned object.
-   * 
-   * This information is used to populate an OpenID Connect ID token, which is
-   * returned for /token requests if the "includeUserInfoWithToken" config value
-   * is true, and is returned for /user requests accompanied by a valid access
-   * token.
-   * 
-   * @param username username for which to get user information
-   * @return user information to populate an ID token
+   * Look up user information by login value.
+   *
+   * @param loginName login value for which user information should be retrieved
+   * @return user information for the given scope, or empty optional if not found
    * @throws Exception if something goes wrong while fetching user info
    */
-  public UserInfo getTokenInfo(String username) throws Exception;
+  public Optional<UserInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception;
 
   /**
-   * Returns implementation-specific user information used to populate a user
-   * profile object.  Only the user ID field of the returned object is required.  Email
-   * and EmailVerified are optional. Authenticator implementations can also add
-   * supplemental fields in the supplementalFields property of the returned object.
-   * 
-   * This information is returned by the /user endpoint if a valid token is presented
-   * as part of the request.  To keep OIDC/bearer tokens small, this method can/should
-   * contain a more comprehensive profile and/or any larger fields than the UserInfo
-   * returned by the getTokenInfo() method.
-   * 
-   * @param userId user ID for which to get user information
-   * @return user information returned by the /user endpoint
+   * Look up user information by user ID.
+   *
+   * @param userId user ID for which user information should be retrieved
+   * @return user information for the given scope, or empty optional if not found
    * @throws Exception if something goes wrong while fetching user info
    */
-  public UserInfo getProfileInfo(String userId) throws Exception;
+  public Optional<UserInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception;
 
   /**
    * Returns the user profile (returned by the /user endpoint) for a guest user.  The
@@ -173,10 +111,10 @@ public interface Authenticator {
    * Overwrites user's password in the system.  The passed strings are not
    * checked for SQL-injection or other hacks prior to calling this method.
    * 
-   * @param username username of user whose password should be overwritten
+   * @param userId ID of user whose password should be overwritten
    * @param newPassword new password for the user
    */
-  public void overwritePassword(String username, String newPassword) throws Exception;
+  public void overwritePassword(String userId, String newPassword) throws Exception;
 
   /**
    * Closes resources opened during initialization.  This method will be called
@@ -201,12 +139,13 @@ public interface Authenticator {
   /**
    * Allows authenticator to log successful logins in an application specific way
    *
-   * @param username username that successfully logged in
+   * @param loginName login value used to successfully log in
+   * @param userId ID of user the performed successful login
    * @param clientId ID of OAuth client performing login
    * @param redirectUri URL auth response will be sent to
    * @param requestingIpAddress IP address making the request
    */
-  public void logSuccessfulLogin(String username, String clientId, String redirectUri, String requestingIpAddress);
+  public void logSuccessfulLogin(String loginName, String userId, String clientId, String redirectUri, String requestingIpAddress);
 
   /**
    * Returns true if getNextGuestId() is implemented to produce guest IDs.  If this method
@@ -244,5 +183,20 @@ public interface Authenticator {
    * @throws RuntimeException if unable to complete the operation
    */
   public UserInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException;
+
+  /**
+   * Reset the password for the passed login to the passed password value
+   *
+   * @param loginName login for which to change password
+   * @param newPassword new password
+   */
+  public void resetPassword(String loginName, String newPassword);
+
+  /**
+   * Generate a new password.  Used for initial user password and password reset.
+   *
+   * @return new, random password
+   */
+  public String generateNewPassword();
 
 }
