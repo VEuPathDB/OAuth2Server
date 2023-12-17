@@ -55,7 +55,6 @@ public class TokenSigningValidationTest {
       SigningKeyStore keyStore = new SigningKeyStore(KEY_PAIR_RANDOM_SEED);
 
       // assign manually generated HMAC client secrets
-      keyStore.addClientSigningKey(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL);
       keyStore.addClientSigningKey(MANUAL_CLIENT_ID, MANUAL_CLIENT_SECRET);
 
       // assign auto-generated HMAC client secret
@@ -87,6 +86,7 @@ public class TokenSigningValidationTest {
 
   @Test(expected = WeakKeyException.class)
   public void testLegacySymmetricTokenValidatorManualFail() throws Exception {
+    KEY_STORE.addClientSigningKey(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL);
     testLegacySymmetricTokenValidator(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
   }
 
@@ -122,8 +122,9 @@ public class TokenSigningValidationTest {
 
   }
 
-  @Test
+  @Test(expected = WeakKeyException.class)
   public void testNewSymmetricTokenValidatorManualFail() throws Exception {
+    KEY_STORE.addClientSigningKey(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL);
     testNewSymmetricTokenValidatorManual(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
   }
 
