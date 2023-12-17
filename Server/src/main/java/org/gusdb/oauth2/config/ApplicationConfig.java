@@ -138,7 +138,7 @@ public class ApplicationConfig {
   private final boolean _useOpenIdConnect;
   private final List<AllowedClient> _allowedClients;
   // map from clientId -> clientSecret
-  private final Map<String,String> _secretMap;
+  private final Map<String,Set<String>> _secretsMap;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
       String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed,
@@ -153,9 +153,9 @@ public class ApplicationConfig {
     _validateDomains = validateDomains;
     _useOpenIdConnect = useOpenIdConnect;
     _allowedClients = allowedClients;
-    _secretMap = new HashMap<>();
+    _secretsMap = new HashMap<>();
     for (AllowedClient client : _allowedClients) {
-      _secretMap.put(client.getId(), client.getSecret());
+      _secretsMap.put(client.getId(), client.getSecrets());
     }
   }
 
@@ -199,8 +199,8 @@ public class ApplicationConfig {
     return _allowedClients;
   }
 
-  public Map<String,String> getSecretMap() {
-    return _secretMap;
+  public Map<String,Set<String>> getSecretsMap() {
+    return _secretsMap;
   }
 
   @Override

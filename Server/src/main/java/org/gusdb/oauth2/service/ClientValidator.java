@@ -45,7 +45,7 @@ public class ClientValidator {
 
   private boolean isValidClientSecret(String clientId, String clientSecret) {
     AllowedClient client = _clientMap.get(clientId);
-    boolean valid = (client == null ? false : client.getSecret().equals(clientSecret));
+    boolean valid = (client == null ? false : client.getSecrets().contains(clientSecret));
     LOG.debug("Valid client secret for ID [" + clientId + "]? " + valid);
     return valid;
   }
@@ -90,6 +90,6 @@ public class ClientValidator {
 
   public boolean isValidQueryClient(String clientId, String clientSecret) {
     AllowedClient client = _clientMap.get(clientId);
-    return client != null && client.getSecret().equals(clientSecret);
+    return client != null && client.getSecrets().contains(clientSecret);
   }
 }

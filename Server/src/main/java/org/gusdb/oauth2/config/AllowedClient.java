@@ -17,14 +17,20 @@ public class AllowedClient {
 
   private static enum JsonKey {
     clientId,
-    clientSecret,
+    clientSecrets,
     clientDomains
   }
 
   public static AllowedClient createFromJson(JsonObject json) throws InitializationException {
-    // get id and secret
+    // get id and secrets
     String clientId = json.getString(JsonKey.clientId.name());
-    String clientSecret = json.getString(JsonKey.clientSecret.name());
+    JsonArray secretsArray = json.getJsonArray(JsonKey.clientSecrets.name());
+    Set<String> clientSecrets = new HashSet<>();
+    if (secretsArray != null) {
+      for (int i = 0; i < secretsArray.size(); i++) {
+        clientSecrets.add(secretsArray.getString(i));
+      }
+    }
     // validate domain list
     JsonArray clientDomains = json.getJsonArray(JsonKey.clientDomains.name());
     Set<String> domainList = new HashSet<>();
@@ -33,29 +39,29 @@ public class AllowedClient {
         domainList.add(clientDomains.getString(i));
       }
     }
-    return new AllowedClient(clientId, clientSecret, domainList);
+    return new AllowedClient(clientId, clientSecrets, domainList);
   }
 
   private String _id;
-  private String _secret;
+  private Set<String> _secrets;
   private Set<String> _domains;
 
-  public AllowedClient(String id, String secret, Set<String> domains) throws InitializationException {
+  public AllowedClient(String id, Set<String> secrets, Set<String> domains) throws InitializationException {
     _id = id;
-    _secret = secret;
+    _secrets = secrets;
     _domains = domains;
     if (_id == null || _id.isEmpty() ||
-        _secret == null || _secret.isEmpty() ||
+        _secrets == null || _secrets.isEmpty() ||
         _domains == null || domains.isEmpty() ||
         _domains.iterator().next() == null ||
         _domains.iterator().next().isEmpty()) {
-      throw new InitializationException("clientId and clientSecret must be populated, and  for each allowed client");
+      throw new InitializationException("clientId and clientSecrets must be populated, and at least one domain must exist for each allowed client");
     }
-    LOG.debug("Creating AllowedClient " + id + "/" + secret + " with allowed domains " + Arrays.toString(domains.toArray()));
+    LOG.debug("Creating AllowedClient " + id + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
   public String getId() { return _id; }
-  public String getSecret() { return _secret; }
+  public Set<String> getSecrets() { return _secrets; }
   public Set<String> getDomains() { return _domains; }
 
 }

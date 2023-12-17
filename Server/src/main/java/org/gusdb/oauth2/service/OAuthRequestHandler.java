@@ -111,7 +111,7 @@ public class OAuthRequestHandler {
       if (isOpenIdConnect) {
         responseBuilder.setParam("id_token", IdTokenFactory.createJwtFromJson(
             IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs),
-            config.getSecretMap().get(tokenData.authCodeData.clientId)));
+            oauthRequest.getClientSecret())); // sign with the same secret sent in
       }
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
