@@ -46,14 +46,14 @@ import org.gusdb.oauth2.shared.token.SigningKeyStore;
   "allowedClients": [
     {
       "clientId": "apiComponentSite",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ],
       "allowUserManagement": true,
       "allowROPCGrant": true,
       "allowGuestObtainment": true
     },{
       "clientId: "globusGenomics",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ]
     }
   ]
@@ -141,7 +141,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private final boolean _validateDomains;
   private final List<AllowedClient> _allowedClients;
   // map from clientId -> clientSecret
-  private final Map<String,String> _secretMap;
+  private final Map<String,Set<String>> _secretsMap;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
       String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed,
@@ -156,10 +156,10 @@ public class ApplicationConfig extends SigningKeyStore {
     _anonymousLoginsAllowed = anonymousLoginsAllowed;
     _validateDomains = validateDomains;
     _allowedClients = allowedClients;
-    _secretMap = new HashMap<>();
+    _secretsMap = new HashMap<>();
     for (AllowedClient client : _allowedClients) {
-      _secretMap.put(client.getId(), client.getSecret());
-      addClientSigningKey(client.getId(), client.getSigningKey());
+      _secretsMap.put(client.getId(), client.getSecrets());
+      setClientSigningKeys(client.getId(), client.getSecrets());
     }
   }
 
@@ -199,8 +199,8 @@ public class ApplicationConfig extends SigningKeyStore {
     return _allowedClients;
   }
 
-  public Map<String,String> getSecretMap() {
-    return _secretMap;
+  public Map<String,Set<String>> getSecretsMap() {
+    return _secretsMap;
   }
 
   @Override

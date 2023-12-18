@@ -15,22 +15,22 @@
   "allowedClients": [
     {
       "clientId": "apiComponentSite",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost", "*.plasmodb.org" ],
       "allowUserManagement": true,
       "allowROPCGrant": true,
       "allowGuestObtainment": true
     },{
       "clientId": "globusGenomics",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost", "*.globus.org", "*.globusgenomics.org" ]
     },{
       "clientId": "apolloClients",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ]
     },{
       "clientId": "apolloPatch",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ]
     }
   ]

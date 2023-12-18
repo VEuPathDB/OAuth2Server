@@ -135,9 +135,10 @@ public class OAuthRequestHandler {
           .setAccessToken(accessToken)
           .setExpiresIn(String.valueOf(expirationSecs));
 
-      // if configured to send id_token with access token response, create and add it
+      // always send id_token with access token response, create and add it
       JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
-      String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config, tokenData.authCodeData.getClientId());
+      String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config,
+          tokenData.authCodeData.getClientId(), oauthRequest.getClientSecret()); // sign with the same secret sent in
       responseBuilder.setParam("id_token", signedToken);
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
@@ -239,7 +240,7 @@ public class OAuthRequestHandler {
         .setExpiresIn(String.valueOf(expirationSecs));
 
     JsonObject tokenJson = IdTokenFactory.createGuestTokenJson(authenticator, clientId, config.getIssuer(), expirationSecs);
-    String signedToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, config, clientId);
+    String signedToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, config, clientId, null);
 
     responseBuilder.setParam("id_token", signedToken);
 

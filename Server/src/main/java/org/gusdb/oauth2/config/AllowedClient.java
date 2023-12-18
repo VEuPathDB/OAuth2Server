@@ -17,8 +17,7 @@ public class AllowedClient {
 
   private static enum JsonKey {
     clientId,
-    clientSecret,
-    signingKey,
+    clientSecrets,
     clientDomains,
     allowUserManagement,
     allowROPCGrant,
@@ -26,9 +25,15 @@ public class AllowedClient {
   }
 
   public static AllowedClient createFromJson(JsonObject json) throws InitializationException {
-    // get id and secret
+    // get id and secrets
     String clientId = json.getString(JsonKey.clientId.name());
-    String clientSecret = json.getString(JsonKey.clientSecret.name());
+    JsonArray secretsArray = json.getJsonArray(JsonKey.clientSecrets.name());
+    Set<String> clientSecrets = new HashSet<>();
+    if (secretsArray != null) {
+      for (int i = 0; i < secretsArray.size(); i++) {
+        clientSecrets.add(secretsArray.getString(i));
+      }
+    }
     // validate domain list
     JsonArray clientDomains = json.getJsonArray(JsonKey.clientDomains.name());
     Set<String> domainList = new HashSet<>();
@@ -37,42 +42,38 @@ public class AllowedClient {
         domainList.add(clientDomains.getString(i));
       }
     }
-    String signingKey = json.getString(JsonKey.signingKey.name());
     boolean allowUserManagement = json.getBoolean(JsonKey.allowUserManagement.name(), false);
     boolean allowROPCGrant = json.getBoolean(JsonKey.allowROPCGrant.name(), false);
     boolean allowGuestObtainment = json.getBoolean(JsonKey.allowGuestObtainment.name(), false);
-    return new AllowedClient(clientId, clientSecret, signingKey, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment);
+    return new AllowedClient(clientId, clientSecrets, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment);
   }
 
   private final String _id;
-  private final String _secret;
-  private final String _signingKey;
+  private Set<String> _secrets;
   private final Set<String> _domains;
   private final boolean _allowUserManagement;
   private final boolean _allowROPCGrant;
   private final boolean _allowGuestObtainment;
 
-  public AllowedClient(String id, String secret, String signingKey, Set<String> domains, boolean allowUserManagement, boolean allowROPCGrant, boolean allowGuestObtainment) throws InitializationException {
+  public AllowedClient(String id, Set<String> secrets, Set<String> domains, boolean allowUserManagement, boolean allowROPCGrant, boolean allowGuestObtainment) throws InitializationException {
     _id = id;
-    _secret = secret;
-    _signingKey = signingKey;
+    _secrets = secrets;
     _domains = domains;
     if (_id == null || _id.isEmpty() ||
-        _secret == null || _secret.isEmpty() ||
+        _secrets == null || _secrets.isEmpty() ||
         _domains == null || domains.isEmpty() ||
         _domains.iterator().next() == null ||
         _domains.iterator().next().isEmpty()) {
-      throw new InitializationException("clientId and clientSecret must be populated, and  for each allowed client");
+      throw new InitializationException("clientId and clientSecrets must be populated, and at least one domain must exist for each allowed client");
     }
     _allowUserManagement = allowUserManagement;
     _allowROPCGrant = allowROPCGrant;
     _allowGuestObtainment = allowGuestObtainment;
-    LOG.debug("Creating AllowedClient " + id + "/" + secret + " with allowed domains " + Arrays.toString(domains.toArray()));
+    LOG.debug("Creating AllowedClient " + id + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
   public String getId() { return _id; }
-  public String getSecret() { return _secret; }
-  public String getSigningKey() { return _signingKey; }
+  public Set<String> getSecrets() { return _secrets; }
   public Set<String> getDomains() { return _domains; }
   public boolean allowUserManagement() { return _allowUserManagement; }
   public boolean allowROPCGrant() { return _allowROPCGrant; }

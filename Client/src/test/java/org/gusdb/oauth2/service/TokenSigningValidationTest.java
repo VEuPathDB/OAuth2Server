@@ -6,6 +6,7 @@ import java.security.Key;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Base64;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import javax.json.Json;
@@ -55,12 +56,12 @@ public class TokenSigningValidationTest {
       SigningKeyStore keyStore = new SigningKeyStore(KEY_PAIR_RANDOM_SEED);
 
       // assign manually generated HMAC client secrets
-      keyStore.addClientSigningKey(MANUAL_CLIENT_ID, MANUAL_CLIENT_SECRET);
+      keyStore.setClientSigningKeys(MANUAL_CLIENT_ID, Set.of(MANUAL_CLIENT_SECRET));
 
       // assign auto-generated HMAC client secret
       Key key = Keys.secretKeyFor(Signatures.SECRET_KEY_ALGORITHM);
       AUTO_CLIENT_SECRET = KeyGenerator.toOutputString(key);
-      keyStore.addClientSigningKey(AUTO_CLIENT_ID, AUTO_CLIENT_SECRET);
+      keyStore.setClientSigningKeys(AUTO_CLIENT_ID, Set.of(AUTO_CLIENT_SECRET));
       
       byte[] privateKeyBytes = keyStore.getAsyncKeys().getPrivate().getEncoded();
       byte[] publicKeyBytes = keyStore.getAsyncKeys().getPublic().getEncoded();
@@ -86,7 +87,7 @@ public class TokenSigningValidationTest {
 
   @Test(expected = WeakKeyException.class)
   public void testLegacySymmetricTokenValidatorManualFail() throws Exception {
-    KEY_STORE.addClientSigningKey(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL);
+    KEY_STORE.setClientSigningKeys(MANUAL_CLIENT_ID_FAIL, Set.of(MANUAL_CLIENT_SECRET_FAIL));
     testLegacySymmetricTokenValidator(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
   }
 
@@ -102,7 +103,7 @@ public class TokenSigningValidationTest {
 
   public void testLegacySymmetricTokenValidator(String clientId, String clientSecret, String testType) throws Exception {
     // create a signed token
-    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, clientId);
+    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, clientId, clientSecret);
 
     // encode the key as a base64 string
     String encodedKey = TextCodec.BASE64.encode(clientSecret);
@@ -124,7 +125,7 @@ public class TokenSigningValidationTest {
 
   @Test(expected = WeakKeyException.class)
   public void testNewSymmetricTokenValidatorManualFail() throws Exception {
-    KEY_STORE.addClientSigningKey(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL);
+    KEY_STORE.setClientSigningKeys(MANUAL_CLIENT_ID_FAIL, Set.of(MANUAL_CLIENT_SECRET_FAIL));
     testNewSymmetricTokenValidatorManual(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
   }
 
@@ -141,7 +142,7 @@ public class TokenSigningValidationTest {
   public void testNewSymmetricTokenValidatorManual(String clientId, String clientSecret, String testType) throws Exception {
 
     // create a signed token
-    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, clientId);
+    String symmetricToken = Signatures.SECRET_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, clientId, clientSecret);
 
     // encode the key as a base64 string
     byte[] unencodedKey = clientSecret.getBytes(StandardCharsets.UTF_8);
@@ -175,7 +176,7 @@ public class TokenSigningValidationTest {
 
   public static void testAsymmetricKeyTokenValidator(boolean fail) throws Exception {
     // create a signed token
-    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, MANUAL_CLIENT_ID);
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, MANUAL_CLIENT_ID, null);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key for distribution
@@ -204,7 +205,7 @@ public class TokenSigningValidationTest {
   public void testAsymmetricCoordinatesTokenValidator() throws Exception {
 
     // create a signed token
-    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, MANUAL_CLIENT_ID);
+    String asymmetricToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(DUMMY_CLAIMS, KEY_STORE, MANUAL_CLIENT_ID, null);
     System.out.println(Signatures.getJwksContent(KEY_STORE));
 
     // encode the public key into coordinates for distribution

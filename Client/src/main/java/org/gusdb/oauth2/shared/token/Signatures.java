@@ -43,9 +43,10 @@ public class Signatures {
      * @param tokenJson raw JSON that constitutes the JWT (claims as properties)
      * @param keyStore set of signing keys for this application
      * @param clientId client ID
+     * @param clientSecret client secret
      * @return signed token string
      */
-    String getSignedEncodedToken(JsonObject tokenJson, SigningKeyStore keyStore, String clientId);
+    String getSignedEncodedToken(JsonObject tokenJson, SigningKeyStore keyStore, String clientId, String clientSecret);
   }
 
   /**
@@ -72,8 +73,8 @@ public class Signatures {
     return EllipticCurveProvider.generateKeyPair(ASYMMETRIC_KEY_ALGORITHM, random);
   }
 
-  private static String createJwtFromJsonHmac(JsonObject tokenJson, SigningKeyStore keyStore, String clientId) {
-    Key key = keyStore.getSecretKey(clientId);
+  private static String createJwtFromJsonHmac(JsonObject tokenJson, SigningKeyStore keyStore, String clientId, String clientSecret) {
+    Key key = keyStore.getSecretKey(clientId, clientSecret);
     log("Will create JWT using HMAC from the following token body: " + prettyPrintJson(tokenJson));
     String jwt = Jwts.builder()
         .setPayload(tokenJson.toString())
@@ -83,7 +84,7 @@ public class Signatures {
     return jwt;
   }
 
-  private static String createJwtFromJsonEcdsa(JsonObject tokenJson, SigningKeyStore keyStore, String clientId) {
+  private static String createJwtFromJsonEcdsa(JsonObject tokenJson, SigningKeyStore keyStore, String clientId, String clientSecret) {
     PrivateKey privateKey = keyStore.getAsyncKeys().getPrivate();
     log("Will create JWT using ECDSA from the following token body: " + prettyPrintJson(tokenJson));
     String jwt = Jwts.builder()
@@ -110,9 +111,6 @@ public class Signatures {
 
   public static JsonObject getJwksContent(SigningKeyStore keyStore) {
 
-    // get one of the HMAC keys to get its properties (but not the key value)
-    SecretKey someSecretKey = keyStore.getFirstSecretKey();
-
     // get the public key and be able to represent it as base64 or as xy coordinates
     ECPublicKey publicKey = (ECPublicKey)keyStore.getAsyncKeys().getPublic();
     ECPublicKeyRepresentation publicKeyRep = new ECPublicKeyRepresentation(publicKey);
@@ -123,7 +121,7 @@ public class Signatures {
         .add(Json.createObjectBuilder()
           .add("kid", "0")
           .add("use", "sig")
-          .add("fmt", someSecretKey.getFormat())
+          .add("fmt", keyStore.getSecretKeyFormat())
           .add("kty", "oct")
           .add("alg", Signatures.SECRET_KEY_ALGORITHM.getValue())
           .add("k", "<your_client_secret>")
