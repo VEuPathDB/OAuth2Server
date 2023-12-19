@@ -150,7 +150,7 @@ public class OAuthClient {
     String token = getToken(Endpoints.ID_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedHmacSignedToken(oauthConfig, token);
+    return getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token);
   }
 
   public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
@@ -159,7 +159,7 @@ public class OAuthClient {
     String token = getToken(Endpoints.BEARER_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedEcdsaSignedToken(oauthConfig, token);
+    return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
   }
 
   public Consumer<MultivaluedMap<String, String>> getUserPassFormModifier(String username, String password) {
@@ -176,7 +176,7 @@ public class OAuthClient {
     String token = getToken(Endpoints.ID_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedHmacSignedToken(oauthConfig, token);
+    return getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token);
   }
 
   public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
@@ -185,7 +185,7 @@ public class OAuthClient {
     String token = getToken(Endpoints.BEARER_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedEcdsaSignedToken(oauthConfig, token);
+    return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
   }
 
   private String getToken(String path, Consumer<MultivaluedMap<String, String>> formModifier, OAuthConfig oauthConfig, String redirectUri) {
@@ -232,12 +232,10 @@ public class OAuthClient {
     }
   }
 
-  public ValidatedToken getValidatedHmacSignedToken(OAuthConfig oauthConfig, String token) {
-
-    String key = oauthConfig.getOauthClientSecret();
+  public ValidatedToken getValidatedHmacSignedToken(String clientSecret, String token) {
 
     // encode the key as a base64 string
-    byte[] unencodedKey = key.getBytes(StandardCharsets.UTF_8);
+    byte[] unencodedKey = clientSecret.getBytes(StandardCharsets.UTF_8);
     String encodedKeyStr = Base64.getEncoder().encodeToString(unencodedKey);
 
     // convert the key back to bytes
@@ -255,9 +253,9 @@ public class OAuthClient {
     return ValidatedToken.build(TokenType.ID, token, claims);
   }
 
-  public ValidatedToken getValidatedEcdsaSignedToken(OAuthConfig oauthConfig, String token) {
+  public ValidatedToken getValidatedEcdsaSignedToken(String oauthBaseUrl, String token) {
 
-    String key = getPublicSigningKey(oauthConfig.getOauthUrl());
+    String key = getPublicSigningKey(oauthBaseUrl);
 
     // convert the key string to a public key object
     PublicKey publicKey = new ECPublicKeyRepresentation(key).getPublicKey();
