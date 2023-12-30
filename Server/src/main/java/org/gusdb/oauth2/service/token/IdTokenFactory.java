@@ -27,7 +27,7 @@ public class IdTokenFactory {
   private static final Logger LOG = LogManager.getLogger(IdTokenFactory.class);
 
   public static JsonObject createIdTokenJson(Authenticator authenticator,
-      AccessTokenData tokenData, String issuer, int expirationSecs)
+      AccessTokenData tokenData, String issuer, int expirationSecs, boolean includeEmail)
           throws OAuthProblemException, OAuthSystemException {
 
     // get values from authenticator and use to populate fields
@@ -40,7 +40,7 @@ public class IdTokenFactory {
     // get base object (common to ID and guest tokens, and user profiles)
     JsonObjectBuilder json = getBaseJson(user);
     appendOidcFields(json, tokenData.authCodeData, issuer, expirationSecs);
-    appendProfileFields(json, user);
+    appendProfileFields(json, user, includeEmail);
     return json.build();
   }
 
@@ -50,10 +50,10 @@ public class IdTokenFactory {
       .add(IdTokenFields.is_guest.name(), user.isGuest());
   }
 
-  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user) {
+  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user, boolean includeEmail) {
     // add user's email if returned by Authenticator
     String email = user.getEmail();
-    if (email != null && !email.isBlank()) {
+    if (includeEmail && email != null && !email.isBlank()) {
       jsonBuilder
         .add(IdTokenFields.email.name(), email)
         .add(IdTokenFields.email_verified.name(), user.isEmailVerified());

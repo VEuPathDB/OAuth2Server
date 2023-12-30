@@ -83,7 +83,7 @@ public class OAuthRequestHandler {
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
       ClientValidator clientValidator, Authenticator authenticator,
-      ApplicationConfig config, TokenSigner tokenSigner) throws OAuthSystemException {
+      ApplicationConfig config, TokenSigner tokenSigner, boolean includeEmail) throws OAuthSystemException {
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
       OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
@@ -137,7 +137,7 @@ public class OAuthRequestHandler {
           .setExpiresIn(String.valueOf(expirationSecs));
 
       // always send id_token with access token response, create and add it
-      JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs);
+      JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs, includeEmail);
       String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config,
           tokenData.authCodeData.getClientId(), oauthRequest.getClientSecret()); // sign with the same secret sent in
       responseBuilder.setParam("id_token", signedToken);
@@ -238,7 +238,7 @@ public class OAuthRequestHandler {
 
   public static String getUserInfoResponseString(UserInfo user, Optional<String> password) {
     JsonObjectBuilder json = IdTokenFactory.getBaseJson(user);
-    IdTokenFactory.appendProfileFields(json, user);
+    IdTokenFactory.appendProfileFields(json, user, true);
     password.ifPresent(pw -> IdTokenFactory.appendPassword(json, pw));
     return json.build().toString();
   }
