@@ -21,6 +21,11 @@
       "allowROPCGrant": true,
       "allowGuestObtainment": true
     },{
+      "clientId": "veupathdbService",
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost", "*.plasmodb.org" ],
+      "allowUserLookupById": true
+    },{
       "clientId": "globusGenomics",
       "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost", "*.globus.org", "*.globusgenomics.org" ]
