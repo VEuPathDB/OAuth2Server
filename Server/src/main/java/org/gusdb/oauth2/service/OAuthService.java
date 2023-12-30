@@ -61,6 +61,7 @@ import org.gusdb.oauth2.client.Endpoints;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
+import org.gusdb.oauth2.service.OAuthRequestHandler.GuestHandling;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
 import org.gusdb.oauth2.shared.token.IdTokenFields;
@@ -68,7 +69,11 @@ import org.gusdb.oauth2.shared.token.Signatures;
 import org.gusdb.oauth2.shared.token.Signatures.TokenSigner;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 
 public class OAuthService {
 
@@ -337,6 +342,42 @@ public class OAuthService {
     return sb.append("}").toString();
   }
 
+  @POST
+  @Path(Endpoints.USER_INFO_BY_ID)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getAccountByUserId(String body) {
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      if (!isUserByIdClient(input)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+
+      // valid user info request from an allowed client
+      String requestedUserId = input.getString("userId");
+      boolean guestInfoIfNotFound = input.getBoolean("guestInfoIfNotFound");
+
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      Optional<UserInfo> user = authenticator.getUserInfoByUserId(requestedUserId, DataScope.PROFILE);
+      if (user.isEmpty()) {
+        return OAuthRequestHandler.handleUserInfoRequest(authenticator, requestedUserId,
+            guestInfoIfNotFound ? GuestHandling.GUEST_IF_NOT_FOUND : GuestHandling.BAD_REQUEST_IF_NOT_FOUND);
+      }
+
+      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(user.get(), Optional.empty())).build();
+    }
+    catch (JsonParsingException | ClassCastException e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
+    }
+    catch (IllegalArgumentException e) {
+      throw new BadRequestException(e.getMessage());
+    }
+    catch (Exception e) {
+      LOG.error("Error while getting user by ID", e);
+      return Response.serverError().build();
+    }
+  }
+
   @GET
   @Path(Endpoints.USER_INFO)
   @Produces(MediaType.APPLICATION_JSON)
@@ -347,16 +388,25 @@ public class OAuthService {
 
     // Two authentication techniques here (preferring #1)
     //   1. Use Authentication header to find bearer token and validate to access user information beyond that in the bearer token
-    //   2. (legacy) OAuth2.0 resource request, uses non-bearer, non-OIDC OAuth2 token to access user information
+    //   2. (legacy) OAuth2.0 resource request, uses non-bearer, non-OIDC OAuth2 token to access user information (still Authentication: Bearer header)
+    // Third way to get user info with only user ID at /user/by-id
 
-    // option 1
-    if (authHeader != null) {
-      RequestingUser user = parseRequestingUser(authHeader);
-      return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(), user.isGuest());
+    if (authHeader == null) {
+      return Response.status(Status.UNAUTHORIZED).build();
     }
 
-    // option 2
-    else {
+    try {
+      // option 1
+      String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+      RequestingUser user = parseRequestingUser(token);
+      return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(),
+          user.isGuest() ? GuestHandling.KNOWN_GUEST : GuestHandling.BAD_REQUEST_IF_NOT_FOUND);
+    }
+    catch (IllegalArgumentException badTokenException) {
+      // bearer token parsing and validation failed; note in log and try traditional ID token
+      LOG.warn("Bearer token failed with asymmetric signature validation; trying symmetric validation.", badTokenException);
+
+      // option 2 (unlikely request)
       try {
         ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
@@ -369,18 +419,22 @@ public class OAuthService {
     }
   }
 
-  private RequestingUser parseRequestingUser(String authHeader) {
-    String bearerToken = OAuthClient.getTokenFromAuthHeader(authHeader);
-    Key publicKey = OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic();
-    // verify signature and create claims object
-    Claims claims = Jwts.parserBuilder()
-        .setSigningKey(publicKey)
-        .build()
-        .parseClaimsJws(bearerToken)
-        .getBody();
-    String userId = claims.getSubject();
-    boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
-    return new RequestingUser(userId, isGuest);
+  private RequestingUser parseRequestingUser(String bearerToken) {
+    try {
+      Key publicKey = OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic();
+      // verify signature and create claims object
+      Claims claims = Jwts.parserBuilder()
+          .setSigningKey(publicKey)
+          .build()
+          .parseClaimsJws(bearerToken)
+          .getBody();
+      String userId = claims.getSubject();
+      boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
+      return new RequestingUser(userId, isGuest);
+    }
+    catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException e) {
+      throw new IllegalArgumentException(e.getClass().getSimpleName() + ", Could not parse JWT; " + e.getMessage());
+    }
   }
 
   @POST
@@ -424,7 +478,8 @@ public class OAuthService {
       if (authHeader == null) {
         return Response.status(Status.UNAUTHORIZED).build();
       }
-      RequestingUser user = parseRequestingUser(authHeader);
+      String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+      RequestingUser user = parseRequestingUser(token);
       if (user.isGuest()) {
         return Response.status(Status.FORBIDDEN).build();
       }
@@ -463,6 +518,19 @@ public class OAuthService {
     }
     catch (Exception e) {
       throw new RuntimeException("Unable to complete request", e);
+    }
+  }
+
+  private boolean isUserByIdClient(JsonObject parentObject) {
+    try {
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      JsonObject clientJson = parentObject.getJsonObject("clientCredentials");
+      return clientValidator.isValidUserLookupByIdClient(
+          clientJson.getString("clientId"),
+          clientJson.getString("clientSecret"));
+    }
+    catch (Exception e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
     }
   }
 

@@ -35,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientConfig;
 import org.gusdb.oauth2.client.KeyStoreTrustManager.KeyStoreConfig;
+import org.gusdb.oauth2.client.ValidatedToken.TokenType;
 import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,24 +48,6 @@ public class OAuthClient {
 
   private static final Logger LOG = LogManager.getLogger(OAuthClient.class);
   private static final String NL = System.lineSeparator();
-
-  public enum TokenType {
-    ID,
-    BEARER;
-  }
-
-  public interface ValidatedToken {
-    public static ValidatedToken build(TokenType type, String tokenValue, Claims claims) {
-      return new ValidatedToken() {
-        @Override public TokenType getTokenType()  { return type;       }
-        @Override public String getTokenValue()    { return tokenValue; }
-        @Override public Claims getTokenContents() { return claims;     }
-      };
-    }
-    TokenType getTokenType();
-    String getTokenValue();
-    Claims getTokenContents();
-  }
 
   public static String getTokenFromAuthHeader(String authHeader) {
     Objects.requireNonNull(authHeader);
@@ -303,14 +286,14 @@ public class OAuthClient {
     return "Bearer " + token.getTokenValue();
   }
 
-  public JSONObject getUserData(OAuthConfig oauthConfig, ValidatedToken token) {
-    String userEndpoint = oauthConfig.getOauthUrl() + Endpoints.USER_INFO;
+  public JSONObject getUserData(String oauthBaseUrl, ValidatedToken token) {
+    String url = oauthBaseUrl + Endpoints.USER_INFO;
     // build request and get JSON response
     try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
           .sslContext(createSslContext())
           .build()
-          .target(userEndpoint)
+          .target(url)
           .request(MediaType.APPLICATION_JSON)
           .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
           .get()) {
@@ -320,7 +303,7 @@ public class OAuthClient {
       }
 
       // otherwise request failed
-      throw new RuntimeException("Unable to retrieve user info from OAuth server.  GET " + userEndpoint + " returned " + response.getStatus());
+      throw new RuntimeException("Unable to retrieve user info from OAuth server.  GET " + url + " returned " + response.getStatus());
 
     }
     catch (Exception e) {
@@ -353,6 +336,17 @@ public class OAuthClient {
         Endpoints.PASSWORD_RESET,
         oauthConfig,
         json -> json.put("loginName",  loginName),
+        (builder,entity) -> builder.post(entity)
+    );
+  }
+
+  public JSONObject getUserData(OAuthConfig oauthConfig, String userId, boolean guestInfoIfNotFound) {
+    return performUserOperation(
+        Endpoints.USER_INFO_BY_ID,
+        oauthConfig,
+        json -> json
+          .put("userId", userId)
+          .put("guestInfoIfNotFound", guestInfoIfNotFound),
         (builder,entity) -> builder.post(entity)
     );
   }

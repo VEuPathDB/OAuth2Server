@@ -50,6 +50,10 @@ public class ClientValidator {
     return isClientAllowed(clientId, clientSecret, cli -> cli.allowROPCGrant());
   }
 
+  public boolean isValidUserLookupByIdClient(String clientId, String clientSecret) {
+    return isClientAllowed(clientId, clientSecret, cli -> cli.allowUserLookupById());
+  }
+
   private boolean isClientAllowed(String clientId, String clientSecret, Function<AllowedClient,Boolean> predicate) {
     return clientId != null && clientSecret != null
       && isValidClientId(clientId) && isValidClientSecret(clientId, clientSecret)

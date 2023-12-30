@@ -13,6 +13,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.Response;
 
@@ -188,17 +189,43 @@ public class OAuthRequestHandler {
           .build();
     }
 
-    return handleUserInfoRequest(authenticator, tokenData.authCodeData.getUserId(), false);
+    return handleUserInfoRequest(authenticator, tokenData.authCodeData.getUserId(), GuestHandling.FORBIDDEN_IF_NOT_FOUND);
   }
 
-  public static Response handleUserInfoRequest(Authenticator authenticator, String userId, boolean isGuest) {
+  public enum GuestHandling {
+    KNOWN_GUEST,
+    GUEST_IF_NOT_FOUND,
+    FORBIDDEN_IF_NOT_FOUND,
+    BAD_REQUEST_IF_NOT_FOUND;
+  }
+
+  public static Response handleUserInfoRequest(Authenticator authenticator, String userId, GuestHandling guestHandling) {
     try {
-      UserInfo user = isGuest
-          ? authenticator.getGuestProfileInfo(userId)
-          : authenticator.getUserInfoByUserId(userId, DataScope.PROFILE).orElseThrow(() -> {
-            LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist.");
-            return new ForbiddenException();
-          });
+      UserInfo user;
+      if (guestHandling == GuestHandling.KNOWN_GUEST) {
+          user = authenticator.getGuestProfileInfo(userId);
+      }
+      else {
+        Optional<UserInfo> userOpt = authenticator.getUserInfoByUserId(userId, DataScope.PROFILE);
+        if (userOpt.isPresent()) {
+          user = userOpt.get();
+        }
+        else {
+          switch(guestHandling) {
+            case GUEST_IF_NOT_FOUND:
+              user = authenticator.getGuestProfileInfo(userId);
+              break;
+            case FORBIDDEN_IF_NOT_FOUND:
+              LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist. Throwing 403.");
+              throw new ForbiddenException();
+            case BAD_REQUEST_IF_NOT_FOUND:
+              LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist. Throwing 400.");
+              throw new BadRequestException();
+            default:
+              throw new IllegalStateException();
+          }
+        }
+      }
       return Response
           .status(Response.Status.OK)
           .entity(getUserInfoResponseString(user, Optional.empty()))
