@@ -14,10 +14,10 @@ import javax.json.JsonObject;
 
 import org.gusdb.oauth2.shared.token.CryptoException;
 import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation;
-import org.gusdb.oauth2.shared.token.Signatures;
-import org.gusdb.oauth2.shared.token.SigningKeyStore;
 import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation.ECCoordinateStrings;
 import org.gusdb.oauth2.shared.token.KeyGenerator;
+import org.gusdb.oauth2.shared.token.Signatures;
+import org.gusdb.oauth2.shared.token.SigningKeyStore;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,7 +27,6 @@ import io.jsonwebtoken.impl.TextCodec;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
-import io.jsonwebtoken.security.WeakKeyException;
 
 // suppress deprecation warnings; we know the legacy method is deprecated- that's why we're testing the new method :)
 @SuppressWarnings("deprecation")
@@ -85,7 +84,7 @@ public class TokenSigningValidationTest {
     catch (Exception e) { throw new RuntimeException(e); }
   }).get();
 
-  @Test(expected = WeakKeyException.class)
+  @Test(expected = CryptoException.class)
   public void testLegacySymmetricTokenValidatorManualFail() throws Exception {
     KEY_STORE.setClientSigningKeys(MANUAL_CLIENT_ID_FAIL, Set.of(MANUAL_CLIENT_SECRET_FAIL));
     testLegacySymmetricTokenValidator(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
@@ -123,7 +122,7 @@ public class TokenSigningValidationTest {
 
   }
 
-  @Test(expected = WeakKeyException.class)
+  @Test(expected = CryptoException.class)
   public void testNewSymmetricTokenValidatorManualFail() throws Exception {
     KEY_STORE.setClientSigningKeys(MANUAL_CLIENT_ID_FAIL, Set.of(MANUAL_CLIENT_SECRET_FAIL));
     testNewSymmetricTokenValidatorManual(MANUAL_CLIENT_ID_FAIL, MANUAL_CLIENT_SECRET_FAIL, "manual_fail");
