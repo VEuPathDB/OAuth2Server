@@ -75,6 +75,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 
+@Path("/")
 public class OAuthService {
 
   private static final Logger LOG = LogManager.getLogger(OAuthService.class);
