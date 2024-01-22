@@ -7,7 +7,14 @@ import java.util.Set;
 
 import javax.crypto.SecretKey;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import io.jsonwebtoken.security.WeakKeyException;
+
 public class SigningKeyStore {
+
+  private static final Logger LOG = LogManager.getLogger(SigningKeyStore.class);
 
   // async keys for bearer tokens
   private final KeyPair _asyncKeys;
@@ -26,10 +33,17 @@ public class SigningKeyStore {
   public void setClientSigningKeys(String clientId, Set<String> rawSigningKeys) throws CryptoException {
     Map<String,SecretKey> secretMap = new HashMap<>();
     for (String rawSigningKey : rawSigningKeys) {
-      SecretKey signingKey = Signatures.getValidatedSecretKey(rawSigningKey);
-      secretMap.put(rawSigningKey, signingKey);
-      if (_secretKeyFormat == null) {
-        _secretKeyFormat = signingKey.getFormat();
+      try {
+        SecretKey signingKey = Signatures.getValidatedSecretKey(rawSigningKey);
+        secretMap.put(rawSigningKey, signingKey);
+        if (_secretKeyFormat == null) {
+          _secretKeyFormat = signingKey.getFormat();
+        }
+      }
+      catch (WeakKeyException e) {
+        String message = "Raw HMAC signing key '" + rawSigningKey + "' for client '" + clientId + "' is too weak for the algorithm.";
+        LOG.error(message, e);
+        throw new CryptoException(message + " " + e.getMessage());
       }
     }
     _clientSecretKeys.put(clientId, secretMap);
