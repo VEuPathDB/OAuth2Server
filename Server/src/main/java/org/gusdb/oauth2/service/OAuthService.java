@@ -569,13 +569,14 @@ public class OAuthService {
     Authenticator auth = OAuthServlet.getAuthenticator(_context);
     try {
       LOG.debug("Trying creds: " + username + "/" + password);
-      if (auth.isCredentialsValid(username, password).isEmpty()) {
+      Optional<String> userIdOpt = auth.isCredentialsValid(username, password);
+      if (userIdOpt.isEmpty()) {
         // wrong password given for the passed user
         return Response.status(Status.FORBIDDEN).build();
       }
       // credentials valid; overwrite password
-      LOG.debug("Overwriting password: " + username + "/" + password);
-      auth.overwritePassword(username, newPassword);
+      //LOG.debug("Overwriting password: " + username + "/" + password);
+      auth.overwritePassword(userIdOpt.get(), newPassword);
       return Response.ok().build();
     }
     catch (Exception e) {
