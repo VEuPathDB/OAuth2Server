@@ -23,7 +23,7 @@ import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.shared.token.CryptoException;
 import org.gusdb.oauth2.shared.token.SigningKeyStore;
 
-/**
+/** Example config JSON **
 {
   "issuer":"https://integrate.eupathdb.org/oauth",
   "validateDomains": true,
@@ -50,7 +50,8 @@ import org.gusdb.oauth2.shared.token.SigningKeyStore;
       "clientDomains": [ "localhost" ],
       "allowUserManagement": true,
       "allowROPCGrant": true,
-      "allowGuestObtainment": true
+      "allowGuestObtainment": true,
+      "allowUserQueries": true
     },{
       "clientId: "globusGenomics",
       "clientSecrets": [ "12345" ],

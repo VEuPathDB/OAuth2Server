@@ -4,7 +4,7 @@ import java.util.AbstractMap;
 import java.util.Optional;
 
 import javax.json.JsonObject;
-import javax.json.stream.JsonParsingException;
+import javax.json.JsonValue;
 
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 
@@ -131,10 +131,10 @@ public interface Authenticator {
    * @return query response
    * @throws UnsupportedOperationException if queries are not supported by this
    * authenticator implementation
-   * @throws JsonParsingException if querySpec is invalid
+   * @throws IllegalArgumentException if querySpec is invalid
    */
-  public JsonObject executeQuery(JsonObject querySpec)
-      throws UnsupportedOperationException, JsonParsingException;
+  public JsonValue executeQuery(JsonObject querySpec)
+      throws UnsupportedOperationException, IllegalArgumentException;
 
   /**
    * Allows authenticator to log successful logins in an application specific way

@@ -10,10 +10,12 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.Key;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -21,6 +23,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -343,42 +346,6 @@ public class OAuthService {
     return sb.append("}").toString();
   }
 
-  @POST
-  @Path(Endpoints.USER_INFO_BY_ID)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getAccountByUserId(String body) {
-    try {
-      JsonObject input = Json.createReader(new StringReader(body)).readObject();
-      if (!isUserByIdClient(input)) {
-        return new OAuthResponseFactory().buildInvalidClientResponse();
-      }
-
-      // valid user info request from an allowed client
-      String requestedUserId = input.getString("userId");
-      boolean guestInfoIfNotFound = input.getBoolean("guestInfoIfNotFound");
-
-      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-      Optional<UserInfo> user = authenticator.getUserInfoByUserId(requestedUserId, DataScope.PROFILE);
-      if (user.isEmpty()) {
-        return OAuthRequestHandler.handleUserInfoRequest(authenticator, requestedUserId,
-            guestInfoIfNotFound ? GuestHandling.GUEST_IF_NOT_FOUND : GuestHandling.BAD_REQUEST_IF_NOT_FOUND);
-      }
-
-      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(user.get(), Optional.empty())).build();
-    }
-    catch (JsonParsingException | ClassCastException e) {
-      throw new BadRequestException("Unable to parse client credentials", e);
-    }
-    catch (IllegalArgumentException e) {
-      throw new BadRequestException(e.getMessage());
-    }
-    catch (Exception e) {
-      LOG.error("Error while getting user by ID", e);
-      return Response.serverError().build();
-    }
-  }
-
   @GET
   @Path(Endpoints.USER_INFO)
   @Produces(MediaType.APPLICATION_JSON)
@@ -522,30 +489,22 @@ public class OAuthService {
     }
   }
 
-  private boolean isUserByIdClient(JsonObject parentObject) {
+  private boolean isUserManagementClient(JsonObject parentObject) {
     try {
       ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-      JsonObject clientJson = parentObject.getJsonObject("clientCredentials");
-      return clientValidator.isValidUserLookupByIdClient(
-          clientJson.getString("clientId"),
-          clientJson.getString("clientSecret"));
+      Entry<String,String> clientCreds = getClientCredentials(parentObject);
+      return clientValidator.isValidProfileEditClient(clientCreds.getKey(), clientCreds.getValue());
     }
     catch (Exception e) {
       throw new BadRequestException("Unable to parse client credentials", e);
     }
   }
 
-  private boolean isUserManagementClient(JsonObject parentObject) {
-    try {
-      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-      JsonObject clientJson = parentObject.getJsonObject("clientCredentials");
-      return clientValidator.isValidProfileEditClient(
-          clientJson.getString("clientId"),
-          clientJson.getString("clientSecret"));
-    }
-    catch (Exception e) {
-      throw new BadRequestException("Unable to parse client credentials", e);
-    }
+  private Entry<String, String> getClientCredentials(JsonObject parentObject) {
+    JsonObject clientJson = parentObject.getJsonObject(OAuthClient.JSON_KEY_CREDENTIALS);
+    return new SimpleEntry<>(
+        clientJson.getString(OAuthClient.JSON_KEY_CLIENT_ID),
+        clientJson.getString(OAuthClient.JSON_KEY_CLIENT_SECRET));
   }
 
   @POST
@@ -647,21 +606,28 @@ public class OAuthService {
     try {
       LOG.debug("Received body from client: " + body);
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
-      String clientId = input.getString(OAuth.OAUTH_CLIENT_ID);
-      String clientSecret = input.getString(OAuth.OAUTH_CLIENT_SECRET);
+      Entry<String,String> clientCreds = 
+          input.containsKey(OAuthClient.JSON_KEY_CREDENTIALS)
+          // use new client credentials format to determine validity
+          ? getClientCredentials(input)
+          // otherwise use oauth names; kept for backward compatbility with old clients (apollopatch)
+          : new SimpleEntry<>(
+              input.getString(OAuth.OAUTH_CLIENT_ID),
+              input.getString(OAuth.OAUTH_CLIENT_SECRET));
+
       ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
-      if (!clientValidator.isValidQueryClient(clientId, clientSecret)) {
+      if (!clientValidator.isValidUserQueryClient(clientCreds.getKey(), clientCreds.getValue())) {
         return Response.status(Status.FORBIDDEN).build();
       }
       Authenticator auth = OAuthServlet.getAuthenticator(_context);
-      JsonObject responseObject = auth.executeQuery(input.getJsonObject("query"));
+      JsonValue responseObject = auth.executeQuery(input.getJsonObject("query"));
       return Response.ok(responseObject.toString()).build();
     }
     catch (UnsupportedOperationException e) {
       return Response.status(Status.NOT_IMPLEMENTED).build();
     }
-    catch (NullPointerException | ClassCastException | JsonParsingException e) {
-      return Response.status(Status.BAD_REQUEST).build();
+    catch (NullPointerException | ClassCastException | JsonParsingException | IllegalArgumentException e) {
+      return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
     }
   }
 }

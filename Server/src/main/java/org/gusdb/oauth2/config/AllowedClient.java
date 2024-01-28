@@ -22,7 +22,7 @@ public class AllowedClient {
     allowUserManagement,
     allowROPCGrant,
     allowGuestObtainment,
-    allowUserLookupById;
+    allowUserQueries;
   }
 
   public static AllowedClient createFromJson(JsonObject json) throws InitializationException {
@@ -46,8 +46,8 @@ public class AllowedClient {
     boolean allowUserManagement = json.getBoolean(JsonKey.allowUserManagement.name(), false);
     boolean allowROPCGrant = json.getBoolean(JsonKey.allowROPCGrant.name(), false);
     boolean allowGuestObtainment = json.getBoolean(JsonKey.allowGuestObtainment.name(), false);
-    boolean allowUserLookupById = json.getBoolean(JsonKey.allowUserLookupById.name(), false);
-    return new AllowedClient(clientId, clientSecrets, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment, allowUserLookupById);
+    boolean allowUserQueries = json.getBoolean(JsonKey.allowUserQueries.name(), false);
+    return new AllowedClient(clientId, clientSecrets, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment, allowUserQueries);
   }
 
   private final String _id;
@@ -56,11 +56,11 @@ public class AllowedClient {
   private final boolean _allowUserManagement;
   private final boolean _allowROPCGrant;
   private final boolean _allowGuestObtainment;
-  private final boolean _allowUserLookupById;
+  private final boolean _allowUserQueries;
 
   public AllowedClient(String id, Set<String> secrets, Set<String> domains,
       boolean allowUserManagement, boolean allowROPCGrant,
-      boolean allowGuestObtainment, boolean allowUserLookupById) throws InitializationException {
+      boolean allowGuestObtainment, boolean allowUserQueries) throws InitializationException {
     _id = id;
     _secrets = secrets;
     _domains = domains;
@@ -74,7 +74,7 @@ public class AllowedClient {
     _allowUserManagement = allowUserManagement;
     _allowROPCGrant = allowROPCGrant;
     _allowGuestObtainment = allowGuestObtainment;
-    _allowUserLookupById = allowUserLookupById;
+    _allowUserQueries = allowUserQueries;
     LOG.debug("Creating AllowedClient " + id + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
@@ -84,6 +84,6 @@ public class AllowedClient {
   public boolean allowUserManagement() { return _allowUserManagement; }
   public boolean allowROPCGrant() { return _allowROPCGrant; }
   public boolean allowGuestObtainment() { return _allowGuestObtainment; }
-  public boolean allowUserLookupById() { return _allowUserLookupById; }
+  public boolean allowUserQueries() { return _allowUserQueries; }
 
 }

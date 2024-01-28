@@ -16,7 +16,6 @@ public class Endpoints {
   public static final String /* POST */ QUERY_USERS     = "/query";          // requires client secret
   public static final String /* POST */ USER_CREATE     = "/user";           // requires client secret
   public static final String /* POST */ PASSWORD_RESET  = "/password-reset"; // requires client secret
-  public static final String /* POST */ USER_INFO_BY_ID = "/user/by-id";     // requires client secret
   public static final String /* GET  */ USER_INFO       = "/user";           // requires bearer token or client secret
   public static final String /* PUT  */ USER_EDIT       = "/user";           // requires bearer token
 

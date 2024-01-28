@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.Random;
 
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
@@ -234,19 +236,46 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public JsonObject executeQuery(JsonObject querySpec)
-      throws UnsupportedOperationException, JsonParsingException {
-    long requestedUserId = Long.valueOf(querySpec.getInt("userId"));
-    UserProfile user = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS)
-        .getUserProfile(requestedUserId);
+  public JsonValue executeQuery(JsonObject querySpec)
+      throws UnsupportedOperationException, IllegalArgumentException {
+    try {
+      if ((!querySpec.containsKey("userId") && !querySpec.containsKey("userIds")) ||
+          ( querySpec.containsKey("userId") &&  querySpec.containsKey("userIds"))) {
+        throw new IllegalArgumentException("Query must contain exactly one of ['userId', 'userIds']");
+      }
+      AccountManager acctDb = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+      if (querySpec.containsKey("userId")) {
+        long requestedUserId = Long.valueOf(querySpec.getInt("userId"));
+        return getUserJson(acctDb, requestedUserId);
+      }
+      else {
+        JsonArray inputArray = querySpec.getJsonArray("userIds");
+        JsonArrayBuilder outputArray = Json.createArrayBuilder();
+        for (int i = 0; i < inputArray.size(); i++) {
+          JsonObject userObj = getUserJson(acctDb, Long.valueOf(inputArray.getInt(i)));
+          outputArray.add(userObj);
+        }
+        return outputArray.build();
+      }
+    }
+    catch (JsonParsingException e) {
+      throw new IllegalArgumentException("Illegal query; " + e.getMessage());
+    }
+  }
+
+  private JsonObject getUserJson(AccountManager acctDb, long requestedUserId) {
+    UserProfile user = acctDb.getUserProfile(requestedUserId);
     if (user == null) {
       return Json.createObjectBuilder()
+          .add("userId", requestedUserId)
           .add("found", false)
           .build();
     }
     else {
       return Json.createObjectBuilder()
+          .add("userId", requestedUserId)
           .add("found", true)
+          .add("isGuest", false)
           .add("email", user.getEmail())
           .add("name", getDisplayName(user.getProperties()))
           .add("organization", user.getProperties().get("organization"))

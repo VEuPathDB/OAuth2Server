@@ -50,8 +50,8 @@ public class ClientValidator {
     return isClientAllowed(clientId, clientSecret, cli -> cli.allowROPCGrant());
   }
 
-  public boolean isValidUserLookupByIdClient(String clientId, String clientSecret) {
-    return isClientAllowed(clientId, clientSecret, cli -> cli.allowUserLookupById());
+  public boolean isValidUserQueryClient(String clientId, String clientSecret) {
+    return isClientAllowed(clientId, clientSecret, cli -> cli.allowUserQueries());
   }
 
   private boolean isClientAllowed(String clientId, String clientSecret, Function<AllowedClient,Boolean> predicate) {
@@ -111,8 +111,4 @@ public class ClientValidator {
     return false;
   }
 
-  public boolean isValidQueryClient(String clientId, String clientSecret) {
-    AllowedClient client = _clientMap.get(clientId);
-    return client != null && client.getSecrets().contains(clientSecret);
-  }
 }

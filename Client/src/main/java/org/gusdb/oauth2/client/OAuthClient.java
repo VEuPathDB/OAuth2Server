@@ -49,14 +49,33 @@ public class OAuthClient {
   private static final Logger LOG = LogManager.getLogger(OAuthClient.class);
   private static final String NL = System.lineSeparator();
 
+  public static final String JSON_KEY_CREDENTIALS = "clientCredentials";
+  public static final String JSON_KEY_CLIENT_ID = "clientId";
+  public static final String JSON_KEY_CLIENT_SECRET = "clientSecret";
+
+  public static final String OAUTH_KEY_CLIENT_ID = "client_id";
+  public static final String OAUTH_KEY_CLIENT_SECRET = "client_secret";
+  public static final String OAUTH_KEY_GRANT_TYPE = "grant_type";
+
+  private static final String AUTHORIZATION_HEADER_VALUE_PREFIX = "Bearer ";
+
+  // applications can configure or turn off public key cache if desired
+  public static boolean USE_PUBLIC_KEY_CACHE = true;
+  public static int PUBLIC_KEY_CACHE_DURATION_SECS = 120; // two minutes
+
+  // values used to store and control cached public signing key
+  private static String CACHED_PUBLIC_KEY = null;
+  private static String LAST_PUBLIC_KEY_FETCH_URL = null;
+  private static long PUBLIC_KEY_FETCH_EXPIRATION = 0;
+
   public static String getTokenFromAuthHeader(String authHeader) {
     Objects.requireNonNull(authHeader);
-    String prefix = "Bearer ";
     authHeader = authHeader.trim();
-    if (!authHeader.startsWith(prefix)) {
-      throw new NotAuthorizedException(HttpHeaders.AUTHORIZATION + " header must send token of type '" + prefix.trim() + "'");
+    if (!authHeader.toLowerCase().startsWith(AUTHORIZATION_HEADER_VALUE_PREFIX.toLowerCase())) {
+      throw new NotAuthorizedException(HttpHeaders.AUTHORIZATION +
+          " header must send token of type '" + AUTHORIZATION_HEADER_VALUE_PREFIX.trim() + "'");
     }
-    return authHeader.substring(0, prefix.length());
+    return authHeader.substring(0, AUTHORIZATION_HEADER_VALUE_PREFIX.length());
   }
 
   public static TrustManager getTrustManager(KeyStoreConfig config) {
@@ -73,6 +92,23 @@ public class OAuthClient {
   }
 
   private String getPublicSigningKey(String oauthBaseUrl) {
+    return USE_PUBLIC_KEY_CACHE ? getCachedPublicSigningKey(oauthBaseUrl) : fetchPublicSigningKey(oauthBaseUrl);
+  }
+
+  private synchronized String getCachedPublicSigningKey(String oauthBaseUrl) {
+    // cache new value if first fetch, different oauth URL, or current value expired
+    if (LAST_PUBLIC_KEY_FETCH_URL == null
+        || !LAST_PUBLIC_KEY_FETCH_URL.equals(oauthBaseUrl)
+        || System.currentTimeMillis() > PUBLIC_KEY_FETCH_EXPIRATION) {
+      LOG.info("Cached public key expired; refreshing from " + oauthBaseUrl + Endpoints.JWKS);
+      CACHED_PUBLIC_KEY = fetchPublicSigningKey(oauthBaseUrl);
+      LAST_PUBLIC_KEY_FETCH_URL = oauthBaseUrl;
+      PUBLIC_KEY_FETCH_EXPIRATION = System.currentTimeMillis() + (PUBLIC_KEY_CACHE_DURATION_SECS * 1000);
+    }
+    return CACHED_PUBLIC_KEY;
+  }
+  
+  private String fetchPublicSigningKey(String oauthBaseUrl) {
     String jwksEndpoint = oauthBaseUrl + Endpoints.JWKS;
 
     // get JWKS response from OAuth server
@@ -122,7 +158,7 @@ public class OAuthClient {
 
   public Consumer<MultivaluedMap<String, String>> getAuthCodeFormModifier(String authCode) {
     return formData -> {
-      formData.add("grant_type", "authorization_code");
+      formData.add(OAUTH_KEY_GRANT_TYPE, "authorization_code");
       formData.add("code", authCode);
     };
   }
@@ -147,7 +183,7 @@ public class OAuthClient {
 
   public Consumer<MultivaluedMap<String, String>> getUserPassFormModifier(String username, String password) {
     return formData -> {
-      formData.add("grant_type", "password");
+      formData.add(OAUTH_KEY_GRANT_TYPE, "password");
       formData.add("username", username);
       formData.add("password", password);
     };
@@ -171,15 +207,26 @@ public class OAuthClient {
     return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
   }
 
+  public ValidatedToken getNewGuestToken(OAuthConfig oauthConfig) {
+
+    // get guest bearer token, signed with ECDSA using public/private key pair
+    String token = getToken(Endpoints.GUEST_TOKEN, form -> {}, oauthConfig, null);
+
+    // validate signature and return parsed claims
+    return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
+  }
+
   private String getToken(String path, Consumer<MultivaluedMap<String, String>> formModifier, OAuthConfig oauthConfig, String redirectUri) {
 
     String oauthUrl = oauthConfig.getOauthUrl() + path;
 
     // build form parameters for token request
     MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
-    formData.add("redirect_uri", redirectUri);
-    formData.add("client_id", oauthConfig.getOauthClientId());
-    formData.add("client_secret", oauthConfig.getOauthClientSecret());
+    formData.add(OAUTH_KEY_CLIENT_ID, oauthConfig.getOauthClientId());
+    formData.add(OAUTH_KEY_CLIENT_SECRET, oauthConfig.getOauthClientSecret());
+
+    if (redirectUri != null)
+      formData.add("redirect_uri", redirectUri);
 
     // add custom form params for this grant type
     formModifier.accept(formData);
@@ -283,7 +330,7 @@ public class OAuthClient {
     if (token.getTokenType() != TokenType.BEARER) {
       throw new RuntimeException("User info and edit endpoints require a user's bearer token (legacy auth tokens are not supported).");
     }
-    return "Bearer " + token.getTokenValue();
+    return AUTHORIZATION_HEADER_VALUE_PREFIX + token.getTokenValue();
   }
 
   public JSONObject getUserData(String oauthBaseUrl, ValidatedToken token) {
@@ -312,54 +359,53 @@ public class OAuthClient {
   }
 
   public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws IllegalArgumentException {
-    return performUserOperation(
+    return new JSONObject(performUserOperation(
         Endpoints.USER_CREATE,
         oauthConfig,
         json -> json.put("user", userProperties),
         (builder,entity) -> builder.post(entity)
-    );
+    ));
   }
 
   public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) {
-    return performUserOperation(
+    return new JSONObject(performUserOperation(
         Endpoints.USER_EDIT,
         oauthConfig,
         json -> json.put("user",  userProperties),
         (builder,entity) -> builder
           .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
           .put(entity)
-    );
+    ));
   }
 
   public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) throws IllegalArgumentException {
-    return performUserOperation(
+    return new JSONObject(performUserOperation(
         Endpoints.PASSWORD_RESET,
         oauthConfig,
         json -> json.put("loginName",  loginName),
         (builder,entity) -> builder.post(entity)
-    );
+    ));
   }
 
-  public JSONObject getUserData(OAuthConfig oauthConfig, String userId, boolean guestInfoIfNotFound) {
-    return performUserOperation(
-        Endpoints.USER_INFO_BY_ID,
+  public JSONArray getUserData(OAuthConfig oauthConfig, List<String> userIds, boolean guestInfoIfNotFound) {
+    return new JSONArray(performUserOperation(
+        Endpoints.QUERY_USERS,
         oauthConfig,
         json -> json
-          .put("userId", userId)
-          .put("guestInfoIfNotFound", guestInfoIfNotFound),
+          .put("userIds", userIds),
         (builder,entity) -> builder.post(entity)
-    );
+    ));
   }
 
-  private JSONObject performUserOperation(String endpoint, OAuthConfig oauthConfig,
+  private String performUserOperation(String endpoint, OAuthConfig oauthConfig,
       Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) {
 
     String userEndpoint = oauthConfig.getOauthUrl() + endpoint;
 
     JSONObject initialJson = new JSONObject()
-        .put("clientCredentials", new JSONObject()
-            .put("clientId", oauthConfig.getOauthClientId())
-            .put("clientSecret", oauthConfig.getOauthClientSecret()));
+        .put(JSON_KEY_CREDENTIALS, new JSONObject()
+            .put(JSON_KEY_CLIENT_ID, oauthConfig.getOauthClientId())
+            .put(JSON_KEY_CLIENT_SECRET, oauthConfig.getOauthClientSecret()));
 
     String requestJson = jsonModifier.apply(initialJson).toString();
 
@@ -371,11 +417,11 @@ public class OAuthClient {
           .build()
           .target(userEndpoint)
           .request(MediaType.APPLICATION_JSON),
-         Entity.entity(requestJson, MediaType.APPLICATION_JSON))) {
+        Entity.entity(requestJson, MediaType.APPLICATION_JSON))) {
 
       // return new user's user info object
       if (response.getStatus() == 200) {
-        return new JSONObject(readResponseBody(response));
+        return readResponseBody(response);
       }
 
       // check for input validation issues

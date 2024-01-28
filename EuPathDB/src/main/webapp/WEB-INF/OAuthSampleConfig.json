@@ -24,7 +24,7 @@
       "clientId": "veupathdbService",
       "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost", "*.plasmodb.org" ],
-      "allowUserLookupById": true
+      "allowUserQueries": true
     },{
       "clientId": "globusGenomics",
       "clientSecrets": [ "12345" ],
@@ -36,7 +36,8 @@
     },{
       "clientId": "apolloPatch",
       "clientSecrets": [ "12345" ],
-      "clientDomains": [ "localhost" ]
+      "clientDomains": [ "localhost" ],
+      "allowUserQueries": true
     }
   ]
 }
