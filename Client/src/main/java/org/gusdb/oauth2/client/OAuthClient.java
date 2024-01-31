@@ -359,7 +359,7 @@ public class OAuthClient {
   }
 
   public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws IllegalArgumentException {
-    return new JSONObject(performUserOperation(
+    return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_CREATE,
         oauthConfig,
         json -> json.put("user", userProperties),
@@ -368,7 +368,7 @@ public class OAuthClient {
   }
 
   public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) {
-    return new JSONObject(performUserOperation(
+    return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_EDIT,
         oauthConfig,
         json -> json.put("user",  userProperties),
@@ -379,7 +379,7 @@ public class OAuthClient {
   }
 
   public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) throws IllegalArgumentException {
-    return new JSONObject(performUserOperation(
+    return new JSONObject(performCredentialsBasedRequest(
         Endpoints.PASSWORD_RESET,
         oauthConfig,
         json -> json.put("loginName",  loginName),
@@ -387,8 +387,8 @@ public class OAuthClient {
     ));
   }
 
-  public JSONArray getUserData(OAuthConfig oauthConfig, List<String> userIds, boolean guestInfoIfNotFound) {
-    return new JSONArray(performUserOperation(
+  public JSONArray getUserData(OAuthConfig oauthConfig, List<String> userIds) {
+    return new JSONArray(performCredentialsBasedRequest(
         Endpoints.QUERY_USERS,
         oauthConfig,
         json -> json
@@ -397,7 +397,7 @@ public class OAuthClient {
     ));
   }
 
-  private String performUserOperation(String endpoint, OAuthConfig oauthConfig,
+  private String performCredentialsBasedRequest(String endpoint, OAuthConfig oauthConfig,
       Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) {
 
     String userEndpoint = oauthConfig.getOauthUrl() + endpoint;
