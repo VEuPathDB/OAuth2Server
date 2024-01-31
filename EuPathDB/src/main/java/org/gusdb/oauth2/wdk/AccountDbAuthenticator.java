@@ -301,25 +301,32 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) {
     AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
-    validateUserProps(accountMgr, userProps);
+    validateUserProps(accountMgr, userProps, Optional.empty());
     UserProfile newUser = Functions.mapException(
         () -> accountMgr.createAccount(userProps.getEmail(), initialPassword, userProps),
         e -> new RuntimeException(e)); // all exceptions at this point are 500s
     return createUserInfoObject(newUser, false, DataScope.PROFILE);
   }
 
-  private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps) {
+  /**
+   * Validates user properties, in some cases massaging them to be valid values.  It makes sure
+   * required properties are present and non-empty, standardizes email values, and ensures
+   * uniqueness of email and username.
+   *
+   * @param accountMgr account manager providing access to data store
+   * @param userProps properties to be validated
+   * @param userId user to which properties will be assigned
+   */
+  private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps, Optional<Long> userId) {
 
     // check email for uniqueness and format
-    userProps.setEmail(validateAndFormatEmail(userProps.getEmail(), accountMgr));
+    userProps.setEmail(validateAndFormatEmail(userProps.getEmail(), accountMgr, userId));
 
     // if user supplied a username, make sure it is unique
     if (userProps.containsKey(AccountManager.USERNAME_PROPERTY_KEY)) {
       String username = userProps.get(AccountManager.USERNAME_PROPERTY_KEY);
-      // check whether the username exists in the database already; if so, the operation fails
-      if (accountMgr.getUserProfileByUsername(username) != null) {
-        throw new IllegalArgumentException("The username '" + username + "' is already in use. " + "Please choose another one.");
-      }
+      // check whether the username exists in the database already under a different user
+      ensureUniqueValue("username", accountMgr.getUserProfileByUsername(username), username, userId);
     }
 
     // make sure required props are present; trimming of unsupported keys is done in AccountManager
@@ -331,7 +338,7 @@ public class AccountDbAuthenticator implements Authenticator {
     }
   }
 
-  private static String validateAndFormatEmail(String email, AccountManager accountMgr) {
+  private static String validateAndFormatEmail(String email, AccountManager accountMgr, Optional<Long> userId) {
     // trim and validate passed email address and extract stable name
     if (email == null)
       throw new IllegalArgumentException("The user's email cannot be empty.");
@@ -342,17 +349,26 @@ public class AccountDbAuthenticator implements Authenticator {
     int atSignIndex = email.indexOf("@");
     if (atSignIndex < 1) // must be present and not the first char
       throw new IllegalArgumentException("The user's email address is invalid.");
+    if (atSignIndex > email.length() - 4) // must be at least a@b.c
+      throw new IllegalArgumentException("The user's email address is invalid.");
+
     // check whether the user exist in the database already; if email exists, the operation fails
-    if (accountMgr.getUserProfileByEmail(email) != null)
-      throw new IllegalArgumentException("The email '" + email + "' has already been registered. " + "Please choose another.");
+    ensureUniqueValue("email", accountMgr.getUserProfileByEmail(email), email, userId);
     return email;
+  }
+
+  private static void ensureUniqueValue(String valueName, UserProfile foundProfile, String value, Optional<Long> userId) {
+    if (foundProfile != null && (userId.isEmpty() || !userId.get().equals(foundProfile.getUserId()))) {
+      // either creating a new user (no found value is acceptable) or editing and value found in different profile
+      throw new IllegalArgumentException("The " + valueName + " '" + value + "' is already in use. " + "Please choose another.");
+    }
   }
 
   @Override
   public UserInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) {
     AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
-    validateUserProps(accountMgr, userProps);
-    long userId = Long.valueOf(userIdStr);
+    Long userId = Long.valueOf(userIdStr);
+    validateUserProps(accountMgr, userProps, Optional.of(userId));
     Functions.mapException(
         () -> accountMgr.saveUserProfile(userId, userProps.getEmail(), userProps),
         e -> new RuntimeException(e)); // all exceptions at this point are 500s

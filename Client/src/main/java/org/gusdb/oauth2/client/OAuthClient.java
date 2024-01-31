@@ -358,7 +358,7 @@ public class OAuthClient {
     }
   }
 
-  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws IllegalArgumentException {
+  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws InvalidPropertiesException {
     return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_CREATE,
         oauthConfig,
@@ -367,7 +367,7 @@ public class OAuthClient {
     ));
   }
 
-  public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) {
+  public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) throws InvalidPropertiesException {
     return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_EDIT,
         oauthConfig,
@@ -378,29 +378,41 @@ public class OAuthClient {
     ));
   }
 
-  public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) throws IllegalArgumentException {
-    return new JSONObject(performCredentialsBasedRequest(
-        Endpoints.PASSWORD_RESET,
-        oauthConfig,
-        json -> json.put("loginName",  loginName),
-        (builder,entity) -> builder.post(entity)
-    ));
+  public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) {
+    try {
+      return new JSONObject(performCredentialsBasedRequest(
+          Endpoints.PASSWORD_RESET,
+          oauthConfig,
+          json -> json.put("loginName",  loginName),
+          (builder,entity) -> builder.post(entity)
+      ));
+    }
+    catch (InvalidPropertiesException e) {
+      // this should never happen; password_reset does not throw 422
+      throw new RuntimeException(e);
+    }
   }
 
   public JSONArray getUserData(OAuthConfig oauthConfig, List<String> userIds) {
-    return new JSONArray(performCredentialsBasedRequest(
-        Endpoints.QUERY_USERS,
-        oauthConfig,
-        json -> json
-          .put("userIds", userIds),
-        (builder,entity) -> builder.post(entity)
-    ));
+    try {
+      return new JSONArray(performCredentialsBasedRequest(
+          Endpoints.QUERY_USERS,
+          oauthConfig,
+          json -> json
+            .put("userIds", userIds),
+          (builder,entity) -> builder.post(entity)
+      ));
+    }
+    catch (InvalidPropertiesException e) {
+      // this should never happen; user query does not throw 422
+      throw new RuntimeException(e);
+    }
   }
 
-  private String performCredentialsBasedRequest(String endpoint, OAuthConfig oauthConfig,
-      Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) {
+  private String performCredentialsBasedRequest(String endpointPath, OAuthConfig oauthConfig,
+      Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) throws InvalidPropertiesException {
 
-    String userEndpoint = oauthConfig.getOauthUrl() + endpoint;
+    String endpoint = oauthConfig.getOauthUrl() + endpointPath;
 
     JSONObject initialJson = new JSONObject()
         .put(JSON_KEY_CREDENTIALS, new JSONObject()
@@ -415,7 +427,7 @@ public class OAuthClient {
           .withConfig(new ClientConfig())
           .sslContext(createSslContext())
           .build()
-          .target(userEndpoint)
+          .target(endpoint)
           .request(MediaType.APPLICATION_JSON),
         Entity.entity(requestJson, MediaType.APPLICATION_JSON))) {
 
@@ -426,15 +438,19 @@ public class OAuthClient {
 
       // check for input validation issues
       if (response.getStatusInfo().getFamily().equals(Status.Family.CLIENT_ERROR)) {
-        throw new IllegalArgumentException(readResponseBody(response));
+        if (response.getStatus() == HttpStatus.UNPROCESSABLE_CONTENT.getStatusCode()) {
+          throw new InvalidPropertiesException(readResponseBody(response));
+        }
+        // a 400 indicates a syntax error (e.g. JSON misformat) on our side and should be a 500
+        throw new RuntimeException("Created bad request to " + endpoint + "; returned " + response.getStatus() + ", " + readResponseBody(response));
       }
 
       // else server error
-      throw new RuntimeException("Unable to perform user operation on OAuth server.  GET " + userEndpoint + " returned " + response.getStatus());
+      throw new RuntimeException("Unable to perform credentialed operation on OAuth server.  " + endpoint + " returned " + response.getStatus());
       
     }
-    catch (Exception e) {
-      throw new RuntimeException("Unable to perform user operation on OAuth server", e);
+    catch (IOException | KeyManagementException | NoSuchAlgorithmException e) {
+      throw new RuntimeException("Unable to perform credentialed operation on OAuth server", e);
     }
   }
 
