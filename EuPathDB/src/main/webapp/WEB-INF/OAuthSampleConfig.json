@@ -19,7 +19,8 @@
       "clientDomains": [ "localhost", "*.plasmodb.org" ],
       "allowUserManagement": true,
       "allowROPCGrant": true,
-      "allowGuestObtainment": true
+      "allowGuestObtainment": true,
+      "allowUserQueries": true
     },{
       "clientId": "veupathdbService",
       "clientSecrets": [ "12345" ],
