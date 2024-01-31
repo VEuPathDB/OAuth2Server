@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.shared.token;
+package org.gusdb.oauth2.shared;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -7,7 +7,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Random;
 
-import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation.ECCoordinateStrings;
+import org.gusdb.oauth2.shared.ECPublicKeyRepresentation.ECCoordinateStrings;
 
 import io.jsonwebtoken.security.Keys;
 

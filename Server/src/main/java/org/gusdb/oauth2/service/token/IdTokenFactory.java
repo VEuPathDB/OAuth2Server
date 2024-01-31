@@ -20,7 +20,7 @@ import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
-import org.gusdb.oauth2.shared.token.IdTokenFields;
+import org.gusdb.oauth2.shared.IdTokenFields;
 
 public class IdTokenFactory {
 

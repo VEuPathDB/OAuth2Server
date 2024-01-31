@@ -20,8 +20,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
-import org.gusdb.oauth2.shared.token.CryptoException;
-import org.gusdb.oauth2.shared.token.SigningKeyStore;
+import org.gusdb.oauth2.shared.CryptoException;
+import org.gusdb.oauth2.shared.SigningKeyStore;
 
 /** Example config JSON **
 {

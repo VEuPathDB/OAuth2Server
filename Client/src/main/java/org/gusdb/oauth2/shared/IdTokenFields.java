@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.shared.token;
+package org.gusdb.oauth2.shared;
 
 import java.util.HashSet;
 import java.util.Set;

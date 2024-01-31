@@ -68,9 +68,9 @@ import org.gusdb.oauth2.server.OAuthServlet;
 import org.gusdb.oauth2.service.OAuthRequestHandler.GuestHandling;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
-import org.gusdb.oauth2.shared.token.IdTokenFields;
-import org.gusdb.oauth2.shared.token.Signatures;
-import org.gusdb.oauth2.shared.token.Signatures.TokenSigner;
+import org.gusdb.oauth2.shared.IdTokenFields;
+import org.gusdb.oauth2.shared.Signatures;
+import org.gusdb.oauth2.shared.Signatures.TokenSigner;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

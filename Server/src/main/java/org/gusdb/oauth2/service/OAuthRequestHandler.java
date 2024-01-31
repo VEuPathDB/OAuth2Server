@@ -44,8 +44,8 @@ import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.AuthCodeData;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.StateParamHttpRequest;
-import org.gusdb.oauth2.shared.token.Signatures;
-import org.gusdb.oauth2.shared.token.Signatures.TokenSigner;
+import org.gusdb.oauth2.shared.Signatures;
+import org.gusdb.oauth2.shared.Signatures.TokenSigner;
 
 public class OAuthRequestHandler {
 

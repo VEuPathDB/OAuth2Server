@@ -1,6 +1,6 @@
 package org.gusdb.oauth2.client;
 
-import org.gusdb.oauth2.shared.token.IdTokenFields;
+import org.gusdb.oauth2.shared.IdTokenFields;
 
 import io.jsonwebtoken.Claims;
 

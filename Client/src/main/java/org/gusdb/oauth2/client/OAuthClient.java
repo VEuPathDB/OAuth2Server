@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientConfig;
 import org.gusdb.oauth2.client.KeyStoreTrustManager.KeyStoreConfig;
 import org.gusdb.oauth2.client.ValidatedToken.TokenType;
-import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation;
+import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

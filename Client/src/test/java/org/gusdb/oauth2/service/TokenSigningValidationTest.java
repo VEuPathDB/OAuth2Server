@@ -12,12 +12,12 @@ import java.util.function.Supplier;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.gusdb.oauth2.shared.token.CryptoException;
-import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation;
-import org.gusdb.oauth2.shared.token.ECPublicKeyRepresentation.ECCoordinateStrings;
-import org.gusdb.oauth2.shared.token.KeyGenerator;
-import org.gusdb.oauth2.shared.token.Signatures;
-import org.gusdb.oauth2.shared.token.SigningKeyStore;
+import org.gusdb.oauth2.shared.CryptoException;
+import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
+import org.gusdb.oauth2.shared.KeyGenerator;
+import org.gusdb.oauth2.shared.Signatures;
+import org.gusdb.oauth2.shared.SigningKeyStore;
+import org.gusdb.oauth2.shared.ECPublicKeyRepresentation.ECCoordinateStrings;
 import org.junit.Assert;
 import org.junit.Test;
 
