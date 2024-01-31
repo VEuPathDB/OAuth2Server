@@ -4,7 +4,7 @@
   <name>OAuth2</name>
   <artifactId>oauth2</artifactId>
   <packaging>pom</packaging>
-  <version>0.7.1-SNAPSHOT</version>
+  <version>0.7.1</version>
 
   <parent>
     <groupId>org.gusdb</groupId>
@@ -28,7 +28,7 @@
 
   <scm>
     <developerConnection>scm:git:ssh://github.com/VEuPathDB/OAuth2Server</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.7.1</tag>
   </scm>
 
   <distributionManagement>
