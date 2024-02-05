@@ -383,4 +383,10 @@ public class AccountDbAuthenticator implements Authenticator {
     return createUserInfoObject(guest, false, DataScope.PROFILE);
   }
 
+  @Override
+  public void updateLastLoginTimestamp(String userId) {
+    AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    accountMgr.updateLastLogin(Long.valueOf(userId));
+  }
+
 }

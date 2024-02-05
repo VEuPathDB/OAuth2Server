@@ -199,4 +199,13 @@ public interface Authenticator {
    */
   public String generateNewPassword();
 
+  /**
+   * Update last login timestamp for the user with the passed user ID.  Implementation of
+   * this method is optional (simply no-op if unsupported).  It is called each time a
+   * new token (ID token or bearer token) is produced.
+   *
+   * @param userId user for whom a new token was generated
+   */
+  public void updateLastLoginTimestamp(String userId);
+
 }

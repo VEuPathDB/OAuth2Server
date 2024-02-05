@@ -128,6 +128,9 @@ public class OAuthRequestHandler {
       final String accessToken = oauthIssuerImpl.accessToken();
       AccessTokenData tokenData = TokenStore.addAccessToken(accessToken, authCode);
 
+      // tell the authenticator to update the user's last login timestamp if supported
+      authenticator.updateLastLoginTimestamp(tokenData.authCodeData.getUserId());
+
       int expirationSecs = config.getTokenExpirationSecs();
 
       OAuthTokenResponseBuilder responseBuilder =
