@@ -98,14 +98,16 @@ public interface Authenticator {
   public Optional<UserInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception;
 
   /**
-   * Returns the user profile (returned by the /user endpoint) for a guest user.  The
-   * default method stubs empty values for all methods except getUserId() which returns
-   * the passed value, and getPreferredUsername() which returns "guest-" + getUserId()
+   * Looks up the user ID (must be a guest) and returns the user profile (returned by
+   * the /user endpoint) for a guest user if found.  If not found, an empty optional
+   * is returned.  The default method always returns an empty optional.
    *
    * @param userId user ID of the guest user
-   * @return user profile for a guest user with the passed ID
+   * @return user profile for a guest user with the passed ID, or empty if not found
    */
-  public UserInfo getGuestProfileInfo(String userId);
+  public default Optional<UserInfo> getGuestProfileInfo(String userId) {
+    return Optional.empty();
+  }
 
   /**
    * Overwrites user's password in the system.  The passed strings are not

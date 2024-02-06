@@ -14,7 +14,6 @@ import javax.json.JsonObjectBuilder;
 import javax.json.stream.JsonGenerator;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.Response;
 
 import org.apache.logging.log4j.LogManager;
@@ -192,50 +191,28 @@ public class OAuthRequestHandler {
           .build();
     }
 
-    return handleUserInfoRequest(authenticator, tokenData.authCodeData.getUserId(), GuestHandling.FORBIDDEN_IF_NOT_FOUND);
+    return handleUserInfoRequest(authenticator, tokenData.authCodeData.getUserId(), false);
   }
 
-  public enum GuestHandling {
-    KNOWN_GUEST,
-    GUEST_IF_NOT_FOUND,
-    FORBIDDEN_IF_NOT_FOUND,
-    BAD_REQUEST_IF_NOT_FOUND;
-  }
-
-  public static Response handleUserInfoRequest(Authenticator authenticator, String userId, GuestHandling guestHandling) {
+  public static Response handleUserInfoRequest(Authenticator authenticator, String userId, boolean isGuest) {
     try {
-      UserInfo user;
-      if (guestHandling == GuestHandling.KNOWN_GUEST) {
-          user = authenticator.getGuestProfileInfo(userId);
+      Optional<UserInfo> user = isGuest
+        // treat user ID as guest ID
+        ? authenticator.getGuestProfileInfo(userId)
+        : authenticator.getUserInfoByUserId(userId, DataScope.PROFILE);
+      if (user.isPresent()) {
+        return Response
+            .status(Response.Status.OK)
+            .entity(getUserInfoResponseString(user.get(), Optional.empty()))
+            .build();
       }
       else {
-        Optional<UserInfo> userOpt = authenticator.getUserInfoByUserId(userId, DataScope.PROFILE);
-        if (userOpt.isPresent()) {
-          user = userOpt.get();
-        }
-        else {
-          switch(guestHandling) {
-            case GUEST_IF_NOT_FOUND:
-              user = authenticator.getGuestProfileInfo(userId);
-              break;
-            case FORBIDDEN_IF_NOT_FOUND:
-              LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist. Throwing 403.");
-              throw new ForbiddenException();
-            case BAD_REQUEST_IF_NOT_FOUND:
-              LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist. Throwing 400.");
-              throw new BadRequestException();
-            default:
-              throw new IllegalStateException();
-          }
-        }
+        LOG.warn("Request made to get user info for user ID " + userId + ", which does not seem to exist. Throwing 400.");
+        throw new BadRequestException();
       }
-      return Response
-          .status(Response.Status.OK)
-          .entity(getUserInfoResponseString(user, Optional.empty()))
-          .build();
     }
     catch (Exception e) {
-      throw new RuntimeException("Unable to look up user profile information for user ID " + userId, e);
+      throw new RuntimeException("Unable to look up user profile information for user ID " + userId + " (isGuest=" + isGuest + ")", e);
     }
   }
 

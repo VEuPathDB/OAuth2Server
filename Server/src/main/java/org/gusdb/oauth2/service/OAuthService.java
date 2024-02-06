@@ -65,7 +65,6 @@ import org.gusdb.oauth2.client.HttpStatus;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
-import org.gusdb.oauth2.service.OAuthRequestHandler.GuestHandling;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
 import org.gusdb.oauth2.shared.IdTokenFields;
@@ -368,8 +367,7 @@ public class OAuthService {
       // option 1
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
       RequestingUser user = parseRequestingUser(token);
-      return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(),
-          user.isGuest() ? GuestHandling.KNOWN_GUEST : GuestHandling.BAD_REQUEST_IF_NOT_FOUND);
+      return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(), user.isGuest());
     }
     catch (IllegalArgumentException badTokenException) {
       // bearer token parsing and validation failed; note in log and try traditional ID token

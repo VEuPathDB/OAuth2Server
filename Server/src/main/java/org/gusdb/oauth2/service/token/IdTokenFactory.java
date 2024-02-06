@@ -121,7 +121,7 @@ public class IdTokenFactory {
 
     // get base object (common to ID and guest tokens, and user profiles)
     String guestUserId = authenticator.getNextGuestId();
-    UserInfo guestUser = authenticator.getGuestProfileInfo(guestUserId);
+    UserInfo guestUser = authenticator.getGuestProfileInfo(guestUserId).orElseThrow(); // just inserted on the last line
     JsonObjectBuilder json = getBaseJson(guestUser);
     appendOidcFields(json, new IdTokenParams(clientId, null), issuer, expirationSecs);
     return json.build();

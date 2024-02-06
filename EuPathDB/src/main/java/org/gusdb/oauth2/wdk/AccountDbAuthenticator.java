@@ -4,6 +4,7 @@ import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
 
 import java.net.URI;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,8 @@ import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
+import org.gusdb.fgputil.db.runner.SQLRunner;
+import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
@@ -210,10 +213,20 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public String getNextGuestId() {
     try {
-      return new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).createGuestAccount("guest").getUserId().toString();
+      String id = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).createGuestAccount("guest_").getUserId().toString();
+      // FIXME: since this code directly accesses the DB, it should live in AccountManager;
+      //   however that complicates FgpUtil releases prior to move to bearer tokens, so adding it here.
+      String sql = "insert into useraccounts.guest_ids (user_id, creation_time) values (?, TO_DATE(SYSDATE))";
+      int inserted = new SQLRunner(_accountDb.getDataSource(), sql, "insert-guest-id")
+          .executeUpdate(new Object[]{ Long.valueOf(id) }, new Integer[]{ Types.BIGINT });
+      if (inserted != 1) throw new IllegalStateException("Tried to insert duplicate guest ID " + id + ". Check ID sequence to make sure it is big enough.");
+      return id;
     }
     catch (SQLException e) {
       throw new RuntimeException("Unable to generate next guest ID", e);
+    }
+    catch (SQLRunnerException e) {
+      throw new RuntimeException("Could not insert row to guest_ids", e.getCause());
     }
   }
 
@@ -264,12 +277,23 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   private JsonObject getUserJson(AccountManager acctDb, long requestedUserId) {
+    // look for registered user first
     UserProfile user = acctDb.getUserProfile(requestedUserId);
     if (user == null) {
-      return Json.createObjectBuilder()
-          .add("userId", requestedUserId)
-          .add("found", false)
-          .build();
+      // no registered user found; look for guest
+      Optional<UserInfo> guest = getGuestProfileInfo(String.valueOf(requestedUserId));
+      return guest
+          // found a guest with this ID
+          .map(x -> Json.createObjectBuilder()
+            .add("userId", requestedUserId)
+            .add("found", true)
+            .add("isGuest", true)
+            .build())
+          // did not find user of any type
+          .orElse(Json.createObjectBuilder()
+            .add("userId", requestedUserId)
+            .add("found", false)
+            .build());
     }
     else {
       return Json.createObjectBuilder()
@@ -378,9 +402,22 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public UserInfo getGuestProfileInfo(String userId) {
-    UserProfile guest = AccountManager.createGuestProfile("guest", Long.valueOf(userId), new Date());
-    return createUserInfoObject(guest, false, DataScope.PROFILE);
+  public Optional<UserInfo> getGuestProfileInfo(String userId) {
+    try {
+      // FIXME: since this code directly accesses the DB, it should live in AccountManager;
+      //   however that complicates FgpUtil releases prior to move to bearer tokens, so adding it here.
+      String sql = "select creation_time from useraccounts.guest_ids where user_id = ?";
+      Optional<Date> creationDate = new SQLRunner(_accountDb.getDataSource(), sql, "select-guest")
+          .executeQuery(new Object[] { Long.valueOf(userId) }, new Integer[] { Types.BIGINT }, rs ->
+              rs.next() ? Optional.of(rs.getDate("creation_time")) : Optional.empty());
+      return creationDate.map(date -> {
+        UserProfile guest = AccountManager.createGuestProfile("guest", Long.valueOf(userId), date);
+        return createUserInfoObject(guest, false, DataScope.PROFILE);
+      });
+    }
+    catch (SQLRunnerException e) {
+      throw new RuntimeException(e.getCause());
+    }
   }
 
   @Override
