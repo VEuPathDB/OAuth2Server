@@ -34,7 +34,9 @@ import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.service.OAuthRequestHandler;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
+import org.gusdb.oauth2.shared.IdTokenFields;
 
 public class AccountDbAuthenticator implements Authenticator {
 
@@ -278,33 +280,22 @@ public class AccountDbAuthenticator implements Authenticator {
 
   private JsonObject getUserJson(AccountManager acctDb, long requestedUserId) {
     // look for registered user first
-    UserProfile user = acctDb.getUserProfile(requestedUserId);
-    if (user == null) {
+    UserProfile userProfile = acctDb.getUserProfile(requestedUserId);
+    Optional<UserInfo> userOpt = userProfile == null
       // no registered user found; look for guest
-      Optional<UserInfo> guest = getGuestProfileInfo(String.valueOf(requestedUserId));
-      return guest
-          // found a guest with this ID
-          .map(x -> Json.createObjectBuilder()
-            .add("userId", requestedUserId)
-            .add("found", true)
-            .add("isGuest", true)
-            .build())
-          // did not find user of any type
-          .orElse(Json.createObjectBuilder()
-            .add("userId", requestedUserId)
-            .add("found", false)
-            .build());
-    }
-    else {
-      return Json.createObjectBuilder()
-          .add("userId", requestedUserId)
-          .add("found", true)
-          .add("isGuest", false)
-          .add("email", user.getEmail())
-          .add("name", getDisplayName(user.getProperties()))
-          .add("organization", user.getProperties().get("organization"))
-          .build();
-    }
+      ? getGuestProfileInfo(String.valueOf(requestedUserId))
+      // convert profile to UserInfo
+      : getUserInfo(userProfile, DataScope.PROFILE);
+    return userOpt
+      // found a user with this ID
+      .map(user -> OAuthRequestHandler.getUserInfoResponseJson(user, Optional.empty())
+        .add("found", true)
+        .build())
+      // did not find user of any type
+      .orElse(Json.createObjectBuilder()
+        .add(IdTokenFields.sub.name(), String.valueOf(requestedUserId))
+        .add("found", false)
+        .build());
   }
 
   @Override

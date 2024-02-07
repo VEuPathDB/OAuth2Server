@@ -216,11 +216,15 @@ public class OAuthRequestHandler {
     }
   }
 
-  public static String getUserInfoResponseString(UserInfo user, Optional<String> password) {
+  public static JsonObjectBuilder getUserInfoResponseJson(UserInfo user, Optional<String> password) {
     JsonObjectBuilder json = IdTokenFactory.getBaseJson(user);
     IdTokenFactory.appendProfileFields(json, user, true);
     password.ifPresent(pw -> IdTokenFactory.appendPassword(json, pw));
-    return json.build().toString();
+    return json;
+  }
+
+  public static String getUserInfoResponseString(UserInfo user, Optional<String> password) {
+    return getUserInfoResponseJson(user, password).build().toString();
   }
 
   public static String prettyPrintJsonObject(String json) {

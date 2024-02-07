@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.gusdb.oauth2.shared.IdTokenFields;
 import org.json.JSONObject;
 
 /**
@@ -48,6 +49,15 @@ public class User {
     _isGuest = isGuest;
     _signature = signature;
     _stableId = stableId;
+  }
+
+  public User(JSONObject json) {
+    this(
+        Long.valueOf(json.getString(IdTokenFields.sub.name())),
+        json.getBoolean(IdTokenFields.is_guest.name()),
+        json.getString(IdTokenFields.signature.name()),
+        json.getString(IdTokenFields.preferred_username.name())
+    );
   }
 
   public void setPropertyValues(JSONObject json) {
