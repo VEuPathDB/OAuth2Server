@@ -58,6 +58,7 @@ public class User {
         json.getString(IdTokenFields.signature.name()),
         json.getString(IdTokenFields.preferred_username.name())
     );
+    setPropertyValues(json);
   }
 
   public void setPropertyValues(JSONObject json) {
