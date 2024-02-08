@@ -1,10 +1,5 @@
 package org.gusdb.oauth2.client.veupathdb;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.gusdb.oauth2.shared.IdTokenFields;
 import org.json.JSONObject;
 
@@ -14,20 +9,6 @@ import org.json.JSONObject;
  * @author rdoherty
  */
 public class BasicUser implements User {
-
-  public static final Map<String,UserProperty> USER_PROPERTIES = createUserPropertyDefs();
-
-  private static Map<String,UserProperty> createUserPropertyDefs() {
-    List<UserProperty> userProps = List.of(
-        new UserProperty("username", "Username", "username", false, false, false, BasicUser::getUsername, BasicUser::setUsername),
-        new UserProperty("firstName", "First Name", "first_name", true, true, false, BasicUser::getFirstName, BasicUser::setFirstName),
-        new UserProperty("middleName", "Middle Name", "middle_name", false, true, false, BasicUser::getMiddleName, BasicUser::setMiddleName),
-        new UserProperty("lastName", "Last Name", "last_name", true, true, false, BasicUser::getLastName, BasicUser::setLastName),
-        new UserProperty("organization", "Organization", "organization", true, true, false, BasicUser::getOrganization, BasicUser::setOrganization),
-        new UserProperty("interests", "Interests", "interests", false, false, true, BasicUser::getInterests, BasicUser::setInterests)
-    );
-    return Collections.unmodifiableMap(userProps.stream().collect(Collectors.toMap(UserProperty::getName, x -> x)));
-  }
 
   // immutable fields supplied by bearer token
   private final long _userId;
@@ -63,7 +44,7 @@ public class BasicUser implements User {
 
   @Override
   public void setPropertyValues(JSONObject json) {
-    for (UserProperty userProp : BasicUser.USER_PROPERTIES.values()) {
+    for (UserProperty userProp : USER_PROPERTIES.values()) {
       userProp.setValue(this, json.optString(userProp.getName(), null));
     }
   }
