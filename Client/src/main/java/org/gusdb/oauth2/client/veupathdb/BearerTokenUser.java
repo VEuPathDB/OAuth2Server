@@ -7,7 +7,7 @@ import org.gusdb.oauth2.client.ValidatedToken;
 import org.gusdb.oauth2.shared.IdTokenFields;
 import org.json.JSONObject;
 
-public class BearerTokenUser extends User {
+public class BearerTokenUser extends BasicUser {
 
   private static final Logger LOG = LogManager.getLogger(BearerTokenUser.class);
 

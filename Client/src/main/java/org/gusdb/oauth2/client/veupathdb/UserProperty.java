@@ -12,10 +12,10 @@ public class UserProperty {
   private boolean _isRequired = false;
   private boolean _isPublic = true;
 
-  private final Function<User,String> _getter;
-  private final BiConsumer<User,String> _setter;
+  private final Function<BasicUser,String> _getter;
+  private final BiConsumer<BasicUser,String> _setter;
 
-  public UserProperty(String name, String displayName, String dbKey, boolean isRequired, boolean isPublic, boolean isMultiLine, Function<User,String> getter, BiConsumer<User,String> setter) {
+  public UserProperty(String name, String displayName, String dbKey, boolean isRequired, boolean isPublic, boolean isMultiLine, Function<BasicUser,String> getter, BiConsumer<BasicUser,String> setter) {
     _name = name;
     _dbKey = dbKey;
     _isRequired = isRequired;
@@ -26,11 +26,11 @@ public class UserProperty {
     _setter = setter;
   }
 
-  public String getValue(User user) {
+  public String getValue(BasicUser user) {
     return _getter.apply(user);
   }
 
-  public void setValue(User user, String value) {
+  public void setValue(BasicUser user, String value) {
     _setter.accept(user, value);
   }
 
