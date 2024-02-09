@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.wdk;
+package org.gusdb.oauth2.eupathdb;
 
 import java.util.Map;
 import java.util.Optional;

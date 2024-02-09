@@ -50,7 +50,7 @@ public class OAuthRequestHandler {
 
   private static final Logger LOG = LogManager.getLogger(OAuthRequestHandler.class);
 
-  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String username, String userId, int expirationSecs)
+  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String loginName, String userId, int expirationSecs)
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
@@ -70,7 +70,7 @@ public class OAuthRequestHandler {
     LOG.debug("Generating authorization code...");
     final String authorizationCode = oauthIssuerImpl.authorizationCode();
     TokenStore.addAuthCode(new AuthCodeData(authorizationCode,
-        oauthRequest.getClientId(), username, userId, oauthRequest.getNonce()));
+        oauthRequest.getClientId(), loginName, userId, oauthRequest.getNonce()));
     builder.setCode(authorizationCode);
 
     String redirectURI = oauthRequest.getRedirectUri();
@@ -139,7 +139,8 @@ public class OAuthRequestHandler {
           .setExpiresIn(String.valueOf(expirationSecs));
 
       // always send id_token with access token response, create and add it
-      JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData, config.getIssuer(), expirationSecs, includeEmail);
+      JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData.authCodeData.getLoginName(),
+          tokenData.authCodeData, config.getIssuer(), expirationSecs, includeEmail);
       String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config,
           tokenData.authCodeData.getClientId(), oauthRequest.getClientSecret()); // sign with the same secret sent in
       responseBuilder.setParam("id_token", signedToken);
@@ -242,7 +243,7 @@ public class OAuthRequestHandler {
     OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
     final String accessToken = oauthIssuerImpl.accessToken();
 
-    int expirationSecs = config.getTokenExpirationSecs();
+    int expirationSecs = config.getBearerTokenExpirationSecs();
 
     OAuthTokenResponseBuilder responseBuilder =
         OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)

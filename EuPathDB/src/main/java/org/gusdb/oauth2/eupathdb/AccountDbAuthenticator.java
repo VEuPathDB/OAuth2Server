@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.wdk;
+package org.gusdb.oauth2.eupathdb;
 
 import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
 
@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -34,6 +35,7 @@ import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.client.veupathdb.User;
 import org.gusdb.oauth2.service.OAuthRequestHandler;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 import org.gusdb.oauth2.shared.IdTokenFields;
@@ -55,14 +57,11 @@ public class AccountDbAuthenticator implements Authenticator {
     schema
   }
 
-  private static final List<UserPropertyName> USER_PROPERTY_DEFS = List.of(
-      new UserPropertyName("username", "username", false),
-      new UserPropertyName("firstName", "first_name", true),
-      new UserPropertyName("middleName", "middle_name", false),
-      new UserPropertyName("lastName", "last_name", true),
-      new UserPropertyName("organization", "organization", true),
-      new UserPropertyName("interests", "interests", false)
-  );
+  // convert from new API to old
+  private static final List<UserPropertyName> USER_PROPERTY_DEFS =
+      User.USER_PROPERTIES.values().stream()
+      .map(p -> new UserPropertyName(p.getName(), p.getDbKey(), p.isRequired()))
+      .collect(Collectors.toList());
 
   private DatabaseInstance _accountDb;
   private String _schema;
@@ -232,7 +231,7 @@ public class AccountDbAuthenticator implements Authenticator {
     }
   }
 
-    @Override
+  @Override
   public void close() {
     if (_accountDb != null) {
       try {

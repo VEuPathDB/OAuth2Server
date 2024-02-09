@@ -62,13 +62,13 @@ public class TokenStore {
   public static class AuthCodeData extends IdTokenParams {
 
     private final String _authCode;
-    private final String _username;
+    private final String _loginName;
     private final String _userId;
 
-    public AuthCodeData(String authCode, String clientId, String username, String userId, String nonce) {
+    public AuthCodeData(String authCode, String clientId, String loginName, String userId, String nonce) {
       super(clientId, nonce);
       _authCode = authCode;
-      _username = username;
+      _loginName = loginName;
       _userId = userId;
     }
 
@@ -77,7 +77,7 @@ public class TokenStore {
       return new StringBuilder()
         .append("{ authCode: ").append(_authCode)
         .append(", clientId: ").append(_clientId)
-        .append(", username: ").append(_username)
+        .append(", loginName: ").append(_loginName)
         .append(", nonce: ").append(_nonce)
         .append(", authTime: ").append(_creationTime)
         .append(" }").toString();
@@ -98,8 +98,8 @@ public class TokenStore {
       return _authCode;
     }
 
-    public String getUsername() {
-      return _username;
+    public String getLoginName() {
+      return _loginName;
     }
 
     public String getUserId() {
@@ -140,10 +140,10 @@ public class TokenStore {
   public static synchronized void addAuthCode(AuthCodeData authCodeData) {
     AUTH_CODE_MAP.put(authCodeData.getAuthCode(), authCodeData);
     LOG.debug("Added auth code with data:" + authCodeData);
-    List<AuthCodeData> list = USER_AUTH_CODE_MAP.get(authCodeData.getUsername());
+    List<AuthCodeData> list = USER_AUTH_CODE_MAP.get(authCodeData.getLoginName());
     if (list == null) {
       list = new ArrayList<>();
-      USER_AUTH_CODE_MAP.put(authCodeData.getUsername(), list);
+      USER_AUTH_CODE_MAP.put(authCodeData.getLoginName(), list);
     }
     list.add(authCodeData);
   }
@@ -153,10 +153,10 @@ public class TokenStore {
     AuthCodeData authCodeData = AUTH_CODE_MAP.get(authCode);
     AccessTokenData accessTokenData = new AccessTokenData(accessToken, authCodeData);
     ACCESS_TOKEN_MAP.put(accessTokenData.tokenValue, accessTokenData);
-    List<AccessTokenData> list = USER_ACCESS_TOKEN_MAP.get(accessTokenData.authCodeData.getUsername());
+    List<AccessTokenData> list = USER_ACCESS_TOKEN_MAP.get(accessTokenData.authCodeData.getLoginName());
     if (list == null) {
       list = new ArrayList<>();
-      USER_ACCESS_TOKEN_MAP.put(accessTokenData.authCodeData.getUsername(), list);
+      USER_ACCESS_TOKEN_MAP.put(accessTokenData.authCodeData.getLoginName(), list);
     }
     list.add(accessTokenData);
     return accessTokenData;
@@ -184,7 +184,7 @@ public class TokenStore {
   public static String getUserForToken(String accessToken) {
     AccessTokenData data = ACCESS_TOKEN_MAP.get(accessToken);
     if (data != null) {
-      return data.authCodeData.getUsername();
+      return data.authCodeData.getLoginName();
     }
     return null;
   }
@@ -211,7 +211,7 @@ public class TokenStore {
     LOG.debug("Expiring the following auth codes: " + Arrays.toString(expiredCodes.toArray()));
     for (String authCode : expiredCodes) {
       AuthCodeData removedCode = AUTH_CODE_MAP.remove(authCode);
-      String username = removedCode.getUsername();
+      String username = removedCode.getLoginName();
       USER_AUTH_CODE_MAP.get(username).remove(removedCode);
       if (USER_AUTH_CODE_MAP.get(username).isEmpty()) {
         USER_AUTH_CODE_MAP.remove(username);
@@ -226,7 +226,7 @@ public class TokenStore {
     LOG.debug("Expiring the following access tokens: " + Arrays.toString(expiredTokens.toArray()));
     for (String accessToken : expiredTokens) {
       AccessTokenData removedToken = ACCESS_TOKEN_MAP.remove(accessToken);
-      String username = removedToken.authCodeData.getUsername();
+      String username = removedToken.authCodeData.getLoginName();
       USER_ACCESS_TOKEN_MAP.get(username).remove(removedToken);
       if (USER_ACCESS_TOKEN_MAP.get(username).isEmpty()) {
         USER_ACCESS_TOKEN_MAP.remove(username);

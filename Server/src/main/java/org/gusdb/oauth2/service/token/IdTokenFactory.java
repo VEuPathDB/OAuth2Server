@@ -18,7 +18,6 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.UserInfo;
-import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.IdTokenFields;
 
@@ -26,20 +25,20 @@ public class IdTokenFactory {
 
   private static final Logger LOG = LogManager.getLogger(IdTokenFactory.class);
 
-  public static JsonObject createIdTokenJson(Authenticator authenticator,
-      AccessTokenData tokenData, String issuer, int expirationSecs, boolean includeEmail)
+  public static JsonObject createIdTokenJson(Authenticator authenticator, String loginName,
+      IdTokenParams tokenParams, String issuer, int expirationSecs, boolean includeEmail)
           throws OAuthProblemException, OAuthSystemException {
 
     // get values from authenticator and use to populate fields
-    UserInfo user = getUserInfoForToken(authenticator, tokenData.authCodeData.getUsername());
+    UserInfo user = getUserInfoForToken(authenticator, loginName);
     String userId = user.getUserId();
     if (userId == null || userId.isEmpty())
       throw OAuthProblemException.error("Authenticator returned null or empty " +
-          "user ID for username [" + tokenData.authCodeData.getUsername() + "].");
+          "user ID for login name [" + loginName + "].");
 
     // get base object (common to ID and guest tokens, and user profiles)
     JsonObjectBuilder json = getBaseJson(user);
-    appendOidcFields(json, tokenData.authCodeData, issuer, expirationSecs);
+    appendOidcFields(json, tokenParams, issuer, expirationSecs);
     appendProfileFields(json, user, includeEmail);
     return json.build();
   }

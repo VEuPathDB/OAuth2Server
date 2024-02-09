@@ -16,7 +16,7 @@ import org.gusdb.oauth2.service.UserPropertiesRequest;
  * 
  * @author rdoherty
  */
-public interface Authenticator {
+public interface Authenticator extends AutoCloseable {
 
   public enum DataScope {
     /**
@@ -123,6 +123,7 @@ public interface Authenticator {
    * on webapp unloading if the org.gusdb.oauth2.server.ApplicationListener is
    * added as a listener in web.xml.
    */
+  @Override
   public void close();
 
   /**

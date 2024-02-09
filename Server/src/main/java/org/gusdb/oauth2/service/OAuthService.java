@@ -113,7 +113,7 @@ public class OAuthService {
   @Path(Endpoints.LOGIN)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   public Response attemptLogin(
-      @FormParam("username") final String username,
+      @FormParam("username") final String loginName,
       @FormParam("password") final String password,
       @HeaderParam("Referer") final String referrer) throws URISyntaxException {
     Session session = new Session(_request.getSession());
@@ -126,12 +126,12 @@ public class OAuthService {
         return Response.seeOther(getLoginUri(formId, "", LoginFormStatus.accessdenied)).build();
       }
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-      Optional<String> validUserId = authenticator.isCredentialsValid(username, password);
+      Optional<String> validUserId = authenticator.isCredentialsValid(loginName, password);
       if (validUserId.isPresent()) {
-        LOG.info("Authentication successful.  Setting session username to " + username);
+        LOG.info("Authentication successful.  Setting session loginName to " + loginName);
 
         // add username and userId to session to save a lookup later if /auth endpoint is hit with a known client session
-        session.setUsername(username);
+        session.setLoginName(loginName);
         session.setUserId(validUserId.get());
 
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
@@ -140,8 +140,8 @@ public class OAuthService {
           return Response.seeOther(new URI(RESOURCE_PREFIX +
               config.getLoginSuccessPage())).build();
         }
-        authenticator.logSuccessfulLogin(username, validUserId.get(), originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
-        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, username, validUserId.get(), config.getTokenExpirationSecs());
+        authenticator.logSuccessfulLogin(loginName, validUserId.get(), originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
+        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, loginName, validUserId.get(), config.getTokenExpirationSecs());
       }
       else {
         return Response.seeOther(getLoginUri(formId,
@@ -224,7 +224,7 @@ public class OAuthService {
         // user is already logged in; respond with auth code for user
         ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
-            session.getUsername(), session.getUserId(), config.getTokenExpirationSecs());
+            session.getLoginName(), session.getUserId(), config.getTokenExpirationSecs());
       }
       else {
         // no one is logged in; generate form ID and send

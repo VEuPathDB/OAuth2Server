@@ -12,6 +12,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -60,8 +62,8 @@ public class OAuthClient {
   private static final String AUTHORIZATION_HEADER_VALUE_PREFIX = "Bearer ";
 
   // applications can configure or turn off public key cache if desired
-  public static boolean USE_PUBLIC_KEY_CACHE = true;
-  public static int PUBLIC_KEY_CACHE_DURATION_SECS = 120; // two minutes
+  public static AtomicBoolean USE_PUBLIC_KEY_CACHE = new AtomicBoolean(true);
+  public static AtomicInteger PUBLIC_KEY_CACHE_DURATION_SECS = new AtomicInteger(120); // two minutes
 
   // values used to store and control cached public signing key
   private static String CACHED_PUBLIC_KEY = null;
@@ -92,7 +94,7 @@ public class OAuthClient {
   }
 
   private String getPublicSigningKey(String oauthBaseUrl) {
-    return USE_PUBLIC_KEY_CACHE ? getCachedPublicSigningKey(oauthBaseUrl) : fetchPublicSigningKey(oauthBaseUrl);
+    return USE_PUBLIC_KEY_CACHE.get() ? getCachedPublicSigningKey(oauthBaseUrl) : fetchPublicSigningKey(oauthBaseUrl);
   }
 
   private synchronized String getCachedPublicSigningKey(String oauthBaseUrl) {
@@ -103,7 +105,7 @@ public class OAuthClient {
       LOG.info("Cached public key expired; refreshing from " + oauthBaseUrl + Endpoints.JWKS);
       CACHED_PUBLIC_KEY = fetchPublicSigningKey(oauthBaseUrl);
       LAST_PUBLIC_KEY_FETCH_URL = oauthBaseUrl;
-      PUBLIC_KEY_FETCH_EXPIRATION = System.currentTimeMillis() + (PUBLIC_KEY_CACHE_DURATION_SECS * 1000);
+      PUBLIC_KEY_FETCH_EXPIRATION = System.currentTimeMillis() + (PUBLIC_KEY_CACHE_DURATION_SECS.get() * 1000);
     }
     return CACHED_PUBLIC_KEY;
   }

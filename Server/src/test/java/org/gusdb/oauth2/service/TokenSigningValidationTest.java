@@ -14,10 +14,10 @@ import javax.json.JsonObject;
 
 import org.gusdb.oauth2.shared.CryptoException;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
-import org.gusdb.oauth2.shared.KeyGenerator;
 import org.gusdb.oauth2.shared.Signatures;
 import org.gusdb.oauth2.shared.SigningKeyStore;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation.ECCoordinateStrings;
+import org.gusdb.oauth2.tools.KeyGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 

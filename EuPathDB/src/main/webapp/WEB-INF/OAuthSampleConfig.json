@@ -1,6 +1,7 @@
 {
   "issuer": "https://eupathdb.org/oauth",
   "tokenExpirationSecs": 3600,
+  "bearerTokenExpirationSecs": 94608000,
   "loginFormPage": "eupathdb-login.html",
   "keyPairRandomSeed": 12345,
   "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
