@@ -14,12 +14,9 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
-import javax.json.stream.JsonParsingException;
 
 import org.apache.log4j.Logger;
 import org.gusdb.fgputil.accountdb.AccountManager;
@@ -36,9 +33,7 @@ import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.User;
-import org.gusdb.oauth2.service.OAuthRequestHandler;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
-import org.gusdb.oauth2.shared.IdTokenFields;
 
 public class AccountDbAuthenticator implements Authenticator {
 
@@ -128,7 +123,7 @@ public class AccountDbAuthenticator implements Authenticator {
     return buffer.toString();
   }
 
-  private Optional<UserInfo> getUserInfo(UserProfile profile, DataScope scope) {
+  Optional<UserInfo> getUserInfo(UserProfile profile, DataScope scope) {
     return Optional.ofNullable(profile).map(p -> createUserInfoObject(p, true, scope));
   }
 
@@ -252,49 +247,8 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public JsonValue executeQuery(JsonObject querySpec)
       throws UnsupportedOperationException, IllegalArgumentException {
-    try {
-      if ((!querySpec.containsKey("userId") && !querySpec.containsKey("userIds")) ||
-          ( querySpec.containsKey("userId") &&  querySpec.containsKey("userIds"))) {
-        throw new IllegalArgumentException("Query must contain exactly one of ['userId', 'userIds']");
-      }
-      AccountManager acctDb = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
-      if (querySpec.containsKey("userId")) {
-        long requestedUserId = Long.valueOf(querySpec.getInt("userId"));
-        return getUserJson(acctDb, requestedUserId);
-      }
-      else {
-        JsonArray inputArray = querySpec.getJsonArray("userIds");
-        JsonArrayBuilder outputArray = Json.createArrayBuilder();
-        for (int i = 0; i < inputArray.size(); i++) {
-          JsonObject userObj = getUserJson(acctDb, Long.valueOf(inputArray.getInt(i)));
-          outputArray.add(userObj);
-        }
-        return outputArray.build();
-      }
-    }
-    catch (JsonParsingException e) {
-      throw new IllegalArgumentException("Illegal query; " + e.getMessage());
-    }
-  }
-
-  private JsonObject getUserJson(AccountManager acctDb, long requestedUserId) {
-    // look for registered user first
-    UserProfile userProfile = acctDb.getUserProfile(requestedUserId);
-    Optional<UserInfo> userOpt = userProfile == null
-      // no registered user found; look for guest
-      ? getGuestProfileInfo(String.valueOf(requestedUserId))
-      // convert profile to UserInfo
-      : getUserInfo(userProfile, DataScope.PROFILE);
-    return userOpt
-      // found a user with this ID
-      .map(user -> OAuthRequestHandler.getUserInfoResponseJson(user, Optional.empty())
-        .add("found", true)
-        .build())
-      // did not find user of any type
-      .orElse(Json.createObjectBuilder()
-        .add(IdTokenFields.sub.name(), String.valueOf(requestedUserId))
-        .add("found", false)
-        .build());
+    AccountManager acctDb = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    return new UserQueryHandler(this, acctDb).handleQuery(querySpec);
   }
 
   @Override

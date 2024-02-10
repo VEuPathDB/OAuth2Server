@@ -395,15 +395,15 @@ public class OAuthClient {
     }
   }
 
-  public JSONArray getUserData(OAuthConfig oauthConfig, List<String> userIds) {
+  public String queryOAuth(OAuthConfig oauthConfig, JSONObject queryConfig) {
     try {
-      return new JSONArray(performCredentialsBasedRequest(
+      return performCredentialsBasedRequest(
           Endpoints.QUERY_USERS,
           oauthConfig,
           json -> json
-            .put("userIds", userIds),
+            .put("query", queryConfig),
           (builder,entity) -> builder.post(entity)
-      ));
+      );
     }
     catch (InvalidPropertiesException e) {
       // this should never happen; user query does not throw 422
