@@ -18,6 +18,11 @@
       <artifactId>oauth2-client</artifactId>
     </dependency>
 
+    <dependency>
+       <groupId>jakarta.servlet</groupId>
+       <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+
     <!-- JAX-RS/Jersey dependencies -->
     <dependency>
       <groupId>org.glassfish.jersey.containers</groupId>
