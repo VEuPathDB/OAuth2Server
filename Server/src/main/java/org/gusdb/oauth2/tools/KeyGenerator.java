@@ -7,7 +7,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Random;
 
-import org.gusdb.oauth2.shared.CryptoException;
+import org.gusdb.oauth2.exception.CryptoException;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
 import org.gusdb.oauth2.shared.Signatures;
 import org.gusdb.oauth2.shared.SigningKeyStore;

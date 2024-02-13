@@ -33,9 +33,9 @@ import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.UserInfo;
-import org.gusdb.oauth2.client.ConflictException;
-import org.gusdb.oauth2.client.InvalidPropertiesException;
 import org.gusdb.oauth2.client.veupathdb.User;
+import org.gusdb.oauth2.exception.ConflictException;
+import org.gusdb.oauth2.exception.InvalidPropertiesException;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 public class AccountDbAuthenticator implements Authenticator {

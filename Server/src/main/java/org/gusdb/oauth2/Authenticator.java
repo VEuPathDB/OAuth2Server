@@ -6,8 +6,8 @@ import java.util.Optional;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-import org.gusdb.oauth2.client.ConflictException;
-import org.gusdb.oauth2.client.InvalidPropertiesException;
+import org.gusdb.oauth2.exception.ConflictException;
+import org.gusdb.oauth2.exception.InvalidPropertiesException;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 /**

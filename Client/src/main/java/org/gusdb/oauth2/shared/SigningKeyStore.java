@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.oauth2.exception.CryptoException;
 
 import io.jsonwebtoken.security.WeakKeyException;
 
