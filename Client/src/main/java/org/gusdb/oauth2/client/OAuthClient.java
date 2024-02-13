@@ -38,13 +38,20 @@ import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientConfig;
 import org.gusdb.oauth2.client.KeyStoreTrustManager.KeyStoreConfig;
 import org.gusdb.oauth2.client.ValidatedToken.TokenType;
+import org.gusdb.oauth2.exception.ConflictException;
+import org.gusdb.oauth2.exception.InvalidPropertiesException;
+import org.gusdb.oauth2.exception.InvalidTokenException;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
 
 public class OAuthClient {
 
@@ -165,7 +172,7 @@ public class OAuthClient {
     };
   }
 
-  public ValidatedToken getIdTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
+  public ValidatedToken getIdTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) throws InvalidTokenException {
 
     // get legacy token, signed with HMAC using client secret as the key
     String token = getToken(Endpoints.ID_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
@@ -174,7 +181,7 @@ public class OAuthClient {
     return getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token);
   }
 
-  public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) {
+  public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) throws InvalidTokenException {
 
     // get bearer token, signed with ECDSA using public/private key pair
     String token = getToken(Endpoints.BEARER_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
@@ -191,7 +198,7 @@ public class OAuthClient {
     };
   }
 
-  public ValidatedToken getIdTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
+  public ValidatedToken getIdTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) throws InvalidTokenException {
 
     // get legacy token, signed with HMAC using client secret as the key
     String token = getToken(Endpoints.ID_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
@@ -200,7 +207,7 @@ public class OAuthClient {
     return getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token);
   }
 
-  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) {
+  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) throws InvalidTokenException {
 
     // get bearer token, signed with ECDSA using public/private key pair
     String token = getToken(Endpoints.BEARER_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
@@ -209,7 +216,7 @@ public class OAuthClient {
     return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
   }
 
-  public ValidatedToken getNewGuestToken(OAuthConfig oauthConfig) {
+  public ValidatedToken getNewGuestToken(OAuthConfig oauthConfig) throws InvalidTokenException {
 
     // get guest bearer token, signed with ECDSA using public/private key pair
     String token = getToken(Endpoints.GUEST_TOKEN, form -> {}, oauthConfig, null);
@@ -264,7 +271,7 @@ public class OAuthClient {
     }
   }
 
-  public ValidatedToken getValidatedHmacSignedToken(String clientSecret, String token) {
+  public ValidatedToken getValidatedHmacSignedToken(String clientSecret, String token) throws InvalidTokenException {
 
     // encode the key as a base64 string
     byte[] unencodedKey = clientSecret.getBytes(StandardCharsets.UTF_8);
@@ -273,35 +280,45 @@ public class OAuthClient {
     // convert the key back to bytes
     byte[] keyBytes = Base64.getDecoder().decode(encodedKeyStr);
 
-    // verify signature and create claims object
-    Claims claims = Jwts.parserBuilder()
-        .setSigningKey(keyBytes)
-        .build()
-        .parseClaimsJws(token)
-        .getBody();
-
-    validateClaims(claims);
-
-    return ValidatedToken.build(TokenType.ID, token, claims);
+    try {
+      // verify signature and create claims object
+      Claims claims = Jwts.parserBuilder()
+          .setSigningKey(keyBytes)
+          .build()
+          .parseClaimsJws(token)
+          .getBody();
+  
+      validateClaims(claims);
+  
+      return ValidatedToken.build(TokenType.ID, token, claims);
+    }
+    catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+      throw new InvalidTokenException(e);
+    }
   }
 
-  public ValidatedToken getValidatedEcdsaSignedToken(String oauthBaseUrl, String token) {
+  public ValidatedToken getValidatedEcdsaSignedToken(String oauthBaseUrl, String token) throws InvalidTokenException {
 
     String key = getPublicSigningKey(oauthBaseUrl);
 
     // convert the key string to a public key object
     PublicKey publicKey = new ECPublicKeyRepresentation(key).getPublicKey();
 
-    // verify signature and create claims object
-    Claims claims = Jwts.parserBuilder()
-        .setSigningKey(publicKey)
-        .build()
-        .parseClaimsJws(token)
-        .getBody();
-
-    validateClaims(claims);
-
-    return ValidatedToken.build(TokenType.BEARER, token, claims);
+    try {
+      // verify signature and create claims object
+      Claims claims = Jwts.parserBuilder()
+          .setSigningKey(publicKey)
+          .build()
+          .parseClaimsJws(token)
+          .getBody();
+  
+      validateClaims(claims);
+  
+      return ValidatedToken.build(TokenType.BEARER, token, claims);
+    }
+    catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+      throw new InvalidTokenException(e);
+    }
   }
 
   private void validateClaims(Claims claims) {

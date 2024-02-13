@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.gusdb.oauth2.shared.CryptoException;
+import org.gusdb.oauth2.exception.CryptoException;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
 import org.gusdb.oauth2.shared.Signatures;
 import org.gusdb.oauth2.shared.SigningKeyStore;

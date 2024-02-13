@@ -18,6 +18,7 @@ import javax.json.JsonWriter;
 import javax.json.stream.JsonGenerator;
 
 import org.apache.logging.log4j.LogManager;
+import org.gusdb.oauth2.exception.CryptoException;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation.ECCoordinateStrings;
 
 import io.jsonwebtoken.Jwts;
