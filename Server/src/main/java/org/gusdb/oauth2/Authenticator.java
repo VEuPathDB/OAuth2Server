@@ -6,6 +6,8 @@ import java.util.Optional;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.gusdb.oauth2.client.ConflictException;
+import org.gusdb.oauth2.client.InvalidPropertiesException;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 /**
@@ -171,10 +173,11 @@ public interface Authenticator extends AutoCloseable {
    * @param userProps properties from which to create new account
    * @param initialPassword initial password to associate with the account
    * @return object representing the new user
-   * @throws IllegalArgumentException if input user props are invalid
+   * @throws ConflictException if a passed value must be unique and conflicts with an existing value
+   * @throws InvalidPropertiesException if input user props are invalid for another reason
    * @throws RuntimeException if unable to complete the operation
    */
-  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws IllegalArgumentException;
+  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
 
   /**
    * Modifies the user account for passed userId using the passed user props
@@ -182,10 +185,11 @@ public interface Authenticator extends AutoCloseable {
    * @param userId ID of user to modify
    * @param userProps properties to assign to the specified user
    * @return object representing the modified user
-   * @throws IllegalArgumentException if input user props are invalid
+   * @throws ConflictException if a passed value must be unique and conflicts with an existing value
+   * @throws InvalidPropertiesException if input user props are invalid for another reason
    * @throws RuntimeException if unable to complete the operation
    */
-  public UserInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException;
+  public UserInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
 
   /**
    * Reset the password for the passed login to the passed password value

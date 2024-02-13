@@ -23,33 +23,48 @@ public interface User {
     return Collections.unmodifiableMap(userProps.stream().collect(Collectors.toMap(UserProperty::getName, x -> x)));
   }
 
-  public void setPropertyValues(JSONObject json);
+  void setPropertyValues(JSONObject json);
 
-  public long getUserId();
-  public boolean isGuest();
-  public String getSignature();
-  public String getStableId();
+  long getUserId();
+  boolean isGuest();
+  String getSignature();
+  String getStableId();
 
-  public String getEmail();
-  public User setEmail(String email);
+  String getEmail();
+  User setEmail(String email);
 
-  public String getUsername();
-  public User setUsername(String username);
+  String getUsername();
+  User setUsername(String username);
 
-  public String getFirstName();
-  public User setFirstName(String firstName);
+  String getFirstName();
+  User setFirstName(String firstName);
 
-  public String getMiddleName();
-  public User setMiddleName(String middleName);
+  String getMiddleName();
+  User setMiddleName(String middleName);
 
-  public String getLastName();
-  public User setLastName(String lastName);
+  String getLastName();
+  User setLastName(String lastName);
 
-  public String getOrganization();
-  public User setOrganization(String organization);
+  String getOrganization();
+  User setOrganization(String organization);
 
-  public String getInterests();
-  public User setInterests(String interests);
+  String getInterests();
+  User setInterests(String interests);
 
-  public String getDisplayName();
+  /**
+   * Provides a "pretty" display name for this user
+   * 
+   * @return display name for this user
+   */
+  default String getDisplayName() {
+    return isGuest() ? "Guest User" : (
+        formatNamePart(getFirstName()) +
+        formatNamePart(getMiddleName()) +
+        formatNamePart(getLastName())).trim();
+  }
+
+  private static String formatNamePart(String namePart) {
+    return (namePart == null || namePart.isEmpty() ? "" : " " + namePart.trim());
+  }
+
 }

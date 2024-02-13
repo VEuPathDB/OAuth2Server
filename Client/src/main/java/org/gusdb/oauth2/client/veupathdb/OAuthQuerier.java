@@ -17,14 +17,7 @@ public class OAuthQuerier {
   }
 
   public static <T extends User> Map<String, T> getUsersByEmail(OAuthClient client, OAuthConfig config, List<String> emails, Function<JSONObject, T> userConverter) {
-    JSONArray response = new JSONArray(client.queryOAuth(config, new JSONObject().put("emails", new JSONArray(emails))));
-    Map<String, T> userMap = new HashMap<>();
-    for (int i = 0; i < response.length(); i++) {
-      JSONObject userJson = response.getJSONObject(i);
-      T user = userConverter.apply(userJson);
-      userMap.put(user.getEmail(), user);
-    }
-    return userMap;
+    return getUsers(client, config, emails, userConverter, "emails", u -> u.getEmail());
   }
 
   public static Map<Long, User> getUsersById(OAuthClient client, OAuthConfig config, List<Long> userIds) {
@@ -32,12 +25,17 @@ public class OAuthQuerier {
   }
 
   public static <T extends User> Map<Long, T> getUsersById(OAuthClient client, OAuthConfig config, List<Long> userIds, Function<JSONObject, T> userConverter) {
-    JSONArray response = new JSONArray(client.queryOAuth(config, new JSONObject().put("userIds", new JSONArray(userIds))));
-    Map<Long, T> userMap = new HashMap<>();
+    return getUsers(client, config, userIds, userConverter, "userIds", u -> u.getUserId());
+  }
+
+  private static <T extends User, S> Map<S, T> getUsers(OAuthClient client, OAuthConfig config, List<S> identifiers,
+      Function<JSONObject, T> userConverter, String identifiersJsonPropKey, Function<T,S> keyGenerator) {
+    JSONArray response = new JSONArray(client.queryOAuth(config, new JSONObject().put("emails", new JSONArray(identifiers))));
+    Map<S, T> userMap = new HashMap<>();
     for (int i = 0; i < response.length(); i++) {
       JSONObject userJson = response.getJSONObject(i);
-      T user = userConverter.apply(userJson);
-      userMap.put(user.getUserId(), user);
+      T user = userJson.getBoolean("found") ? userConverter.apply(userJson) : null;
+      userMap.put(keyGenerator.apply(user), user);
     }
     return userMap;
   }

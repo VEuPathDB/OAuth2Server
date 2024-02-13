@@ -360,7 +360,7 @@ public class OAuthClient {
     }
   }
 
-  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws InvalidPropertiesException {
+  public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws InvalidPropertiesException, ConflictException {
     return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_CREATE,
         oauthConfig,
@@ -369,7 +369,7 @@ public class OAuthClient {
     ));
   }
 
-  public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) throws InvalidPropertiesException {
+  public JSONObject modifyUser(OAuthConfig oauthConfig, ValidatedToken token, Map<String,String> userProperties) throws InvalidPropertiesException, ConflictException {
     return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_EDIT,
         oauthConfig,
@@ -389,8 +389,8 @@ public class OAuthClient {
           (builder,entity) -> builder.post(entity)
       ));
     }
-    catch (InvalidPropertiesException e) {
-      // this should never happen; password_reset does not throw 422
+    catch (InvalidPropertiesException | ConflictException e) {
+      // this should never happen; password_reset does not throw 422 or 409
       throw new RuntimeException(e);
     }
   }
@@ -405,14 +405,14 @@ public class OAuthClient {
           (builder,entity) -> builder.post(entity)
       );
     }
-    catch (InvalidPropertiesException e) {
-      // this should never happen; user query does not throw 422
+    catch (InvalidPropertiesException | ConflictException e) {
+      // this should never happen; user query does not throw 422 or 409
       throw new RuntimeException(e);
     }
   }
 
   private String performCredentialsBasedRequest(String endpointPath, OAuthConfig oauthConfig,
-      Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) throws InvalidPropertiesException {
+      Function<JSONObject,JSONObject> jsonModifier, BiFunction<Invocation.Builder,Entity<String>,Response> responseSupplier) throws InvalidPropertiesException, ConflictException {
 
     String endpoint = oauthConfig.getOauthUrl() + endpointPath;
 
@@ -442,6 +442,9 @@ public class OAuthClient {
       if (response.getStatusInfo().getFamily().equals(Status.Family.CLIENT_ERROR)) {
         if (response.getStatus() == HttpStatus.UNPROCESSABLE_CONTENT.getStatusCode()) {
           throw new InvalidPropertiesException(readResponseBody(response));
+        }
+        if (response.getStatus() == Status.CONFLICT.getStatusCode()) {
+          throw new ConflictException(readResponseBody(response));
         }
         // a 400 indicates a syntax error (e.g. JSON misformat) on our side and should be a 500
         throw new RuntimeException("Created bad request to " + endpoint + "; returned " + response.getStatus() + ", " + readResponseBody(response));

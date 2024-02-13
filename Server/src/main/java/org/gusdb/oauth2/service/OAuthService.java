@@ -60,8 +60,10 @@ import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.Authenticator.RequestingUser;
 import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.client.ConflictException;
 import org.gusdb.oauth2.client.Endpoints;
 import org.gusdb.oauth2.client.HttpStatus;
+import org.gusdb.oauth2.client.InvalidPropertiesException;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.server.OAuthServlet;
@@ -425,9 +427,12 @@ public class OAuthService {
     catch (JsonParsingException | ClassCastException e) {
       throw new BadRequestException("Unable to parse client credentials", e);
     }
-    catch (IllegalArgumentException e) {
+    catch (InvalidPropertiesException e) {
       // passed user properties were unacceptable for some reason
       return Response.status(HttpStatus.UNPROCESSABLE_CONTENT).entity(e.getMessage()).build();
+    }
+    catch (ConflictException e) {
+      return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
     }
   }
 
@@ -461,9 +466,12 @@ public class OAuthService {
     catch (JsonParsingException | ClassCastException e) {
       throw new BadRequestException("Unable to parse client credentials", e);
     }
-    catch (IllegalArgumentException e) {
+    catch (InvalidPropertiesException e) {
       // passed user properties were unacceptable for some reason
       return Response.status(HttpStatus.UNPROCESSABLE_CONTENT).entity(e.getMessage()).build();
+    }
+    catch (ConflictException e) {
+      return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
     }
   }
 

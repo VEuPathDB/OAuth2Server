@@ -5,6 +5,7 @@ import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
 import java.net.URI;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.client.ConflictException;
+import org.gusdb.oauth2.client.InvalidPropertiesException;
 import org.gusdb.oauth2.client.veupathdb.User;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
 
@@ -157,23 +160,24 @@ public class AccountDbAuthenticator implements Authenticator {
       }
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
-        JsonObjectBuilder builder = Json.createObjectBuilder()
-            .add("name", getDisplayName(profile.getProperties()))
-            .add("organization", profile.getProperties().get("organization"));
-        if (scope == DataScope.PROFILE) builder
-            .add("firstName", profile.getProperties().get("firstName"))
-            .add("middleName", profile.getProperties().get("middleName"))
-            .add("lastName", profile.getProperties().get("lastName"))
-            .add("username", profile.getProperties().get("username"))
-            .add("interests", profile.getProperties().get("interests"));
-        JsonObject json = builder.build();
-        // convert JSON object to map of String -> JsonValue
-        Map<String,JsonValue> map = new HashMap<>();
-        for (String key : json.keySet()) {
-          // we know they are all strings 
-          map.put(key, json.getJsonString(key));
+        switch (scope) {
+          case PROFILE:
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            for (String propName : User.USER_PROPERTIES.keySet()) {
+              builder.add(propName, profile.getProperties().get(propName));
+            }
+            JsonObject json = builder.build();
+            // convert JSON object to map of String -> JsonValue
+            Map<String,JsonValue> map = new HashMap<>();
+            for (String propName : User.USER_PROPERTIES.keySet()) {
+              // we know they are all strings 
+              map.put(propName, json.getJsonString(propName));
+            }
+            return map;
+          case TOKEN:
+          default:
+            return Collections.emptyMap();
         }
-        return map;
       }
     };
   }
@@ -181,21 +185,6 @@ public class AccountDbAuthenticator implements Authenticator {
   // protected so TestAuthenticator can override
   protected UserProfile getUserProfile(String userId) {
     return new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(Long.valueOf(userId));
-  }
-
-  private static String getDisplayName(Map<String,String> userProperties) {
-    String firstName = userProperties.get("firstName");
-    String middleName = userProperties.get("middleName");
-    String lastName = userProperties.get("lastName");
-    String name = null;
-    if (firstName != null && !firstName.isEmpty()) name = firstName;
-    if (middleName != null && !middleName.isEmpty()) {
-      name = (name == null ? middleName : name + " " + middleName);
-    }
-    if (lastName != null && !lastName.isEmpty()) {
-      name = (name == null ? lastName : name + " " + lastName);
-    }
-    return name;
   }
 
   @Override
@@ -267,7 +256,7 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) {
+  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws ConflictException, InvalidPropertiesException {
     AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
     validateUserProps(accountMgr, userProps, Optional.empty());
     UserProfile newUser = Functions.mapException(
@@ -284,8 +273,10 @@ public class AccountDbAuthenticator implements Authenticator {
    * @param accountMgr account manager providing access to data store
    * @param userProps properties to be validated
    * @param userId user to which properties will be assigned
+   * @throws ConflictException 
+   * @throws InvalidPropertiesException 
    */
-  private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps, Optional<Long> userId) {
+  private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps, Optional<Long> userId) throws ConflictException, InvalidPropertiesException {
 
     // check email for uniqueness and format
     userProps.setEmail(validateAndFormatEmail(userProps.getEmail(), accountMgr, userId));
@@ -301,39 +292,39 @@ public class AccountDbAuthenticator implements Authenticator {
     // TODO: move this check into AccountManager
     for (UserPropertyName prop : USER_PROPERTY_DEFS) {
       if (prop.isRequired() && (!userProps.containsKey(prop.getName()) || userProps.get(prop.getName()).isBlank())) {
-        throw new IllegalArgumentException("User property '" + prop.getName() + "' cannot be empty.");
+        throw new InvalidPropertiesException("User property '" + prop.getName() + "' cannot be empty.");
       }
     }
   }
 
-  private static String validateAndFormatEmail(String email, AccountManager accountMgr, Optional<Long> userId) {
+  private static String validateAndFormatEmail(String email, AccountManager accountMgr, Optional<Long> userId) throws InvalidPropertiesException, ConflictException {
     // trim and validate passed email address and extract stable name
     if (email == null)
-      throw new IllegalArgumentException("The user's email cannot be empty.");
+      throw new InvalidPropertiesException("The user's email cannot be empty.");
     // format the info
     email = AccountManager.trimAndLowercase(email);
     if (email.isEmpty())
-      throw new IllegalArgumentException("The user's email cannot be empty.");
+      throw new InvalidPropertiesException("The user's email cannot be empty.");
     int atSignIndex = email.indexOf("@");
     if (atSignIndex < 1) // must be present and not the first char
-      throw new IllegalArgumentException("The user's email address is invalid.");
+      throw new InvalidPropertiesException("The user's email address is invalid.");
     if (atSignIndex > email.length() - 4) // must be at least a@b.c
-      throw new IllegalArgumentException("The user's email address is invalid.");
+      throw new InvalidPropertiesException("The user's email address is invalid.");
 
     // check whether the user exist in the database already; if email exists, the operation fails
     ensureUniqueValue("email", accountMgr.getUserProfileByEmail(email), email, userId);
     return email;
   }
 
-  private static void ensureUniqueValue(String valueName, UserProfile foundProfile, String value, Optional<Long> userId) {
+  private static void ensureUniqueValue(String valueName, UserProfile foundProfile, String value, Optional<Long> userId) throws ConflictException {
     if (foundProfile != null && (userId.isEmpty() || !userId.get().equals(foundProfile.getUserId()))) {
       // either creating a new user (no found value is acceptable) or editing and value found in different profile
-      throw new IllegalArgumentException("The " + valueName + " '" + value + "' is already in use. " + "Please choose another.");
+      throw new ConflictException("The " + valueName + " '" + value + "' is already in use. " + "Please choose another.");
     }
   }
 
   @Override
-  public UserInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) {
+  public UserInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) throws ConflictException, InvalidPropertiesException {
     AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
     Long userId = Long.valueOf(userIdStr);
     validateUserProps(accountMgr, userProps, Optional.of(userId));

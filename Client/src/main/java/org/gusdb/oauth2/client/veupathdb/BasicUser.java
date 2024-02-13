@@ -43,9 +43,14 @@ public class BasicUser implements User {
   }
 
   @Override
-  public void setPropertyValues(JSONObject json) {
+  public void setPropertyValues(JSONObject userInfo) {
+    // set email (standard property but mutable so set on user profile and not token
+    if (userInfo.has(IdTokenFields.email.name())) {
+      setEmail(userInfo.getString(IdTokenFields.email.name()));
+    }
+    // set other user properties found only on user profile object
     for (UserProperty userProp : USER_PROPERTIES.values()) {
-      userProp.setValue(this, json.optString(userProp.getName(), null));
+      userProp.setValue(this, userInfo.optString(userProp.getName(), null));
     }
   }
 
@@ -155,23 +160,6 @@ public class BasicUser implements User {
   public BasicUser setInterests(String interests) {
     _interests = interests;
     return this;
-  }
-
-  /**
-   * Provides a "pretty" display name for this user
-   * 
-   * @return display name for this user
-   */
-  @Override
-  public String getDisplayName() {
-    return isGuest() ? "Guest User" : (
-        formatNamePart(getFirstName()) +
-        formatNamePart(getMiddleName()) +
-        formatNamePart(getLastName())).trim();
-  }
-
-  private static String formatNamePart(String namePart) {
-    return (namePart == null || namePart.isEmpty() ? "" : " " + namePart.trim());
   }
 
   @Override
