@@ -37,10 +37,7 @@ public class BearerTokenUser extends BasicUser {
     // fetch user info from OAuth server where it is stored (but only on demand, and only once for this object's lifetime)
     JSONObject userInfo = _client.getUserData(_oauthUrl, _token);
 
-    // set email (standard property but mutable so set on user profile and not token
-    setEmail(userInfo.getString(IdTokenFields.email.name()));
-
-    // set other user properties found only on user profile object
+    // set values found only on user info object
     setPropertyValues(userInfo);
 
     LOG.info("User data successfully fetched for " + getDisplayName() + " / " + getOrganization());
