@@ -161,14 +161,14 @@ public class AccountDbAuthenticator implements Authenticator {
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
         JsonObjectBuilder builder = Json.createObjectBuilder();
+        Map<String,String> props = profile.getProperties();
         switch (scope) {
           case PROFILE:
             for (String propName : User.USER_PROPERTIES.keySet()) {
-              builder.add(propName, profile.getProperties().get(propName));
+              builder.add(propName, Optional.ofNullable(props.get(propName)).orElse(""));
             }
             break;
           case ID_TOKEN:
-            Map<String,String> props = profile.getProperties();
             builder.add("name", User.formatDisplayName(
                 props.get("firstName"),
                 props.get("middleName"),
