@@ -272,7 +272,7 @@ public class OAuthService {
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
-    return getOidcTokenResponse(formParams, Signatures.SECRET_KEY_SIGNER, false);
+    return getOidcTokenResponse(formParams, Signatures.SECRET_KEY_SIGNER, DataScope.ID_TOKEN);
   }
 
   @POST
@@ -280,10 +280,10 @@ public class OAuthService {
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getBearerToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
-    return getOidcTokenResponse(formParams, Signatures.ASYMMETRIC_KEY_SIGNER, true);
+    return getOidcTokenResponse(formParams, Signatures.ASYMMETRIC_KEY_SIGNER, DataScope.BEARER_TOKEN);
   }
 
-  private Response getOidcTokenResponse(MultivaluedMap<String,String> formParams, TokenSigner signingStrategy, boolean includeEmail) throws OAuthSystemException {
+  private Response getOidcTokenResponse(MultivaluedMap<String,String> formParams, TokenSigner signingStrategy, DataScope scope) throws OAuthSystemException {
     try {
       // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
       HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
@@ -299,7 +299,7 @@ public class OAuthService {
 
       ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
       return OAuthRequestHandler.handleTokenRequest(oauthRequest, clientValidator,
-          OAuthServlet.getAuthenticator(_context), config, signingStrategy, includeEmail);
+          OAuthServlet.getAuthenticator(_context), config, signingStrategy, scope);
     }
     catch (OAuthProblemException e) {
       LOG.error("Problem with authorize request: ", e);

@@ -34,7 +34,8 @@ public interface Authenticator extends AutoCloseable {
      * To keep OIDC ID/bearer tokens small, this scope can/should produce a less
      * comprehensive collection of fields than the PROFILE scope and omit any large fields.
      */
-    TOKEN,
+    ID_TOKEN,
+    BEARER_TOKEN,
 
     /**
      * Indicates implementation-specific user information used to populate a user
