@@ -61,11 +61,14 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Needed for ECDSA algorithm in pre Java-14 environments -->
+    <!-- Signatures/KeyGen/Certificates -->
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-      <scope>runtime</scope>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
     </dependency>
 
     <dependency>

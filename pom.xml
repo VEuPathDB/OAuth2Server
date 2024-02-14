@@ -18,6 +18,7 @@
     <java.version>11</java.version>
     <jjwt.version>0.11.5</jjwt.version>
     <oltu.version>1.0.2</oltu.version>
+    <bouncycastle.version>1.77</bouncycastle.version>
   </properties>
 
   <modules>
@@ -103,12 +104,16 @@
         <scope>runtime</scope>
       </dependency>
 
-      <!-- Needed for ECDSA algorithm in pre-Java-14 environments -->
+      <!-- Signatures/KeyGen/Certificates -->
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.70</version>
-        <scope>runtime</scope>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
 
       <!-- JSON processing -->
