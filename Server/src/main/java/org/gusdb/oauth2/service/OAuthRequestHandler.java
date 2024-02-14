@@ -37,7 +37,7 @@ import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.config.ApplicationConfig;
-import org.gusdb.oauth2.service.token.IdTokenFactory;
+import org.gusdb.oauth2.service.token.TokenFactory;
 import org.gusdb.oauth2.service.token.TokenStore;
 import org.gusdb.oauth2.service.token.TokenStore.AccessTokenData;
 import org.gusdb.oauth2.service.token.TokenStore.AuthCodeData;
@@ -82,7 +82,7 @@ public class OAuthRequestHandler {
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
       ClientValidator clientValidator, Authenticator authenticator,
-      ApplicationConfig config, TokenSigner tokenSigner, boolean includeEmail) throws OAuthSystemException {
+      ApplicationConfig config, TokenSigner tokenSigner, DataScope scope) throws OAuthSystemException {
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
       OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
@@ -139,8 +139,8 @@ public class OAuthRequestHandler {
           .setExpiresIn(String.valueOf(expirationSecs));
 
       // always send id_token with access token response, create and add it
-      JsonObject tokenJson = IdTokenFactory.createIdTokenJson(authenticator, tokenData.authCodeData.getLoginName(),
-          tokenData.authCodeData, config.getIssuer(), expirationSecs, includeEmail);
+      JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, tokenData.authCodeData.getLoginName(),
+          tokenData.authCodeData, config.getIssuer(), expirationSecs, scope);
       String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config,
           tokenData.authCodeData.getClientId(), oauthRequest.getClientSecret()); // sign with the same secret sent in
       responseBuilder.setParam("id_token", signedToken);
@@ -218,9 +218,9 @@ public class OAuthRequestHandler {
   }
 
   public static JsonObjectBuilder getUserInfoResponseJson(UserInfo user, Optional<String> password) {
-    JsonObjectBuilder json = IdTokenFactory.getBaseJson(user);
-    IdTokenFactory.appendProfileFields(json, user, true);
-    password.ifPresent(pw -> IdTokenFactory.appendPassword(json, pw));
+    JsonObjectBuilder json = TokenFactory.getBaseJson(user);
+    TokenFactory.appendProfileFields(json, user, DataScope.PROFILE);
+    password.ifPresent(pw -> TokenFactory.appendPassword(json, pw));
     return json;
   }
 
@@ -251,7 +251,7 @@ public class OAuthRequestHandler {
         .setAccessToken(accessToken)
         .setExpiresIn(String.valueOf(expirationSecs));
 
-    JsonObject tokenJson = IdTokenFactory.createGuestTokenJson(authenticator, clientId, config.getIssuer(), expirationSecs);
+    JsonObject tokenJson = TokenFactory.createGuestTokenJson(authenticator, clientId, config.getIssuer(), expirationSecs);
     String signedToken = Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, config, clientId, null);
 
     responseBuilder.setParam("id_token", signedToken);

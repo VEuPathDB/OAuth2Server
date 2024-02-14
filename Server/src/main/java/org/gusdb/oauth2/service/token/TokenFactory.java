@@ -21,16 +21,17 @@ import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.IdTokenFields;
 
-public class IdTokenFactory {
+public class TokenFactory {
 
-  private static final Logger LOG = LogManager.getLogger(IdTokenFactory.class);
+  private static final Logger LOG = LogManager.getLogger(TokenFactory.class);
 
-  public static JsonObject createIdTokenJson(Authenticator authenticator, String loginName,
-      IdTokenParams tokenParams, String issuer, int expirationSecs, boolean includeEmail)
+  public static JsonObject createTokenJson(Authenticator authenticator, String loginName,
+      IdTokenParams tokenParams, String issuer, int expirationSecs, DataScope scope)
           throws OAuthProblemException, OAuthSystemException {
+    assert(scope != DataScope.PROFILE);
 
     // get values from authenticator and use to populate fields
-    UserInfo user = getUserInfoForToken(authenticator, loginName);
+    UserInfo user = getUserInfoForToken(authenticator, loginName, scope);
     String userId = user.getUserId();
     if (userId == null || userId.isEmpty())
       throw OAuthProblemException.error("Authenticator returned null or empty " +
@@ -39,7 +40,7 @@ public class IdTokenFactory {
     // get base object (common to ID and guest tokens, and user profiles)
     JsonObjectBuilder json = getBaseJson(user);
     appendOidcFields(json, tokenParams, issuer, expirationSecs);
-    appendProfileFields(json, user, includeEmail);
+    appendProfileFields(json, user, scope);
     return json.build();
   }
 
@@ -49,10 +50,10 @@ public class IdTokenFactory {
       .add(IdTokenFields.is_guest.name(), user.isGuest());
   }
 
-  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user, boolean includeEmail) {
+  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user, DataScope scope) {
     // add user's email if returned by Authenticator
     String email = user.getEmail();
-    if (includeEmail && email != null && !email.isBlank()) {
+    if (scope != DataScope.BEARER_TOKEN && email != null && !email.isBlank()) {
       jsonBuilder
         .add(IdTokenFields.email.name(), email)
         .add(IdTokenFields.email_verified.name(), user.isEmailVerified());
@@ -83,6 +84,7 @@ public class IdTokenFactory {
         jsonBuilder.add(entry.getKey(), entry.getValue());
       }
     }
+
     return jsonBuilder;
   }
 
@@ -126,9 +128,9 @@ public class IdTokenFactory {
     return json.build();
   }
 
-  private static UserInfo getUserInfoForToken(Authenticator authenticator, String loginName) throws OAuthSystemException {
+  private static UserInfo getUserInfoForToken(Authenticator authenticator, String loginName, DataScope scope) throws OAuthSystemException {
     try {
-      return authenticator.getUserInfoByLoginName(loginName, DataScope.TOKEN).orElseThrow(() -> {
+      return authenticator.getUserInfoByLoginName(loginName, scope).orElseThrow(() -> {
         LOG.warn("Request made to get user token for login '" + loginName + "', which does not seem to exist.");
         return new ForbiddenException();
       });

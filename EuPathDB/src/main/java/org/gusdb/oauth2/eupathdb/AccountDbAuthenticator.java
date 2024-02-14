@@ -7,9 +7,9 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -160,24 +160,31 @@ public class AccountDbAuthenticator implements Authenticator {
       }
       @Override
       public Map<String, JsonValue> getSupplementalFields() {
+        JsonObjectBuilder builder = Json.createObjectBuilder();
         switch (scope) {
           case PROFILE:
-            JsonObjectBuilder builder = Json.createObjectBuilder();
             for (String propName : User.USER_PROPERTIES.keySet()) {
               builder.add(propName, profile.getProperties().get(propName));
             }
-            JsonObject json = builder.build();
-            // convert JSON object to map of String -> JsonValue
-            Map<String,JsonValue> map = new HashMap<>();
-            for (String propName : User.USER_PROPERTIES.keySet()) {
-              // we know they are all strings 
-              map.put(propName, json.getJsonString(propName));
-            }
-            return map;
-          case TOKEN:
+            break;
+          case ID_TOKEN:
+            Map<String,String> props = profile.getProperties();
+            builder.add("name", User.formatDisplayName(
+                props.get("firstName"),
+                props.get("middleName"),
+                props.get("lastName")
+            ));
+            builder.add("organization", props.get("organization"));
+            break;
+          case BEARER_TOKEN:
           default:
             return Collections.emptyMap();
         }
+        // convert JSON object to map of String -> JsonValue
+        return builder.build().entrySet().stream()
+            .peek(entry -> LOG.debug("Adding entry to supplemental fields: " + entry.getKey() + " -> " + entry.getValue().toString()))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
       }
     };
   }

@@ -38,6 +38,7 @@ public class KeyGenerator {
       byte[] randomBytes = new byte[32];
       new Random().nextBytes(randomBytes);
       String randomString = Base64.getEncoder().encodeToString(randomBytes);
+      System.out.println("Random String:\n" + randomString);
 
       SigningKeyStore keyStore = new SigningKeyStore(randomString);
       System.out.println("EC Private:\n" + toOutputString(keyStore.getAsyncKeys().getPrivate()));

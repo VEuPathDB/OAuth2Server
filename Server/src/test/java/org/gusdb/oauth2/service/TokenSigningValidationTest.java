@@ -43,7 +43,7 @@ public class TokenSigningValidationTest {
   private static String AUTO_CLIENT_SECRET; // will be assigned during key store creation
 
   // asymmetric token config
-  private static final String KEY_PAIR_RANDOM_SEED = "1234567890123456";
+  private static final String KEY_PAIR_RANDOM_SEED = "ne2OCyFSoXXtLCR2RQuUsaqaWBmnwufNNhCyv6KygkwDDpILeOv67MEecKguBFrhqyiYO/UM6JJzVd5Xh3JwSA==";
 
   // claims object to be encoded/signed/verified/decoded
   private static final JsonObject DUMMY_CLAIMS = Json.createObjectBuilder().add("sub", "myUserId").build();
