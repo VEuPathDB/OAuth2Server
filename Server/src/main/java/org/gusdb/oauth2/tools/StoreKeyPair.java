@@ -20,8 +20,6 @@ import java.security.Signature;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
@@ -40,6 +38,10 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
 import org.gusdb.oauth2.shared.SigningKeyStore;
 
+/**
+ * This class 
+ *
+ */
 public class StoreKeyPair {
 
   public static Certificate selfSign(KeyPair keyPair, String subjectDN)
@@ -102,8 +104,8 @@ public class StoreKeyPair {
     // you can validate by generating a signature and verifying it or by
     // comparing the moduli by first casting to RSAPublicKey, e.g.:
 
-    ECPublicKey pubKey = (ECPublicKey) generatedKeyPair.getPublic();
-    ECPrivateKey privKey = (ECPrivateKey) retrievedKeyPair.getPrivate();
+    //ECPublicKey pubKey = (ECPublicKey) generatedKeyPair.getPublic();
+    //ECPrivateKey privKey = (ECPrivateKey) retrievedKeyPair.getPrivate();
 
     // verify things work!
 
