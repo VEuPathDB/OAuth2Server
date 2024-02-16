@@ -354,6 +354,7 @@ public class OAuthClient {
 
   public JSONObject getUserData(String oauthBaseUrl, ValidatedToken token) {
     String url = oauthBaseUrl + Endpoints.USER_INFO;
+    LOG.info("Will send Authorization header value: " + getAuthorizationHeaderValue(token));
     // build request and get JSON response
     try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
