@@ -6,4 +6,8 @@ public class CryptoException extends Exception {
     super(message);
   }
 
+  public CryptoException(String message, Exception cause) {
+    super(message, cause);
+  }
+
 }

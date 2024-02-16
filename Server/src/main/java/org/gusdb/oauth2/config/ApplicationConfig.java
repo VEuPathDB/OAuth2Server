@@ -3,6 +3,7 @@ package org.gusdb.oauth2.config;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.exception.CryptoException;
 import org.gusdb.oauth2.shared.SigningKeyStore;
+import org.gusdb.oauth2.tools.KeyPairReader;
 
 /** Example config JSON **
 {
@@ -29,7 +31,8 @@ import org.gusdb.oauth2.shared.SigningKeyStore;
   "validateDomains": true,
   "tokenExpirationSecs": 3600,
   "bearerTokenExpirationSecs": 94608000,
-  "keyPairRandomSeed": 12345,
+  "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
+  "keyStorePassPhrase": "xxxxxx",
   "loginFormPage": "login.html", // optional, login.html is default
   "loginSuccessPage": "success.html", // optional, success.html is default
   "authenticatorClass": "org.gusdb.oauth2.wdk.UserDbAuthenticator",
@@ -87,10 +90,11 @@ public class ApplicationConfig extends SigningKeyStore {
     allowAnonymousLogin,
     validateDomains,
     allowedClients,
-    keyPairRandomSeed
+    keyStoreFile,
+    keyStorePassPhrase
   }
 
-  public static ApplicationConfig parseConfigFile(Path configFile) throws IOException, InitializationException {
+  public static ApplicationConfig parseConfigFile(Path configFile) throws InitializationException {
     LOG.debug("Parsing config file: " + configFile.toAbsolutePath());
     try (FileInputStream in = new FileInputStream(configFile.toFile());
          JsonReader jsonIn = Json.createReader(in)) {
@@ -121,13 +125,20 @@ public class ApplicationConfig extends SigningKeyStore {
         usedClientIds.add(client.getId());
         allowedClients.add(client);
       }
-      String keyPairRandomSeed = json.getString(JsonKey.keyPairRandomSeed.name());
+      String keyStoreFile = json.getString(JsonKey.keyStoreFile.name());
+      String keyStorePassPhrase = json.getString(JsonKey.keyStorePassPhrase.name());
       return new ApplicationConfig(issuer, authClassName, authClassConfig, loginFormPage,
           loginSuccessPage, tokenExpirationSecs, bearerTokenExpirationSecs, allowAnonymousLogin, validateDomains,
-          allowedClients, keyPairRandomSeed);
+          allowedClients, keyStoreFile, keyStorePassPhrase);
     }
-    catch (ClassCastException | NullPointerException | IllegalArgumentException | CryptoException e) {
-      throw new InitializationException("Improperly constructed configuration object", e);
+    catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
+      throw new InitializationException("Misconfiguration", e);
+    }
+    catch (IOException e) {
+      throw new InitializationException("Unable to read required file", e);
+    }
+    catch (CryptoException e) {
+      throw new InitializationException("Unable to initialize key store", e);
     }
   }
 
@@ -153,8 +164,8 @@ public class ApplicationConfig extends SigningKeyStore {
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
       String loginSuccessPage, int tokenExpirationSecs, int bearerTokenExpirationSecs, boolean anonymousLoginsAllowed,
-      boolean validateDomains, List<AllowedClient> allowedClients, String keyPairRandomSeed) throws CryptoException {
-    super(keyPairRandomSeed);
+      boolean validateDomains, List<AllowedClient> allowedClients, String keyStoreFile, String keyStorePassPhrase) throws CryptoException, IOException {
+    super(new KeyPairReader().readKeyPair(Paths.get(keyStoreFile), keyStorePassPhrase));
     _issuer = issuer;
     _authClassName = authClassName;
     _authClassConfig = authClassConfig;

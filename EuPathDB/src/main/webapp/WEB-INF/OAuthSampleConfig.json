@@ -3,7 +3,8 @@
   "tokenExpirationSecs": 3600,
   "bearerTokenExpirationSecs": 94608000,
   "loginFormPage": "eupathdb-login.html",
-  "keyPairRandomSeed": 12345,
+  "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
+  "keyStorePassPhrase": "xxxxxx",
   "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
   "authenticatorConfig": {
     "login": "db_login",
