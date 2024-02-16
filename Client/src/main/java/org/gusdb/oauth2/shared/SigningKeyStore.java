@@ -21,14 +21,17 @@ public class SigningKeyStore {
   private final KeyPair _asyncKeys;
 
   // maps client IDs -> client secrets -> SecretKey objects representing those secrets
-  private final Map<String,Map<String,SecretKey>> _clientSecretKeys;
+  private final Map<String,Map<String,SecretKey>> _clientSecretKeys = new HashMap<>();
 
   // secret key format (for JWKS)
   private String _secretKeyFormat;
 
   public SigningKeyStore(String asyncKeysRandomSeed) throws CryptoException {
     _asyncKeys = Signatures.getKeyPair(asyncKeysRandomSeed);
-    _clientSecretKeys = new HashMap<>();
+  }
+
+  public SigningKeyStore(KeyPair asyncKeys) {
+    _asyncKeys = asyncKeys;
   }
 
   public void setClientSigningKeys(String clientId, Set<String> rawSigningKeys) throws CryptoException {
