@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +69,8 @@ public class ClientValidator {
   private boolean isValidClientSecret(String clientId, String clientSecret) {
     AllowedClient client = _clientMap.get(clientId);
     boolean valid = (client == null ? false : client.getSecrets().contains(clientSecret));
-    LOG.debug("Client secrets:\nSubmitted: " + clientSecret + client.getSecrets().stream().map(s -> "\nValid    :" + s).collect(Collectors.joining()));
+    // FIXME: log shows submitted vs valid secrets; may use again since URL encoding of secret could be an issue in the future
+    //LOG.debug("Client secrets:\nSubmitted: " + clientSecret + client.getSecrets().stream().map(s -> "\nValid    :" + s).collect(Collectors.joining()));
     LOG.debug("Valid client secret for ID [" + clientId + "]? " + valid);
     return valid;
   }
