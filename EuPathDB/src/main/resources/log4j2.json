@@ -39,7 +39,7 @@
         "level": "info"
       },{
         "name": "org.gusdb",
-        "level": "info"
+        "level": "debug"
       },{
         "name": "org.gusdb.oauth2.assets.StaticResource",
         "level": "info"
