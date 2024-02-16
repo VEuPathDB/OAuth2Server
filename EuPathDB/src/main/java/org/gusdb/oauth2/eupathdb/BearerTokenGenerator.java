@@ -2,6 +2,7 @@ package org.gusdb.oauth2.eupathdb;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Properties;
@@ -18,13 +19,15 @@ import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
 import org.gusdb.oauth2.shared.Signatures;
 import org.gusdb.oauth2.shared.SigningKeyStore;
+import org.gusdb.oauth2.tools.KeyPairReader;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 
 public class BearerTokenGenerator {
 
-  private static final String PROP_ASYNC_KEYS_RANDOM_SEED = "asyncKeysRandomSeed";
+  private static final String PROP_KEYSTORE_FILE = "keyStoreFile";
+  private static final String PROP_KEYSTORE_PASSPHRASE = "keyStorePassPhrase";
   private static final String PROP_ACCOUNTDB_LOGIN = "accountDbLogin";
   private static final String PROP_ACCOUNTDB_PASSWORD = "accountDbPassword";
 
@@ -33,12 +36,14 @@ public class BearerTokenGenerator {
     Properties config = new Properties();
     try (InputStream in = new FileInputStream(args[0])) {
       config.load(in);
-      String asyncKeysRandomSeed = findProp(config, PROP_ASYNC_KEYS_RANDOM_SEED);
+      String keyStoreFile = findProp(config, PROP_KEYSTORE_FILE);
+      String keyStorePassPhrase = findProp(config, PROP_KEYSTORE_PASSPHRASE);
       String accountDbLogin = findProp(config, PROP_ACCOUNTDB_LOGIN);
       String accountDbPassword = findProp(config, PROP_ACCOUNTDB_PASSWORD);
       String loginName = args[1];
 
-      SigningKeyStore keyStore = new SigningKeyStore(asyncKeysRandomSeed);
+      SigningKeyStore keyStore = new SigningKeyStore(new KeyPairReader().readKeyPair(Paths.get(keyStoreFile), keyStorePassPhrase));
+      // dummy up a client; SigningKeyStore requires >0 but will not be used here
       keyStore.setClientSigningKeys("abc", Set.of("mug2kfCI8qhXzrnuE/nh1gK9JbSFaXaih+zdsfD8io25MWH4b3V5u+U8E7SW4x7iBAHdq6yWWrF/TP9p098lfQ=="));
 
       // generate a new token for this account
@@ -72,7 +77,7 @@ public class BearerTokenGenerator {
   private static String usage() {
     System.err.println("USAGE: java org.gusdb.oauth2.eupathdb.BearerTokenGenerator <configFile> <loginName>");
     System.err.println("   configFile must contain '='-delimited property rows with the following keys: " +
-        PROP_ASYNC_KEYS_RANDOM_SEED + ", " + PROP_ACCOUNTDB_LOGIN + ", " + PROP_ACCOUNTDB_PASSWORD);
+        PROP_KEYSTORE_FILE + ", " + PROP_KEYSTORE_PASSPHRASE + ", " + PROP_ACCOUNTDB_LOGIN + ", " + PROP_ACCOUNTDB_PASSWORD);
     System.exit(1);
     return null;
   }
