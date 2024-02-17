@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.json.JsonValue;
-
 import org.json.JSONObject;
 
 public interface User {
@@ -72,11 +70,6 @@ public interface User {
 
   private static String formatNamePart(String namePart) {
     return (namePart == null || namePart.isEmpty() ? "" : " " + namePart.trim());
-  }
-
-  static JsonValue getDisplayName(String string, String string2, String string3) {
-    // TODO Auto-generated method stub
-    return null;
   }
 
 }

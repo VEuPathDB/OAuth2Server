@@ -4,8 +4,10 @@ import org.gusdb.oauth2.client.KeyStoreTrustManager;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.client.OAuthConfig;
 import org.gusdb.oauth2.client.ValidatedToken;
-import org.gusdb.oauth2.client.ValidatedToken.TokenType;
 import org.gusdb.oauth2.client.veupathdb.BasicUser;
+import org.gusdb.oauth2.client.veupathdb.BearerTokenUser;
+import org.gusdb.oauth2.client.veupathdb.User;
+import org.gusdb.oauth2.exception.InvalidTokenException;
 import org.json.JSONObject;
 
 public class UserInfoFetcher extends ToolBase {
@@ -13,7 +15,7 @@ public class UserInfoFetcher extends ToolBase {
   private static final String PROP_APICOMPONENTSITE_SECRET = "apiComponentSiteSecret";
   private static final String PROP_TEST_BEARER_TOKEN = "testBearerToken";
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InvalidTokenException {
     new UserInfoFetcher(args).execute();
   }
 
@@ -21,7 +23,7 @@ public class UserInfoFetcher extends ToolBase {
     super(args, new String[] { PROP_APICOMPONENTSITE_SECRET, PROP_TEST_BEARER_TOKEN });
   }
 
-  public void execute() {
+  public void execute() throws InvalidTokenException {
 
     String apiComponentSiteSecret = findProp(PROP_APICOMPONENTSITE_SECRET);
     String tokenValue = findProp(PROP_TEST_BEARER_TOKEN);
@@ -34,7 +36,9 @@ public class UserInfoFetcher extends ToolBase {
 
     OAuthClient client = new OAuthClient(new KeyStoreTrustManager());
 
-    ValidatedToken token = ValidatedToken.build(TokenType.BEARER, tokenValue, null);
+    ValidatedToken token = client.getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), tokenValue);
+
+    //ValidatedToken token = ValidatedToken.build(TokenType.BEARER, tokenValue, null);
 
     String sentHeaderValue = OAuthClient.getAuthorizationHeaderValue(token);
     System.out.println("Passing header value: " + sentHeaderValue);
@@ -45,9 +49,13 @@ public class UserInfoFetcher extends ToolBase {
     String receivedToken = OAuthClient.getTokenFromAuthHeader(sentHeaderValue);
     System.out.println("Parsed raw token: " + receivedToken);
 
+    // first try BasicUser method
     JSONObject json = client.getUserData(oauthConfig.getOauthUrl(), token);
-
     System.out.println(new BasicUser(json).getDisplayName());
+
+    // second try BearerTokenUser method
+    User user = new BearerTokenUser(client, oauthConfig.getOauthUrl(), token);
+    System.out.println(user.getDisplayName());
   }
 
   private static void checkValue(String value) {
