@@ -40,8 +40,9 @@ public class BearerTokenUser extends BasicUser {
     // set values found only on user info object
     setPropertyValues(userInfo);
 
-    LOG.info("User data successfully fetched for " + getDisplayName() + " / " + getOrganization());
     _userInfoFetched = true;
+
+    LOG.info("User data successfully fetched for " + getDisplayName() + " / " + getOrganization());
   }
 
 }
