@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>oauth2</artifactId>
-    <version>0.7.8-SNAPSHOT</version>
+    <version>0.9.1-jakarta-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -16,17 +16,20 @@
     <!-- Expect this property to be passed in -->
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
 
-    <fgputil.version>2.12.9</fgputil.version>
+    <fgputil.version>2.12.18</fgputil.version>
   </properties>
 
   <dependencies>
 
+    <!-- Uncomment to run command line tools that require the database -->
+    <!--
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
       <version>21.9.0.0</version>
       <scope>runtime</scope>
     </dependency>
+    -->
 
     <dependency>
       <groupId>org.gusdb</groupId>

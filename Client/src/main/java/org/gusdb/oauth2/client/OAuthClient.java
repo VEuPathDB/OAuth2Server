@@ -84,7 +84,7 @@ public class OAuthClient {
       throw new NotAuthorizedException(HttpHeaders.AUTHORIZATION +
           " header must send token of type '" + AUTHORIZATION_HEADER_VALUE_PREFIX.trim() + "'");
     }
-    return authHeader.substring(0, AUTHORIZATION_HEADER_VALUE_PREFIX.length());
+    return authHeader.substring(AUTHORIZATION_HEADER_VALUE_PREFIX.length(), authHeader.length());
   }
 
   public static TrustManager getTrustManager(KeyStoreConfig config) {
@@ -345,7 +345,7 @@ public class OAuthClient {
     return str.append("}").append(NL).toString();
   }
 
-  private static String getAuthorizationHeaderValue(ValidatedToken token) {
+  public static String getAuthorizationHeaderValue(ValidatedToken token) {
     if (token.getTokenType() != TokenType.BEARER) {
       throw new RuntimeException("User info and edit endpoints require a user's bearer token (legacy auth tokens are not supported).");
     }
@@ -354,6 +354,7 @@ public class OAuthClient {
 
   public JSONObject getUserData(String oauthBaseUrl, ValidatedToken token) {
     String url = oauthBaseUrl + Endpoints.USER_INFO;
+    LOG.info("Will send Authorization header value: " + getAuthorizationHeaderValue(token));
     // build request and get JSON response
     try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())

@@ -9,6 +9,17 @@ package org.gusdb.oauth2.client;
 public interface OAuthConfig {
 
   /**
+   * Creates an instance of OAuthConfig from the passed values
+   */
+  public static OAuthConfig build(String oauthUrl, String oauthClientId, String oauthClientSecret) {
+    return new OAuthConfig() {
+      @Override public String getOauthUrl()          { return oauthUrl;          }
+      @Override public String getOauthClientId()     { return oauthClientId;     }
+      @Override public String getOauthClientSecret() { return oauthClientSecret; }
+    };
+  }
+
+  /**
    * @return base URL of OAuth2 server to use for authentication
    */
   String getOauthUrl();
