@@ -24,6 +24,7 @@ public interface User {
   }
 
   void setPropertyValues(JSONObject json);
+  void setPropertyValues(Map<String,String> propertyValues);
 
   long getUserId();
   boolean isGuest();

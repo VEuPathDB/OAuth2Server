@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.client.veupathdb;
 
+import java.util.Map;
+
 import org.gusdb.oauth2.shared.IdTokenFields;
 import org.json.JSONObject;
 
@@ -51,6 +53,18 @@ public class BasicUser implements User {
     // set other user properties found only on user profile object
     for (UserProperty userProp : USER_PROPERTIES.values()) {
       userProp.setValue(this, userInfo.optString(userProp.getName(), null));
+    }
+  }
+
+  @Override
+  public void setPropertyValues(Map<String, String> propertyValues) {
+    // set email (standard property but mutable so set on user profile and not token
+    if (propertyValues.containsKey(IdTokenFields.email.name())) {
+      setEmail(propertyValues.get(IdTokenFields.email.name()));
+    }
+    // set other user properties found only on user profile object
+    for (UserProperty userProp : USER_PROPERTIES.values()) {
+      userProp.setValue(this, propertyValues.get(userProp.getName()));
     }
   }
 
