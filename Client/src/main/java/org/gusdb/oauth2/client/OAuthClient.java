@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -216,13 +217,17 @@ public class OAuthClient {
     return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
   }
 
-  public ValidatedToken getNewGuestToken(OAuthConfig oauthConfig) throws InvalidTokenException {
+  public ValidatedToken getNewGuestToken(OAuthConfig oauthConfig) {
+    try {
+      // get guest bearer token, signed with ECDSA using public/private key pair
+      String token = getToken(Endpoints.GUEST_TOKEN, form -> {}, oauthConfig, null);
 
-    // get guest bearer token, signed with ECDSA using public/private key pair
-    String token = getToken(Endpoints.GUEST_TOKEN, form -> {}, oauthConfig, null);
-
-    // validate signature and return parsed claims
-    return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
+      // validate signature and return parsed claims
+      return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
+    }
+    catch (InvalidTokenException e) {
+      throw new IllegalStateException("New guest token returned from OAuth is not valid!", e);
+    }
   }
 
   private String getToken(String path, Consumer<MultivaluedMap<String, String>> formModifier, OAuthConfig oauthConfig, String redirectUri) {
@@ -398,7 +403,7 @@ public class OAuthClient {
     ));
   }
 
-  public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) {
+  public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) throws InvalidPropertiesException {
     try {
       return new JSONObject(performCredentialsBasedRequest(
           Endpoints.PASSWORD_RESET,
@@ -407,8 +412,8 @@ public class OAuthClient {
           (builder,entity) -> builder.post(entity)
       ));
     }
-    catch (InvalidPropertiesException | ConflictException e) {
-      // this should never happen; password_reset does not throw 422 or 409
+    catch (ConflictException e) {
+      // this should never happen; password_reset does not throw 409
       throw new RuntimeException(e);
     }
   }
@@ -464,7 +469,15 @@ public class OAuthClient {
         if (response.getStatus() == Status.CONFLICT.getStatusCode()) {
           throw new ConflictException(readResponseBody(response));
         }
+        // propagate 401/403 responses, converting back to the associated exceptions
+        if (response.getStatus() == Status.UNAUTHORIZED.getStatusCode()) {
+          throw new NotAuthorizedException(readResponseBody(response));
+        }
+        if (response.getStatus() == Status.FORBIDDEN.getStatusCode()) {
+          throw new ForbiddenException(readResponseBody(response));
+        }
         // a 400 indicates a syntax error (e.g. JSON misformat) on our side and should be a 500
+        // a 406 indicates a misconfiguration (client does not have perms for this type of request) and should be a 500
         throw new RuntimeException("Created bad request to " + endpoint + "; returned " + response.getStatus() + ", " + readResponseBody(response));
       }
 

@@ -487,11 +487,15 @@ public class OAuthService {
       }
       String loginName = input.getString("loginName");
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-      UserInfo user = authenticator.getUserInfoByLoginName(loginName, DataScope.PROFILE)
-          .orElseThrow(() -> new BadRequestException("No user exists with login '" + loginName +"'."));
-      String newPassword = authenticator.generateNewPassword();
-      authenticator.resetPassword(user.getUserId(), newPassword);
-      return Response.ok(OAuthRequestHandler.getUserInfoResponseString(user, Optional.of(newPassword))).build();
+      Optional<UserInfo> userOpt = authenticator.getUserInfoByLoginName(loginName, DataScope.PROFILE);
+      return userOpt.map(user -> {
+        String newPassword = authenticator.generateNewPassword();
+        authenticator.resetPassword(user.getUserId(), newPassword);
+        return Response.ok(OAuthRequestHandler.getUserInfoResponseString(user, Optional.of(newPassword))).build();
+      })
+      .orElse(
+        Response.status(HttpStatus.UNPROCESSABLE_CONTENT).entity("No user exists with login '" + loginName +"'.").build()
+      );
     }
     catch (JsonParsingException | ClassCastException e) {
       throw new BadRequestException("Unable to parse client credentials", e);
