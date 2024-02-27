@@ -4,12 +4,12 @@
   <name>OAuth2</name>
   <artifactId>oauth2</artifactId>
   <packaging>pom</packaging>
-  <version>1.0.1-jakarta-SNAPSHOT</version>
+  <version>1.0.2-jakarta-SNAPSHOT</version>
 
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>base-pom</artifactId>
-    <version>2.17-jakarta</version>
+    <version>2.19-jakarta</version>
   </parent>
 
   <!-- Manage versions of libs specific to OAuth/tokens-->
@@ -154,7 +154,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.2.1</version>
+            <version>3.3.0</version>
             <executions>
               <execution>
                 <id>attach-source</id>
@@ -167,7 +167,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.4.1</version>
+            <version>3.6.3</version>
             <executions>
               <execution>
                 <id>attach-javadoc</id>
@@ -211,7 +211,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-help-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.4.0</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>
@@ -227,7 +227,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.8</version>
+        <version>0.8.11</version>
         <executions>
           <execution>
             <id>default-prepare-agent</id>
