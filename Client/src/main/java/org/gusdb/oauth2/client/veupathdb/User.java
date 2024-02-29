@@ -1,6 +1,7 @@
 package org.gusdb.oauth2.client.veupathdb;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,7 +21,7 @@ public interface User {
         new UserProperty("organization", "Organization", "organization", true, true, false, User::getOrganization, User::setOrganization),
         new UserProperty("interests", "Interests", "interests", false, false, true, User::getInterests, User::setInterests)
     );
-    return Collections.unmodifiableMap(userProps.stream().collect(Collectors.toMap(UserProperty::getName, x -> x)));
+    return Collections.unmodifiableMap(userProps.stream().collect(Collectors.toMap(UserProperty::getName, x -> x, (a,b) -> a, () -> new LinkedHashMap<>())));
   }
 
   void setPropertyValues(JSONObject json);

@@ -82,7 +82,7 @@ public class OAuthRequestHandler {
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
       ClientValidator clientValidator, Authenticator authenticator,
-      ApplicationConfig config, TokenSigner tokenSigner, DataScope scope) throws OAuthSystemException {
+      ApplicationConfig config, TokenSigner tokenSigner, DataScope scope, int expirationSecs) throws OAuthSystemException {
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
       OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
@@ -130,8 +130,6 @@ public class OAuthRequestHandler {
       // tell the authenticator to update the user's last login timestamp if supported
       authenticator.updateLastLoginTimestamp(tokenData.authCodeData.getUserId());
 
-      int expirationSecs = config.getTokenExpirationSecs();
-
       OAuthTokenResponseBuilder responseBuilder =
           OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)
           .setTokenType("Bearer")
@@ -141,8 +139,10 @@ public class OAuthRequestHandler {
       // always send id_token with access token response, create and add it
       JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, tokenData.authCodeData.getLoginName(),
           tokenData.authCodeData, config.getIssuer(), expirationSecs, scope);
+
       String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config,
           tokenData.authCodeData.getClientId(), oauthRequest.getClientSecret()); // sign with the same secret sent in
+
       responseBuilder.setParam("id_token", signedToken);
 
       OAuthResponse response = responseBuilder.buildJSONMessage();
