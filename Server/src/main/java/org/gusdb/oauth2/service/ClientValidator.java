@@ -2,6 +2,8 @@ package org.gusdb.oauth2.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +70,17 @@ public class ClientValidator {
 
   private boolean isValidClientSecret(String clientId, String clientSecret) {
     AllowedClient client = _clientMap.get(clientId);
+
+    // Bug fix 2-29-2024: Accept both URL-encoded and non-encoded client secrets.  The OAuth 2.0
+    //   spec (https://www.rfc-editor.org/rfc/rfc6749#section-2.3.1), and newest version of
+    //   Apache's mod_auth (used by Apollo) URL-encode client secret values before sending in
+    //   the request body.  However, our legacy code and more importantly, Globus's requests,
+    //   use non-encoded values.  We could change our code, but don't want the headache of
+    //   figuring out if Globus is in the wrong and asking them to change.  Thus, support both.
+    // p.s. this means we cannot issue client secrets with '%' characters!!!
+    if (clientSecret.contains("%"))
+      clientSecret = URLDecoder.decode(clientSecret, StandardCharsets.UTF_8);
+
     boolean valid = (client == null ? false : client.getSecrets().contains(clientSecret));
     // FIXME: log shows submitted vs valid secrets; may use again since URL encoding of secret could be an issue in the future
     //LOG.debug("Client secrets:\nSubmitted: " + clientSecret + client.getSecrets().stream().map(s -> "\nValid    :" + s).collect(Collectors.joining()));
