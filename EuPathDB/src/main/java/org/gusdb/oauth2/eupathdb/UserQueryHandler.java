@@ -56,7 +56,7 @@ public class UserQueryHandler {
           JsonArray idInputArray = querySpec.getJsonArray(ValidQueryTypePropKey.userIds.name());
           JsonArrayBuilder idOutputArray = Json.createArrayBuilder();
           for (int i = 0; i < idInputArray.size(); i++) {
-            idOutputArray.add(getUserJsonById(Long.valueOf(idInputArray.getInt(i))));
+            idOutputArray.add(getUserJsonById(Integer.valueOf(idInputArray.getInt(i)).longValue()));
           }
           return idOutputArray.build();
 

@@ -4,13 +4,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.client.OAuthConfig;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class OAuthQuerier {
+
+  private static final Logger LOG = LogManager.getLogger(OAuthQuerier.class);
 
   public static Map<String, User> getUsersByEmail(OAuthClient client, OAuthConfig config, List<String> emails) {
     return getUsersByEmail(client, config, emails, BasicUser::new);
@@ -30,7 +35,9 @@ public class OAuthQuerier {
 
   private static <T extends User, S> Map<S, T> getUsers(OAuthClient client, OAuthConfig config, List<S> identifiers,
       Function<JSONObject, T> userConverter, String identifiersJsonPropKey, Function<T,S> keyGenerator) {
-    JSONArray response = new JSONArray(client.queryOAuth(config, new JSONObject().put("emails", new JSONArray(identifiers))));
+    LOG.info("Using OAuthQuerier for multi-user request by " + identifiersJsonPropKey +
+        ": [" + identifiers.stream().map(String::valueOf).collect(Collectors.joining(", ")) + "]");
+    JSONArray response = new JSONArray(client.queryOAuth(config, new JSONObject().put(identifiersJsonPropKey, new JSONArray(identifiers))));
     Map<S, T> userMap = new HashMap<>();
     for (int i = 0; i < response.length(); i++) {
       JSONObject userJson = response.getJSONObject(i);

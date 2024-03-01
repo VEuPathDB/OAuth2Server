@@ -364,7 +364,7 @@ public class OAuthService {
 
     // Two authentication techniques here (preferring #1)
     //   1. Use Authentication header to find bearer token and validate to access user information beyond that in the bearer token
-    //   2. (legacy) OAuth2.0 resource request, uses non-bearer, non-OIDC OAuth2 token to access user information (still Authentication: Bearer header)
+    //   2. OAuth2.0 resource request, uses non-bearer, non-OIDC OAuth2 token to access user information (still Authentication: Bearer header)
     // Third way to get user info with only user ID at /user/by-id
 
     if (authHeader == null) {
@@ -379,9 +379,9 @@ public class OAuthService {
     }
     catch (IllegalArgumentException badTokenException) {
       // bearer token parsing and validation failed; note in log and try traditional ID token
-      LOG.warn("Bearer token failed with asymmetric signature validation; trying symmetric validation.", badTokenException);
+      LOG.warn("Bearer token failed with asymmetric signature validation (" + badTokenException.toString() + "); trying symmetric validation.");
 
-      // option 2 (unlikely request)
+      // option 2
       try {
         ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         OAuthAccessResourceRequest oauthRequest = new OAuthAccessResourceRequest(_request, ParameterStyle.HEADER);
