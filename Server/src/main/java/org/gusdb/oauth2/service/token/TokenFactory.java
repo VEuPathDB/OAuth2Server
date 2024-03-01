@@ -1,6 +1,5 @@
 package org.gusdb.oauth2.service.token;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -90,7 +89,7 @@ public class TokenFactory {
 
   private static JsonObjectBuilder appendOidcFields(JsonObjectBuilder jsonBuilder, IdTokenParams params, String issuer, int expirationSecs) {
     // OpenID Connect claims that we support
-    long now = new Date().getTime() / 1000;
+    long now = System.currentTimeMillis() / 1000;
     jsonBuilder
       .add(IdTokenFields.iss.name(), issuer)
       .add(IdTokenFields.aud.name(), params.getClientId())

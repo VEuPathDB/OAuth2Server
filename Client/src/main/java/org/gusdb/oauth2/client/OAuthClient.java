@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -29,6 +30,7 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.gusdb.oauth2.client.KeyStoreTrustManager.KeyStoreConfig;
 import org.gusdb.oauth2.client.ValidatedToken.TokenType;
 import org.gusdb.oauth2.exception.ConflictException;
+import org.gusdb.oauth2.exception.ExpiredTokenException;
 import org.gusdb.oauth2.exception.InvalidPropertiesException;
 import org.gusdb.oauth2.exception.InvalidTokenException;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;
@@ -42,6 +44,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -166,32 +169,48 @@ public class OAuthClient {
     return body.toString(StandardCharsets.UTF_8);
   }
 
-  public Consumer<MultivaluedMap<String, String>> getAuthCodeFormModifier(String authCode) {
+  private interface TokenSupplier {
+    ValidatedToken getToken() throws InvalidTokenException, ExpiredTokenException;
+  }
+
+  private ValidatedToken hideBadTokenExceptions(TokenSupplier tokenSupplier) throws InvalidPropertiesException {
+    try {
+      return tokenSupplier.getToken();
+    }
+    catch (IllegalArgumentException e) {
+      throw new InvalidPropertiesException(e.getMessage());
+    }
+    catch (InvalidTokenException | ExpiredTokenException e) {
+      throw new RuntimeException("Unexpected validation failure of 'known' token", e);
+    }
+  }
+
+  private Consumer<MultivaluedMap<String, String>> getAuthCodeFormModifier(String authCode) {
     return formData -> {
       formData.add(OAUTH_KEY_GRANT_TYPE, "authorization_code");
       formData.add("code", authCode);
     };
   }
 
-  public ValidatedToken getIdTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) throws InvalidTokenException {
+  public ValidatedToken getIdTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) throws InvalidPropertiesException {
 
     // get legacy token, signed with HMAC using client secret as the key
     String token = getToken(Endpoints.ID_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token);
+    return hideBadTokenExceptions(() -> getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token));
   }
 
-  public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) throws InvalidTokenException {
+  public ValidatedToken getBearerTokenFromAuthCode(OAuthConfig oauthConfig, String authCode, String redirectUri) throws InvalidPropertiesException {
 
     // get bearer token, signed with ECDSA using public/private key pair
     String token = getToken(Endpoints.BEARER_TOKEN, getAuthCodeFormModifier(authCode), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
+    return hideBadTokenExceptions(() -> getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token));
   }
 
-  public Consumer<MultivaluedMap<String, String>> getUserPassFormModifier(String username, String password) {
+  private Consumer<MultivaluedMap<String, String>> getUserPassFormModifier(String username, String password) {
     return formData -> {
       formData.add(OAUTH_KEY_GRANT_TYPE, "password");
       formData.add("username", username);
@@ -199,22 +218,22 @@ public class OAuthClient {
     };
   }
 
-  public ValidatedToken getIdTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) throws InvalidTokenException {
+  public ValidatedToken getIdTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) throws InvalidPropertiesException {
 
     // get legacy token, signed with HMAC using client secret as the key
     String token = getToken(Endpoints.ID_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token);
+    return hideBadTokenExceptions(() -> getValidatedHmacSignedToken(oauthConfig.getOauthClientSecret(), token));
   }
 
-  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) throws InvalidTokenException {
+  public ValidatedToken getBearerTokenFromUsernamePassword(OAuthConfig oauthConfig, String username, String password, String redirectUri) throws InvalidPropertiesException {
 
     // get bearer token, signed with ECDSA using public/private key pair
     String token = getToken(Endpoints.BEARER_TOKEN, getUserPassFormModifier(username, password), oauthConfig, redirectUri);
 
     // validate signature and return parsed claims
-    return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
+    return hideBadTokenExceptions(() -> getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token));
   }
 
   public ValidatedToken getNewGuestToken(OAuthConfig oauthConfig) {
@@ -225,7 +244,7 @@ public class OAuthClient {
       // validate signature and return parsed claims
       return getValidatedEcdsaSignedToken(oauthConfig.getOauthUrl(), token);
     }
-    catch (InvalidTokenException e) {
+    catch (ExpiredTokenException | InvalidTokenException e) {
       throw new IllegalStateException("New guest token returned from OAuth is not valid!", e);
     }
   }
@@ -265,6 +284,28 @@ public class OAuthClient {
         // get id_token from object and decode to user ID
         return json.getString("id_token");
       }
+      else if (response.getStatus() == 406) {
+        String reasonString = readResponseBody(response).trim();
+        Optional<UnacceptableRequestReason> reasonOpt = UnacceptableRequestReason.parse(reasonString);
+        Function<UnacceptableRequestReason,RuntimeException> exceptionMapper = reason -> {
+          switch(reason) {
+            case INVALID_AUTH_CODE:
+            case INVALID_USERNAME_PASSWORD:
+            case INVALID_REDIRECT_URI:
+              // these are user input problems
+              return new IllegalArgumentException("Could not produce token: " + reason.getDisplay());
+            case INVALID_CLIENT:
+            case UNSUPPORTED_GRANT_TYPE:
+            case UNSUPPORTED_RESPONSE_TYPE:
+            default:
+              // these are backend code problems
+              return new RuntimeException("Received '" + reason.getDisplay() + "' response from OAuth server.");
+          }
+        };
+        // use message associated with reason type, or raw response if unknown type
+        throw reasonOpt.map(exceptionMapper).orElse(new RuntimeException(
+            "Received '" + reasonString + "' response from OAuth server."));
+      }
       else {
         // Failure; throw exception
         throw new RuntimeException("OAuth2 token request failed with status " +
@@ -276,7 +317,7 @@ public class OAuthClient {
     }
   }
 
-  public ValidatedToken getValidatedHmacSignedToken(String clientSecret, String token) throws InvalidTokenException {
+  public ValidatedToken getValidatedHmacSignedToken(String clientSecret, String token) throws InvalidTokenException, ExpiredTokenException {
 
     // encode the key as a base64 string
     byte[] unencodedKey = clientSecret.getBytes(StandardCharsets.UTF_8);
@@ -297,12 +338,15 @@ public class OAuthClient {
   
       return ValidatedToken.build(TokenType.ID, token, claims);
     }
-    catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    catch (ExpiredJwtException e) {
+      throw new ExpiredTokenException(e);
+    }
+    catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
       throw new InvalidTokenException(e);
     }
   }
 
-  public ValidatedToken getValidatedEcdsaSignedToken(String oauthBaseUrl, String token) throws InvalidTokenException {
+  public ValidatedToken getValidatedEcdsaSignedToken(String oauthBaseUrl, String token) throws InvalidTokenException, ExpiredTokenException {
 
     String key = getPublicSigningKey(oauthBaseUrl);
 
@@ -321,7 +365,10 @@ public class OAuthClient {
   
       return ValidatedToken.build(TokenType.BEARER, token, claims);
     }
-    catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    catch (ExpiredJwtException e) {
+      throw new ExpiredTokenException(e);
+    }
+    catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
       throw new InvalidTokenException(e);
     }
   }

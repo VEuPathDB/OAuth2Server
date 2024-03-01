@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -272,7 +273,7 @@ public class OAuthService {
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
-    return getOidcTokenResponse(formParams, Signatures.SECRET_KEY_SIGNER, DataScope.ID_TOKEN);
+    return getOidcTokenResponse(formParams, Signatures.SECRET_KEY_SIGNER, DataScope.ID_TOKEN, config -> config.getTokenExpirationSecs());
   }
 
   @POST
@@ -280,10 +281,14 @@ public class OAuthService {
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
   @Produces(MediaType.APPLICATION_JSON)
   public Response getBearerToken(MultivaluedMap<String, String> formParams) throws OAuthSystemException {
-    return getOidcTokenResponse(formParams, Signatures.ASYMMETRIC_KEY_SIGNER, DataScope.BEARER_TOKEN);
+    return getOidcTokenResponse(formParams, Signatures.ASYMMETRIC_KEY_SIGNER, DataScope.BEARER_TOKEN, config -> config.getBearerTokenExpirationSecs());
   }
 
-  private Response getOidcTokenResponse(MultivaluedMap<String,String> formParams, TokenSigner signingStrategy, DataScope scope) throws OAuthSystemException {
+  private Response getOidcTokenResponse(
+      MultivaluedMap<String,String> formParams,
+      TokenSigner signingStrategy,
+      DataScope scope,
+      Function<ApplicationConfig,Integer> expirationLookup) throws OAuthSystemException {
     try {
       // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
       HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);
@@ -298,8 +303,9 @@ public class OAuthService {
       }
 
       ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
+
       return OAuthRequestHandler.handleTokenRequest(oauthRequest, clientValidator,
-          OAuthServlet.getAuthenticator(_context), config, signingStrategy, scope);
+          OAuthServlet.getAuthenticator(_context), config, signingStrategy, scope, expirationLookup.apply(config));
     }
     catch (OAuthProblemException e) {
       LOG.error("Problem with authorize request: ", e);
