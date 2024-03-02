@@ -17,6 +17,7 @@
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
 
     <fgputil.version>2.13.1-jakarta</fgputil.version>
+
   </properties>
 
   <dependencies>
