@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>oauth2</artifactId>
-    <version>1.1.4-SNAPSHOT</version>
+    <version>1.1.4-jakarta-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -16,7 +16,7 @@
     <!-- Expect this property to be passed in -->
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
 
-    <fgputil.version>2.13.1</fgputil.version>
+    <fgputil.version>2.13.1-jakarta</fgputil.version>
   </properties>
 
   <dependencies>
