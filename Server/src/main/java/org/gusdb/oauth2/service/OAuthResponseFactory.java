@@ -4,44 +4,44 @@ import java.util.Collections;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Variant;
 
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
+import org.gusdb.oauth2.client.UnacceptableRequestReason;
 
 public class OAuthResponseFactory {
 
-  private static ResponseBuilder NOT_ACCEPTABLE_RESPONSE = Response.notAcceptable(Collections.<Variant>emptyList());
+  private static ResponseBuilder NOT_ACCEPTABLE_RESPONSE = Response.notAcceptable(Collections.emptyList());
 
   public Response buildInvalidGrantTypeResponse() {
-    return getNotAcceptableResponse("Unsupported Grant Type");
+    return getNotAcceptableResponse(UnacceptableRequestReason.UNSUPPORTED_GRANT_TYPE);
   }
 
   public Response buildInvalidUserPassResponse() {
-    return getNotAcceptableResponse("Invalid Username/Password");
+    return getNotAcceptableResponse(UnacceptableRequestReason.INVALID_USERNAME_PASSWORD);
   }
 
   public Response buildInvalidClientResponse() {
-    return getNotAcceptableResponse("Invalid Client");
+    return getNotAcceptableResponse(UnacceptableRequestReason.INVALID_CLIENT);
   }
 
   public Response buildBadAuthCodeResponse() {
-    return getNotAcceptableResponse("Invalid Auth Code");
+    return getNotAcceptableResponse(UnacceptableRequestReason.INVALID_CLIENT);
   }
 
   public Response buildBadResponseTypeResponse() {
-    return getNotAcceptableResponse("Unsupported Response Type");
+    return getNotAcceptableResponse(UnacceptableRequestReason.UNSUPPORTED_RESPONSE_TYPE);
   }
 
   public Response buildBadRedirectUrlResponse() {
-    return getNotAcceptableResponse("Invalid Redirect URI in Request");
+    return getNotAcceptableResponse(UnacceptableRequestReason.INVALID_REDIRECT_URI);
   }
 
   public Response buildInvalidRequestResponse(OAuthProblemException e) {
-    return getNotAcceptableResponse(e.getMessage());
+    return NOT_ACCEPTABLE_RESPONSE.entity(e.getMessage()).build();
   }
 
-  private static Response getNotAcceptableResponse(String message) {
-    return NOT_ACCEPTABLE_RESPONSE.entity(message).build();
+  private static Response getNotAcceptableResponse(UnacceptableRequestReason reason) {
+    return NOT_ACCEPTABLE_RESPONSE.entity(reason.name()).build();
   }
 
   public Response buildServerErrorResponse() {

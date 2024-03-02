@@ -3,6 +3,7 @@ package org.gusdb.oauth2.config;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,13 +21,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.assets.StaticResource;
+import org.gusdb.oauth2.exception.CryptoException;
+import org.gusdb.oauth2.shared.SigningKeyStore;
+import org.gusdb.oauth2.tools.KeyPairReader;
 
-/**
+/** Example config JSON **
 {
   "issuer":"https://integrate.eupathdb.org/oauth",
   "validateDomains": true,
   "tokenExpirationSecs": 3600,
-  "useOpenIdConnect": true,
+  "bearerTokenExpirationSecs": 94608000,
+  "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
+  "keyStorePassPhrase": "xxxxxx",
   "loginFormPage": "login.html", // optional, login.html is default
   "loginSuccessPage": "success.html", // optional, success.html is default
   "authenticatorClass": "org.gusdb.oauth2.wdk.UserDbAuthenticator",
@@ -44,17 +50,21 @@ import org.gusdb.oauth2.assets.StaticResource;
   "allowedClients": [
     {
       "clientId": "apiComponentSite",
-      "clientSecret": "12345",
-      "clientDomains": [ "localhost" ]
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost" ],
+      "allowUserManagement": true,
+      "allowROPCGrant": true,
+      "allowGuestObtainment": true,
+      "allowUserQueries": true
     },{
       "clientId: "globusGenomics",
-      "clientSecret": "12345",
+      "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ]
     }
   ]
 }
 */
-public class ApplicationConfig {
+public class ApplicationConfig extends SigningKeyStore {
 
   private static final Logger LOG = LogManager.getLogger(ApplicationConfig.class);
 
@@ -62,10 +72,12 @@ public class ApplicationConfig {
 
   private static final boolean VALIDATE_DOMAINS_BY_DEFAULT = true;
   private static final boolean ALLOW_ANONYMOUS_LOGIN_BY_DEFAULT = false;
-  private static final boolean USE_OPEN_ID_CONNECT_BY_DEFAULT = true;
+
   private static final String DEFAULT_LOGIN_FORM_PAGE = "login.html";
   private static final String DEFAULT_LOGIN_SUCCESS_PAGE = "success.html";
-  private static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300;
+
+  public static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300; // five minutes
+  public static final int DEFAULT_BEARER_TOKEN_EXPIRATION_SECS = 5184000; // two months
 
   private static enum JsonKey {
     issuer,
@@ -74,13 +86,15 @@ public class ApplicationConfig {
     loginFormPage,
     loginSuccessPage,
     tokenExpirationSecs,
+    bearerTokenExpirationSecs,
     allowAnonymousLogin,
     validateDomains,
-    useOpenIdConnect,
-    allowedClients
+    allowedClients,
+    keyStoreFile,
+    keyStorePassPhrase
   }
 
-  public static ApplicationConfig parseConfigFile(Path configFile) throws IOException, InitializationException {
+  public static ApplicationConfig parseConfigFile(Path configFile) throws InitializationException {
     LOG.debug("Parsing config file: " + configFile.toAbsolutePath());
     try (FileInputStream in = new FileInputStream(configFile.toFile());
          JsonReader jsonIn = Json.createReader(in)) {
@@ -92,10 +106,10 @@ public class ApplicationConfig {
       JsonObject authClassConfig = json.getJsonObject(JsonKey.authenticatorConfig.name());
       boolean validateDomains = json.getBoolean(JsonKey.validateDomains.name(), VALIDATE_DOMAINS_BY_DEFAULT);
       boolean allowAnonymousLogin = json.getBoolean(JsonKey.allowAnonymousLogin.name(), ALLOW_ANONYMOUS_LOGIN_BY_DEFAULT);
-      boolean useOpenIdConnect = json.getBoolean(JsonKey.useOpenIdConnect.name(), USE_OPEN_ID_CONNECT_BY_DEFAULT);
       String loginFormPage = json.getString(JsonKey.loginFormPage.name(), DEFAULT_LOGIN_FORM_PAGE);
       String loginSuccessPage = json.getString(JsonKey.loginSuccessPage.name(), DEFAULT_LOGIN_SUCCESS_PAGE);
       int tokenExpirationSecs = json.getInt(JsonKey.tokenExpirationSecs.name(), DEFAULT_TOKEN_EXPIRATION_SECS);
+      int bearerTokenExpirationSecs = json.getInt(JsonKey.bearerTokenExpirationSecs.name(), DEFAULT_BEARER_TOKEN_EXPIRATION_SECS);
       validateResource(loginFormPage);
       validateResource(loginSuccessPage);
       JsonArray clientsJson = json.getJsonArray(JsonKey.allowedClients.name());
@@ -111,12 +125,20 @@ public class ApplicationConfig {
         usedClientIds.add(client.getId());
         allowedClients.add(client);
       }
+      String keyStoreFile = json.getString(JsonKey.keyStoreFile.name());
+      String keyStorePassPhrase = json.getString(JsonKey.keyStorePassPhrase.name());
       return new ApplicationConfig(issuer, authClassName, authClassConfig, loginFormPage,
-          loginSuccessPage, tokenExpirationSecs, allowAnonymousLogin, validateDomains,
-          useOpenIdConnect, allowedClients);
+          loginSuccessPage, tokenExpirationSecs, bearerTokenExpirationSecs, allowAnonymousLogin, validateDomains,
+          allowedClients, keyStoreFile, keyStorePassPhrase);
     }
     catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
-      throw new InitializationException("Improperly constructed configuration object", e);
+      throw new InitializationException("Misconfiguration", e);
+    }
+    catch (IOException e) {
+      throw new InitializationException("Unable to read required file", e);
+    }
+    catch (CryptoException e) {
+      throw new InitializationException("Unable to initialize key store", e);
     }
   }
 
@@ -133,29 +155,31 @@ public class ApplicationConfig {
   private final String _loginFormPage;
   private final String _loginSuccessPage;
   private final int _tokenExpirationSecs;
+  private final int _bearerTokenExpirationSecs;
   private final boolean _anonymousLoginsAllowed;
   private final boolean _validateDomains;
-  private final boolean _useOpenIdConnect;
   private final List<AllowedClient> _allowedClients;
   // map from clientId -> clientSecret
   private final Map<String,Set<String>> _secretsMap;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
-      String loginSuccessPage, int tokenExpirationSecs, boolean anonymousLoginsAllowed,
-      boolean validateDomains, boolean useOpenIdConnect, List<AllowedClient> allowedClients) {
+      String loginSuccessPage, int tokenExpirationSecs, int bearerTokenExpirationSecs, boolean anonymousLoginsAllowed,
+      boolean validateDomains, List<AllowedClient> allowedClients, String keyStoreFile, String keyStorePassPhrase) throws CryptoException, IOException {
+    super(new KeyPairReader().readKeyPair(Paths.get(keyStoreFile), keyStorePassPhrase));
     _issuer = issuer;
     _authClassName = authClassName;
     _authClassConfig = authClassConfig;
     _loginFormPage = loginFormPage;
     _loginSuccessPage = loginSuccessPage;
     _tokenExpirationSecs = tokenExpirationSecs;
+    _bearerTokenExpirationSecs = bearerTokenExpirationSecs;
     _anonymousLoginsAllowed = anonymousLoginsAllowed;
     _validateDomains = validateDomains;
-    _useOpenIdConnect = useOpenIdConnect;
     _allowedClients = allowedClients;
     _secretsMap = new HashMap<>();
     for (AllowedClient client : _allowedClients) {
       _secretsMap.put(client.getId(), client.getSecrets());
+      setClientSigningKeys(client.getId(), client.getSecrets());
     }
   }
 
@@ -183,16 +207,16 @@ public class ApplicationConfig {
     return _tokenExpirationSecs;
   }
 
+  public int getBearerTokenExpirationSecs() {
+    return _bearerTokenExpirationSecs;
+  }
+
   public boolean anonymousLoginsAllowed() {
     return _anonymousLoginsAllowed;
   }
 
   public boolean validateDomains() {
     return _validateDomains;
-  }
-
-  public boolean useOpenIdConnect() {
-    return _useOpenIdConnect;
   }
 
   public List<AllowedClient> getAllowedClients() {

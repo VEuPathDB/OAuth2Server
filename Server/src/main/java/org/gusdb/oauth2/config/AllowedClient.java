@@ -18,7 +18,11 @@ public class AllowedClient {
   private static enum JsonKey {
     clientId,
     clientSecrets,
-    clientDomains
+    clientDomains,
+    allowUserManagement,
+    allowROPCGrant,
+    allowGuestObtainment,
+    allowUserQueries;
   }
 
   public static AllowedClient createFromJson(JsonObject json) throws InitializationException {
@@ -39,14 +43,24 @@ public class AllowedClient {
         domainList.add(clientDomains.getString(i));
       }
     }
-    return new AllowedClient(clientId, clientSecrets, domainList);
+    boolean allowUserManagement = json.getBoolean(JsonKey.allowUserManagement.name(), false);
+    boolean allowROPCGrant = json.getBoolean(JsonKey.allowROPCGrant.name(), false);
+    boolean allowGuestObtainment = json.getBoolean(JsonKey.allowGuestObtainment.name(), false);
+    boolean allowUserQueries = json.getBoolean(JsonKey.allowUserQueries.name(), false);
+    return new AllowedClient(clientId, clientSecrets, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment, allowUserQueries);
   }
 
-  private String _id;
+  private final String _id;
   private Set<String> _secrets;
-  private Set<String> _domains;
+  private final Set<String> _domains;
+  private final boolean _allowUserManagement;
+  private final boolean _allowROPCGrant;
+  private final boolean _allowGuestObtainment;
+  private final boolean _allowUserQueries;
 
-  public AllowedClient(String id, Set<String> secrets, Set<String> domains) throws InitializationException {
+  public AllowedClient(String id, Set<String> secrets, Set<String> domains,
+      boolean allowUserManagement, boolean allowROPCGrant,
+      boolean allowGuestObtainment, boolean allowUserQueries) throws InitializationException {
     _id = id;
     _secrets = secrets;
     _domains = domains;
@@ -57,11 +71,19 @@ public class AllowedClient {
         _domains.iterator().next().isEmpty()) {
       throw new InitializationException("clientId and clientSecrets must be populated, and at least one domain must exist for each allowed client");
     }
+    _allowUserManagement = allowUserManagement;
+    _allowROPCGrant = allowROPCGrant;
+    _allowGuestObtainment = allowGuestObtainment;
+    _allowUserQueries = allowUserQueries;
     LOG.debug("Creating AllowedClient " + id + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
   public String getId() { return _id; }
   public Set<String> getSecrets() { return _secrets; }
   public Set<String> getDomains() { return _domains; }
+  public boolean allowUserManagement() { return _allowUserManagement; }
+  public boolean allowROPCGrant() { return _allowROPCGrant; }
+  public boolean allowGuestObtainment() { return _allowGuestObtainment; }
+  public boolean allowUserQueries() { return _allowUserQueries; }
 
 }

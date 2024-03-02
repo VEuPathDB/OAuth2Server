@@ -1,7 +1,10 @@
 {
   "issuer": "https://eupathdb.org/oauth",
-  "loginFormPage": "eupathdb-login.html",
   "tokenExpirationSecs": 3600,
+  "bearerTokenExpirationSecs": 94608000,
+  "loginFormPage": "eupathdb-login.html",
+  "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
+  "keyStorePassPhrase": "xxxxxx",
   "authenticatorClass": "org.gusdb.oauth2.wdk.TestAuthenticator",
   "authenticatorConfig": {
     "login": "db_login",
@@ -15,7 +18,16 @@
     {
       "clientId": "apiComponentSite",
       "clientSecrets": [ "12345" ],
-      "clientDomains": [ "localhost", "*.plasmodb.org" ]
+      "clientDomains": [ "localhost", "*.plasmodb.org" ],
+      "allowUserManagement": true,
+      "allowROPCGrant": true,
+      "allowGuestObtainment": true,
+      "allowUserQueries": true
+    },{
+      "clientId": "veupathdbService",
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost", "*.plasmodb.org" ],
+      "allowUserQueries": true
     },{
       "clientId": "globusGenomics",
       "clientSecrets": [ "12345" ],
@@ -27,7 +39,8 @@
     },{
       "clientId": "apolloPatch",
       "clientSecrets": [ "12345" ],
-      "clientDomains": [ "localhost" ]
+      "clientDomains": [ "localhost" ],
+      "allowUserQueries": true
     }
   ]
 }

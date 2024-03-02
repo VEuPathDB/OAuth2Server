@@ -5,7 +5,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.gusdb.oauth2.config.ApplicationConfig;
-import org.gusdb.oauth2.service.TokenStore;
+import org.gusdb.oauth2.service.token.TokenStore;
 
 public class TokenExpirerThread implements Runnable {
 
@@ -25,11 +25,11 @@ public class TokenExpirerThread implements Runnable {
   }
 
   private int _tokenExpirationSecs;
-  
+
   public TokenExpirerThread(int tokenExpirationSecs) {
     _tokenExpirationSecs = tokenExpirationSecs;
   }
-  
+
   @Override
   public void run() {
     TokenStore.removeExpiredTokens(_tokenExpirationSecs);

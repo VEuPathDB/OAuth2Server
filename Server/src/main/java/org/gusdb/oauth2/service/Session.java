@@ -9,13 +9,15 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.oauth2.service.token.TokenStore;
 import org.gusdb.oauth2.service.util.AuthzRequest;
 
 public class Session {
 
   private static final Logger LOG = LogManager.getLogger(Session.class);
 
-  private static final String SESSION_USERNAME_KEY = "username";
+  private static final String SESSION_LOGINNAME_KEY = "loginName";
+  private static final String SESSION_USERID_KEY = "userId";
   private static final String SESSION_FORM_ID_MAP_KEY = "formIdMap";
 
   private final HttpSession _session;
@@ -30,15 +32,23 @@ public class Session {
   }
 
   public boolean isAuthenticated() {
-    return getUsername() != null;
+    return getLoginName() != null;
   }
 
-  public String getUsername() {
-    return (String)_session.getAttribute(SESSION_USERNAME_KEY);
+  public String getLoginName() {
+    return (String)_session.getAttribute(SESSION_LOGINNAME_KEY);
   }
 
-  public void setUsername(String username) {
-    _session.setAttribute(SESSION_USERNAME_KEY, username);
+  public void setLoginName(String loginName) {
+    _session.setAttribute(SESSION_LOGINNAME_KEY, loginName);
+  }
+
+  public String getUserId() {
+    return (String)_session.getAttribute(SESSION_USERID_KEY);
+  }
+
+  public void setUserId(String userId) {
+    _session.setAttribute(SESSION_USERID_KEY, userId);
   }
 
   public AuthzRequest getOriginalRequest(String formId) {
@@ -70,10 +80,11 @@ public class Session {
   }
 
   public void invalidate() {
-    String username = getUsername();
+    String username = getLoginName();
     if (username != null) {
       TokenStore.clearObjectsForUser(username);
     }
     _session.invalidate();
   }
+
 }

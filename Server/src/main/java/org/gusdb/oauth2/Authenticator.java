@@ -1,10 +1,14 @@
 package org.gusdb.oauth2;
 
-import java.util.Map;
+import java.util.AbstractMap;
+import java.util.Optional;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
-import javax.json.stream.JsonParsingException;
+
+import org.gusdb.oauth2.exception.ConflictException;
+import org.gusdb.oauth2.exception.InvalidPropertiesException;
+import org.gusdb.oauth2.service.UserPropertiesRequest;
 
 /**
  * Provides access to a custom user store to authenticate users and provide
@@ -14,63 +18,44 @@ import javax.json.stream.JsonParsingException;
  * 
  * @author rdoherty
  */
-public interface Authenticator {
+public interface Authenticator extends AutoCloseable {
 
-  /**
-   * Provides access to user's ID and email
-   * 
-   * @author rdoherty
-   */
-  public static interface UserInfo {
+  public enum DataScope {
     /**
-     * Returns system-unique and static ID for a user; this identifier should be
-     * suitable for representing a primary key for this user.  It will be
-     * used as the "sub" property of the OpenID Connect ID token.  If null
-     * or an empty value is returned, and exception will be thrown.
-     * 
-     * @return unique user ID
+     * Indicates implementation-specific user information used to populate OIDC ID and
+     * bearer tokens.  Only the user ID field of the returned object is required.  Email
+     * and EmailVerified are optional. Authenticator implementations can also add
+     * supplemental fields in the supplementalFields property of the returned object.
+     *
+     * This information is used to populate both types of OpenIDConnect tokens.
+     * - ID tokens:     returned for /token requests
+     * - Bearer tokens: returned for /bearer-token requests
+     *
+     * To keep OIDC ID/bearer tokens small, this scope can/should produce a less
+     * comprehensive collection of fields than the PROFILE scope and omit any large fields.
      */
-    public String getUserId();
-
-    /**
-     * Returns user's email address; if this method returns a value, it will be
-     * used as the "email" property of the OpenID Connect ID token.  If null
-     * or an empty String is returned, the "email" property will be omitted.
-     * 
-     * @return user's email address
-     */
-    public String getEmail();
+    ID_TOKEN,
+    BEARER_TOKEN,
 
     /**
-     * Returns whether this user's email has been verified.  The value returned
-     * will be used as the "email_verified" property of the OpenID Connect ID
-     * token.  This will only be included, however, if the "email" property is
-     * also included.
-     * 
-     * @return whether the user's email address has been verified
+     * Indicates implementation-specific user information used to populate a user
+     * profile object.  Only the user ID field of the returned object is required.  Email
+     * and EmailVerified are optional. Authenticator implementations can also add
+     * supplemental fields in the supplementalFields property of the returned object.
+     *
+     * This information is returned by user requests (registration, info, edit requests)
+     * if a valid token is presented as part of the request.
+     *
+     * To keep OIDC ID/bearer tokens small, this scope can/should produce a more
+     * comprehensive collection of fields than the TOKEN scope and include any large fields.
      */
-    public boolean isEmailVerified();
+    PROFILE;
+  }
 
-    /**
-     * Returns a human-readable username for the user.  The value returned will
-     * be used as the "preferred_username" property of the OpenID Connect ID
-     * token.  If null or an empty String is returned, the "preferred_username"
-     * property will be omitted.  Per the spec, implementations are not required
-     * to make this value unique or stable.  However, they may depending on
-     * their need.
-     * 
-     * @return users's preferred username
-     */
-    public String getPreferredUsername();
-
-    /**
-     * Returns supplemental fields to be included in the OpenID Connect ID
-     * token.  Keys cannot override natively-supported fields, but any other
-     * value is valid.  Any JSON value is allowed.
-     * 
-     * @return supplemental fields to add to ID token
-     */
-    public Map<String,JsonValue> getSupplementalFields();
+  public static class RequestingUser extends AbstractMap.SimpleImmutableEntry<String, Boolean> {
+    public RequestingUser(String userId, boolean isGuest) { super(userId, isGuest); }
+    public String getUserId() { return getKey(); }
+    public boolean isGuest() { return getValue(); }
   }
 
   /**
@@ -86,47 +71,62 @@ public interface Authenticator {
   public void initialize(JsonObject configJson) throws InitializationException;
 
   /**
-   * Replies true if the passed credentials identify a valid user, else false.
+   * Replies with a non-empty optional containing the user ID of a user
+   * if the passed credentials identify a valid user, else an empty optional.
    * The passed strings are not checked for SQL-injection or other hacks.
    * 
-   * @param username entered username
+   * @param loginName entered login value
    * @param password entered password
-   * @return true if passed creds identify a user, else false
+   * @return user ID if passed creds identify a user, else empty
    * @throws Exception if something goes wrong during validation
    */
-  public boolean isCredentialsValid(String username, String password) throws Exception;
+  public Optional<String> isCredentialsValid(String loginName, String password) throws Exception;
 
   /**
-   * Returns implementation-specific user information.  Only the user ID field
-   * of the returned object is required.  Email and EmailVerified are optional.
-   * Authenticator implementations can also add supplemental fields in the
-   * supplementalFields property of the returned object.
-   * 
-   * This information is used to populate an OpenID Connect ID token, which is
-   * returned for /token requests if the "includeUserInfoWithToken" config value
-   * is true, and is returned for /user requests accompanied by a valid access
-   * token.
-   * 
-   * @param username username for which to get user information
-   * @return user information
+   * Look up user information by login value.
+   *
+   * @param loginName login value for which user information should be retrieved
+   * @return user information for the given scope, or empty optional if not found
    * @throws Exception if something goes wrong while fetching user info
    */
-  public UserInfo getUserInfo(String username) throws Exception;
+  public Optional<UserInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception;
+
+  /**
+   * Look up user information by user ID.
+   *
+   * @param userId user ID for which user information should be retrieved
+   * @return user information for the given scope, or empty optional if not found
+   * @throws Exception if something goes wrong while fetching user info
+   */
+  public Optional<UserInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception;
+
+  /**
+   * Looks up the user ID (must be a guest) and returns the user profile (returned by
+   * the /user endpoint) for a guest user if found.  If not found, an empty optional
+   * is returned.  The default method always returns an empty optional.
+   *
+   * @param userId user ID of the guest user
+   * @return user profile for a guest user with the passed ID, or empty if not found
+   */
+  public default Optional<UserInfo> getGuestProfileInfo(String userId) {
+    return Optional.empty();
+  }
 
   /**
    * Overwrites user's password in the system.  The passed strings are not
-   * checked for SQL-injection or other hacks.
+   * checked for SQL-injection or other hacks prior to calling this method.
    * 
-   * @param username username of user whose password should be overwritten
+   * @param userId ID of user whose password should be overwritten
    * @param newPassword new password for the user
    */
-  public void overwritePassword(String username, String newPassword) throws Exception;
+  public void overwritePassword(String userId, String newPassword) throws Exception;
 
   /**
    * Closes resources opened during initialization.  This method will be called
    * on webapp unloading if the org.gusdb.oauth2.server.ApplicationListener is
    * added as a listener in web.xml.
    */
+  @Override
   public void close();
 
   /**
@@ -137,19 +137,83 @@ public interface Authenticator {
    * @return query response
    * @throws UnsupportedOperationException if queries are not supported by this
    * authenticator implementation
-   * @throws JsonParsingException if querySpec is invalid
+   * @throws IllegalArgumentException if querySpec is invalid
    */
-  public JsonObject executeQuery(JsonObject querySpec)
-      throws UnsupportedOperationException, JsonParsingException;
+  public JsonValue executeQuery(JsonObject querySpec)
+      throws UnsupportedOperationException, IllegalArgumentException;
 
   /**
    * Allows authenticator to log successful logins in an application specific way
    *
-   * @param username username that successfully logged in
+   * @param loginName login value used to successfully log in
+   * @param userId ID of user the performed successful login
    * @param clientId ID of OAuth client performing login
    * @param redirectUri URL auth response will be sent to
    * @param requestingIpAddress IP address making the request
    */
-  public void logSuccessfulLogin(String username, String clientId, String redirectUri, String requestingIpAddress);
+  public void logSuccessfulLogin(String loginName, String userId, String clientId, String redirectUri, String requestingIpAddress);
+
+  /**
+   * Returns true if getNextGuestId() is implemented to produce guest IDs.  If this method
+   * returns false, the guest token endpoint of this OIDC server will throw an error
+   */
+  public default boolean supportsGuests() {
+    return false;
+  }
+
+  /**
+   * @return a new guest ID
+   */
+  public default String getNextGuestId() {
+    throw new UnsupportedOperationException("This authenticator does not support guests.");
+  }
+
+  /**
+   * Creates a new account from the given request and returns a UserInfo object representing it
+   *
+   * @param userProps properties from which to create new account
+   * @param initialPassword initial password to associate with the account
+   * @return object representing the new user
+   * @throws ConflictException if a passed value must be unique and conflicts with an existing value
+   * @throws InvalidPropertiesException if input user props are invalid for another reason
+   * @throws RuntimeException if unable to complete the operation
+   */
+  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
+
+  /**
+   * Modifies the user account for passed userId using the passed user props
+   *
+   * @param userId ID of user to modify
+   * @param userProps properties to assign to the specified user
+   * @return object representing the modified user
+   * @throws ConflictException if a passed value must be unique and conflicts with an existing value
+   * @throws InvalidPropertiesException if input user props are invalid for another reason
+   * @throws RuntimeException if unable to complete the operation
+   */
+  public UserInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
+
+  /**
+   * Reset the password for the passed login to the passed password value
+   *
+   * @param loginName login for which to change password
+   * @param newPassword new password
+   */
+  public void resetPassword(String loginName, String newPassword);
+
+  /**
+   * Generate a new password.  Used for initial user password and password reset.
+   *
+   * @return new, random password
+   */
+  public String generateNewPassword();
+
+  /**
+   * Update last login timestamp for the user with the passed user ID.  Implementation of
+   * this method is optional (simply no-op if unsupported).  It is called each time a
+   * new token (ID token or bearer token) is produced.
+   *
+   * @param userId user for whom a new token was generated
+   */
+  public void updateLastLoginTimestamp(String userId);
 
 }

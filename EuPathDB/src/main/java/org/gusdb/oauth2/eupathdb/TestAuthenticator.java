@@ -1,6 +1,7 @@
-package org.gusdb.oauth2.wdk;
+package org.gusdb.oauth2.eupathdb;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,8 +30,8 @@ public class TestAuthenticator extends AccountDbAuthenticator {
   }
 
   @Override
-  public boolean isCredentialsValid(String username, String password) throws Exception {
-    return getUserData(username, password, true) != null;
+  public Optional<String> isCredentialsValid(String username, String password) throws Exception {
+    return Optional.ofNullable(getUserData(username, password, true)).map(profile -> profile.getUserId().toString());
   }
 
   @Override
