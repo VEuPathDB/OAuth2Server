@@ -341,7 +341,7 @@ public class OAuthClient {
     catch (ExpiredJwtException e) {
       throw new ExpiredTokenException(e);
     }
-    catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    catch (ClassCastException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
       throw new InvalidTokenException(e);
     }
   }
@@ -368,7 +368,7 @@ public class OAuthClient {
     catch (ExpiredJwtException e) {
       throw new ExpiredTokenException(e);
     }
-    catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    catch (ClassCastException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
       throw new InvalidTokenException(e);
     }
   }
@@ -377,7 +377,6 @@ public class OAuthClient {
     // TODO: add validation of claims
     //claims.getIssuer()
     //claims.getAudience()
-    //claims.getExpiration()
   }
 
   private SSLContext createSslContext() throws NoSuchAlgorithmException, KeyManagementException {
