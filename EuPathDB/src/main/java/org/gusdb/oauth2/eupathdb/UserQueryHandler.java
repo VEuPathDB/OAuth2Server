@@ -1,7 +1,9 @@
 package org.gusdb.oauth2.eupathdb;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -55,8 +57,9 @@ public class UserQueryHandler {
         case userIds:
           JsonArray idInputArray = querySpec.getJsonArray(ValidQueryTypePropKey.userIds.name());
           JsonArrayBuilder idOutputArray = Json.createArrayBuilder();
+          Map<Long,JsonObject> idCache = new HashMap<>();
           for (int i = 0; i < idInputArray.size(); i++) {
-            idOutputArray.add(getUserJsonById(Integer.valueOf(idInputArray.getInt(i)).longValue()));
+            idOutputArray.add(idCache.computeIfAbsent(Integer.valueOf(idInputArray.getInt(i)).longValue(), id -> getUserJsonById(id)));
           }
           return idOutputArray.build();
 
@@ -67,8 +70,9 @@ public class UserQueryHandler {
         case emails:
           JsonArray emailInputArray = querySpec.getJsonArray(ValidQueryTypePropKey.emails.name());
           JsonArrayBuilder emailOutputArray = Json.createArrayBuilder();
+          Map<String,JsonObject> emailCache = new HashMap<>();
           for (int i = 0; i < emailInputArray.size(); i++) {
-            emailOutputArray.add(getUserJsonByEmail(emailInputArray.getString(i)));
+            emailOutputArray.add(emailCache.computeIfAbsent(emailInputArray.getString(i), email -> getUserJsonByEmail(email)));
           }
           return emailOutputArray.build();
 
@@ -81,7 +85,7 @@ public class UserQueryHandler {
     }
   }
 
-  private JsonValue getUserJsonByEmail(String requestedEmail) {
+  private JsonObject getUserJsonByEmail(String requestedEmail) {
     // only registered users have email
     UserProfile userProfile = _accountDb.getUserProfileByEmail(requestedEmail);
     if (userProfile == null) {
