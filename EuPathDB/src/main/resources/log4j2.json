@@ -44,7 +44,7 @@
         "name": "org.gusdb.oauth2.assets.StaticResource",
         "level": "info"
       },{
-        "name": "org.gusdb.oauth2.wdk.AccountDbAuthenticator.LoginLogger",
+        "name": "org.gusdb.oauth2.eupathdb.AccountDbAuthenticator.LoginLogger",
         "level": "info",
         "AppenderRef": { "ref": "login-log" }
       }],
