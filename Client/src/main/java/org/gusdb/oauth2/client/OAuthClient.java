@@ -387,7 +387,7 @@ public class OAuthClient {
   private static String dumpMultiMap(MultivaluedMap<String, String> formData) {
     StringBuilder str = new StringBuilder("{").append(NL);
     for (Entry<String,List<String>> entry : formData.entrySet()) {
-      String value = entry.getKey().equals("password") ? "<hidden>" :
+      String value = entry.getKey().equals("password") || entry.getKey().equals("client_secret") ? "<hidden>" :
         entry.getValue().stream().collect(Collectors.joining(", "));
       str.append("  ").append(entry.getKey()).append(": ")
          .append("[ ").append(value).append(" ]").append(NL);
