@@ -632,7 +632,7 @@ public class OAuthService {
           input.containsKey(OAuthClient.JSON_KEY_CREDENTIALS)
           // use new client credentials format to determine validity
           ? getClientCredentials(input)
-          // otherwise use oauth names; kept for backward compatbility with old clients (apollopatch)
+          // otherwise use oauth names; kept for backward compatibility with old clients (apollopatch)
           : new SimpleEntry<>(
               input.getString(OAuth.OAUTH_CLIENT_ID),
               input.getString(OAuth.OAUTH_CLIENT_SECRET));
