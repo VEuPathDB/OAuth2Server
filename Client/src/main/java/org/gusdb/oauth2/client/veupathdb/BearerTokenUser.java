@@ -33,7 +33,7 @@ public class BearerTokenUser extends BasicUser {
     // return if already fetched
     if (_userInfoFetched) return;
 
-    LOG.info("User data fetch requested for user " + getUserId() + "; querying OAuth server.");
+    LOG.trace("User data fetch requested for user " + getUserId() + "; querying OAuth server.");
     // fetch user info from OAuth server where it is stored (but only on demand, and only once for this object's lifetime)
     JSONObject userInfo = _client.getUserData(_oauthUrl, _token);
 
@@ -42,7 +42,7 @@ public class BearerTokenUser extends BasicUser {
 
     _userInfoFetched = true;
 
-    LOG.info("User data successfully fetched for " + getDisplayName() + " / " + getOrganization());
+    LOG.trace("User data successfully fetched for " + getUserId());
   }
 
 }
