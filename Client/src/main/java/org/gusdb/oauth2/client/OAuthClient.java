@@ -59,6 +59,7 @@ import io.jsonwebtoken.security.SignatureException;
 public class OAuthClient {
 
   private static final Logger LOG = LogManager.getLogger(OAuthClient.class);
+
   private static final String NL = System.lineSeparator();
 
   public static final String JSON_KEY_CREDENTIALS = "clientCredentials";
@@ -112,7 +113,7 @@ public class OAuthClient {
     if (LAST_PUBLIC_KEY_FETCH_URL == null
         || !LAST_PUBLIC_KEY_FETCH_URL.equals(oauthBaseUrl)
         || System.currentTimeMillis() > PUBLIC_KEY_FETCH_EXPIRATION) {
-      LOG.info("Cached public key expired; refreshing from " + oauthBaseUrl + Endpoints.JWKS);
+      LOG.trace("Cached public key expired; refreshing from " + oauthBaseUrl + Endpoints.JWKS);
       CACHED_PUBLIC_KEY = fetchPublicSigningKey(oauthBaseUrl);
       LAST_PUBLIC_KEY_FETCH_URL = oauthBaseUrl;
       PUBLIC_KEY_FETCH_EXPIRATION = System.currentTimeMillis() + (PUBLIC_KEY_CACHE_DURATION_SECS.get() * 1000);
@@ -263,7 +264,7 @@ public class OAuthClient {
     // add custom form params for this grant type
     formModifier.accept(formData);
 
-    LOG.info("Building token request with the following URL: " + oauthUrl +
+    LOG.trace("Building token request with the following URL: " + oauthUrl +
         " and params: " + dumpMultiMap(formData));
 
     // build request and get token response
@@ -278,7 +279,7 @@ public class OAuthClient {
       if (response.getStatus() == 200) {
         // Success!  Read result into buffer and convert to JSON
         JSONObject json = new JSONObject(readResponseBody(response));
-        LOG.debug("Response received from OAuth server for token request: " + json.toString(2));
+        LOG.trace("Response received from OAuth server for token request: " + json.toString(2));
 
         // get id_token from object and decode to user ID
         return json.getString("id_token");
