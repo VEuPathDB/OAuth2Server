@@ -31,7 +31,7 @@ public class KeyGenerator {
 
     if (SECRET_KEY_ALG_NAME.equals(args[0])) {
       Key key = Keys.secretKeyFor(Signatures.SECRET_KEY_ALGORITHM);
-      System.out.println("HMAC: " + toOutputString(key));
+      System.out.println(toOutputString(key));
     }
     else {
       // create a random seed for the asymmetric keys and initialize key store
