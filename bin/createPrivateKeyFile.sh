@@ -9,30 +9,20 @@ if [ "$#" != "1" ]; then
 fi
 
 passPhrase=$1
-outputFile=ecKeys.$( date +%s%3N ).pkcs12
-
-# record the current directory for output
-RUN_DIR=$(pwd)
+outputFilename=ecKeys.$( date +%s%3N ).pkcs12
+outputFile=$(pwd)/$outputFilename
 
 # get to the parent directory of the bin dir
-PROJECT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/..
-cd $PROJECT_DIR
+cd $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/..
 
-# only build uber-jar if necessary
-if [ ! -e Server/target/uber-jar.jar ]; then
+source bin/shared.sh
 
-  # build the entire project to cache snapshot deps in local mvn repo
-  mvn clean install
-
-  # package the server component into an uber jar
-  cd Server
-  mvn clean package assembly:single
-  cd ..
-
-fi
+buildUberJar
 
 # generate a random seed of sufficient length
-seed=$( java -classpath Server/target/uber-jar.jar org.gusdb.oauth2.tools.KeyGenerator HmacSHA512 )
+seed=$(createHmacValue)
 
 # generate the key and write to file
-java -classpath Server/target/uber-jar.jar org.gusdb.oauth2.tools.KeyPairWriter $outputFile "$passPhrase" $seed && echo "Wrote key file to $outputFile"
+echo
+java -classpath Server/target/uber-jar.jar org.gusdb.oauth2.tools.KeyPairWriter $outputFile "$passPhrase" $seed \
+  && echo && echo "Wrote key file to $outputFilename" && echo
