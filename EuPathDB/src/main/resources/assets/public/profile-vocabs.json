@@ -1,5 +1,5 @@
 {
-  "primaryPosition": [
+  "position": [
     { "value": "pi", "display": "Lab head/Principal Investigator" },
     { "value": "postdoc", "display": "PostDoc" },
     { "value": "grad_student", "display": "Masters or PhD student" },
