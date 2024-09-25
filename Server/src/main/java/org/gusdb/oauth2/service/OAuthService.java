@@ -486,6 +486,10 @@ public class OAuthService {
     catch (ConflictException e) {
       return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
     }
+    catch (Exception e) {
+      LOG.error("Unable to edit user profile.", e);
+      throw e;
+    }
   }
 
   @POST
