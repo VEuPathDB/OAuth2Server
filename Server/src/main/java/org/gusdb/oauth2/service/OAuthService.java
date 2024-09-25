@@ -44,6 +44,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Variant;
 
@@ -106,9 +107,15 @@ public class OAuthService {
     if (name == null || name.isEmpty()) {
       return Response.notAcceptable(Collections.<Variant>emptyList()).build();
     }
+
+    // Only apply CORS header if path begins with "public/"
+    boolean isPublicResource = name.startsWith("public/");
+    Function<ResponseBuilder,ResponseBuilder> CORS =
+        response -> isPublicResource ? response.header("Access-Control-Allow-Origin", "*") : response;
+
     StaticResource resource = new StaticResource(name);
     return resource.getStreamingOutput()
-        .map(stream -> Response.ok(stream).type(resource.getMimeType()).build())
+        .map(stream -> CORS.apply(Response.ok(stream).type(resource.getMimeType())).build())
         .orElse(Response.status(Status.NOT_FOUND).build());
   }
 

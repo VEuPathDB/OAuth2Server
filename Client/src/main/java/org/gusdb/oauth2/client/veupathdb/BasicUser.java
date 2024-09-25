@@ -24,7 +24,11 @@ public class BasicUser implements User {
   private String _firstName;
   private String _middleName;
   private String _lastName;
+  private String _country;
   private String _organization;
+  private String _groupName;
+  private String _position;
+  private String _positionType;
   private String _interests;
 
   public BasicUser(long userId, boolean isGuest, String signature, String stableId) {
@@ -153,6 +157,17 @@ public class BasicUser implements User {
   }
 
   @Override
+  public String getCountry() {
+    return _country;
+  }
+
+  @Override
+  public BasicUser setCountry(String country) {
+    _country = country;
+    return this;
+  }
+
+  @Override
   public String getOrganization() {
     fetchUserInfo();
     return _organization;
@@ -161,6 +176,39 @@ public class BasicUser implements User {
   @Override
   public BasicUser setOrganization(String organization) {
     _organization = organization;
+    return this;
+  }
+
+  @Override
+  public String getGroupName() {
+    return _groupName;
+  }
+
+  @Override
+  public BasicUser setGroupName(String groupName) {
+    _groupName = groupName;
+    return this;
+  }
+
+  @Override
+  public String getPosition() {
+    return _position;
+  }
+
+  @Override
+  public BasicUser setPosition(String position) {
+    _position = position;
+    return this;
+  }
+
+  @Override
+  public String getPositionType() {
+    return _positionType;
+  }
+
+  @Override
+  public BasicUser setPositionType(String positionType) {
+    _positionType = positionType;
     return this;
   }
 
