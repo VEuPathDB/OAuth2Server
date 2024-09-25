@@ -1,26 +1,29 @@
 
-var knownProjects = [
-  "veupathdb",
-  "amoebadb",
-  "cryptodb",
-  "fungidb",
-  "giardiadb",
-  "microsporidiadb",
-  "piroplasmadb",
-  "plasmodb",
-  "schistodb",
-  "toxodb",
-  "trichdb",
-  "tritrypdb",
-  "hostdb",
-  "vectorbase",
-  "orthomcl",
-  "clinepidb",
-  "microbiomedb"
+var projectIds = [
+  "VEuPathDB",
+  "AmoebaDB",
+  "CryptoDB",
+  "FungiDB",
+  "GiardiaDB",
+  "MicrosporidiaDB",
+  "PiroplasmaDB",
+  "PlasmoDB",
+  "SchistoDB",
+  "ToxoDB",
+  "TrichDB",
+  "TriTrypDB",
+  "HostDB",
+  "VectorBase",
+  "OrthoMCL",
+  "ClinEpiDB",
+  "MicrobiomeDB"
 ];
+
+var knownProjects = projectIds.map(s => s.toLowerCase());
 
 var defaultSiteData = {
   project: 'veupathdb',
+  projectId: 'VEuPathDB', // not quite accurate but it is the 'public-facing' project ID
   baseUrl: 'https://veupathdb.org/veupathdb',
   cancelUrl: 'https://veupathdb.org/veupathdb'
 };
@@ -52,22 +55,32 @@ function getReferringSiteData(urlQueryParamName) {
     return defaultSiteData;
   }
 
+  var projectId = projectIds[knownProjects.indexOf(project)];
+
   var baseUrl = url.protocol + "//" + url.host + "/" + webappName;
   var cancelUrl = (url.searchObject.redirectUrl == undefined ?
       baseUrl : decodeURIComponent(url.searchObject.redirectUrl));
 
   return {
     project: project,
+    projectId: projectId,
     baseUrl: baseUrl,
     cancelUrl: cancelUrl
   };
 }
 
 function addEupathDecorators(siteData) {
+
   $(".eupathdb-logos" ).load( "logos.html", function() {
     // choose the correct header logo and link
     $('#' + siteData.project + '-logo').css({ display: 'inline' });
     $('.main-logo-container a').attr('href', siteData.baseUrl);
   });
+
   $(".eupathdb-footer").load("footer.html");
+
+  var optionalLoginProjects = [ "OrthoMCL", "ClinEpiDB", "MicrobiomeDB" ];
+  if (!optionalLoginProjects.includes(siteData.projectId)) {
+    $(".banner").text("As of October 2024, we require users to log in to " + siteData.projectId);
+  }
 }
