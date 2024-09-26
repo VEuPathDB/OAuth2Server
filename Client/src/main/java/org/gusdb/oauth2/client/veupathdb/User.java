@@ -17,7 +17,7 @@ public interface User {
   static final String ORGANIZATION_HELP = "Please use the full name of your academic institution, company, or foundation.";
   static final String GROUP_NAME_HELP = "Please use the official name of your group or lab or the full name of your primary investigator.";
   static final String ORGANIZATION_SUGGEST = "e.g. University of Pennsylvania";
-  static final String GROUP_NAME_SUGGEST = "e.g. Charles Darwin Lab";
+  static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab";
   static final String NO_VALUE = null;
 
   private static Map<String,UserProperty> createUserPropertyDefs() {
@@ -27,10 +27,10 @@ public interface User {
         new UserProperty("middleName", "Middle Name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, User::getMiddleName, User::setMiddleName),
         new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, "last_name", true, true, InputType.TEXT, User::getLastName, User::setLastName),
         new UserProperty("country", "Country", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, User::getCountry, User::setCountry),
-        new UserProperty("organization", "Organization", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, User::getOrganization, User::setOrganization),
-        new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, User::getGroupName, User::setGroupName),
+        new UserProperty("organization", "Organization Name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, User::getOrganization, User::setOrganization),
+        new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, User::getPositionType, User::setPositionType),
         new UserProperty("position", "Primary Position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, User::getPosition, User::setPosition),
-        new UserProperty("positionType", "Position Type", NO_VALUE, NO_VALUE, "position_type", true, true, InputType.SELECT, User::getPositionType, User::setPositionType),
+        new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, User::getGroupName, User::setGroupName),
         new UserProperty("interests", "Interests", NO_VALUE, NO_VALUE, "interests", false, false, InputType.TEXTBOX, User::getInterests, User::setInterests)
     );
     return Collections.unmodifiableMap(userProps.stream().collect(Collectors.toMap(UserProperty::getName, x -> x, (a,b) -> a, () -> new LinkedHashMap<>())));
