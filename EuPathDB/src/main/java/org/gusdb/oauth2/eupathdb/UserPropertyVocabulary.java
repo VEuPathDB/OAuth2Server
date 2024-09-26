@@ -2,13 +2,14 @@ package org.gusdb.oauth2.eupathdb;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import org.gusdb.fgputil.IoUtil;
+import org.gusdb.oauth2.assets.StaticResource;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -24,8 +25,9 @@ public class UserPropertyVocabulary extends HashMap<String,List<String>> {
   public static final UserPropertyVocabulary VOCAB_MAP = parseVocabs();
 
   private static UserPropertyVocabulary parseVocabs() {
-    try (InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream("assets/public/profile-vocabs.json");
-         BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+    URL vocabsUrl = new StaticResource("public/profile-vocabs.json").getResourceUrl()
+        .orElseThrow(() -> new RuntimeException("Unable to find vocabulary resource in classpath."));
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(vocabsUrl.openStream()))) {
       JSONObject json = new JSONObject(IoUtil.readAllChars(reader));
       UserPropertyVocabulary vocabMap = new UserPropertyVocabulary();
       for (String key : json.keySet()) {
