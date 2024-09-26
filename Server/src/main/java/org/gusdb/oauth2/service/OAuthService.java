@@ -74,6 +74,7 @@ import org.gusdb.oauth2.service.util.JerseyHttpRequestWrapper;
 import org.gusdb.oauth2.shared.IdTokenFields;
 import org.gusdb.oauth2.shared.Signatures;
 import org.gusdb.oauth2.shared.Signatures.TokenSigner;
+import org.json.JSONObject;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -454,6 +455,7 @@ public class OAuthService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response modifyAccount(String body) {
+    LOG.info("Inside PUT /user with request body: " + new JSONObject(body).toString(2));
     try {
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
       if (!isUserManagementClient(input)) {
