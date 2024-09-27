@@ -22,7 +22,8 @@ public class AllowedClient {
     allowUserManagement,
     allowROPCGrant,
     allowGuestObtainment,
-    allowUserQueries;
+    allowUserQueries,
+    allowIFrameEmbedding;
   }
 
   public static AllowedClient createFromJson(JsonObject json) throws InitializationException {
@@ -47,7 +48,8 @@ public class AllowedClient {
     boolean allowROPCGrant = json.getBoolean(JsonKey.allowROPCGrant.name(), false);
     boolean allowGuestObtainment = json.getBoolean(JsonKey.allowGuestObtainment.name(), false);
     boolean allowUserQueries = json.getBoolean(JsonKey.allowUserQueries.name(), false);
-    return new AllowedClient(clientId, clientSecrets, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment, allowUserQueries);
+    boolean allowIFrameEmbedding = json.getBoolean(JsonKey.allowIFrameEmbedding.name(), false);
+    return new AllowedClient(clientId, clientSecrets, domainList, allowUserManagement, allowROPCGrant, allowGuestObtainment, allowUserQueries, allowIFrameEmbedding);
   }
 
   private final String _id;
@@ -57,10 +59,12 @@ public class AllowedClient {
   private final boolean _allowROPCGrant;
   private final boolean _allowGuestObtainment;
   private final boolean _allowUserQueries;
+  private final boolean _allowIFrameEmbedding;
 
   public AllowedClient(String id, Set<String> secrets, Set<String> domains,
       boolean allowUserManagement, boolean allowROPCGrant,
-      boolean allowGuestObtainment, boolean allowUserQueries) throws InitializationException {
+      boolean allowGuestObtainment, boolean allowUserQueries,
+      boolean allowIFrameEmbedding) throws InitializationException {
     _id = id;
     _secrets = secrets;
     _domains = domains;
@@ -75,6 +79,7 @@ public class AllowedClient {
     _allowROPCGrant = allowROPCGrant;
     _allowGuestObtainment = allowGuestObtainment;
     _allowUserQueries = allowUserQueries;
+    _allowIFrameEmbedding = allowIFrameEmbedding;
     LOG.debug("Creating AllowedClient " + id + " with allowed domains " + Arrays.toString(domains.toArray()));
   }
 
@@ -85,5 +90,6 @@ public class AllowedClient {
   public boolean allowROPCGrant() { return _allowROPCGrant; }
   public boolean allowGuestObtainment() { return _allowGuestObtainment; }
   public boolean allowUserQueries() { return _allowUserQueries; }
+  public boolean allowIFrameEmbedding() { return _allowIFrameEmbedding; }
 
 }
