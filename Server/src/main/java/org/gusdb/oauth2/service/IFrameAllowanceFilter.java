@@ -34,7 +34,7 @@ public class IFrameAllowanceFilter implements ContainerResponseFilter {
       headers.remove("X-FRAME-OPTIONS");
 
       // 2. set frame ancestors to configured sites
-      headers.put("Content-Security-Policy", List.of("frame-ancestors 'self' " + String.join(" ", iframeAllowedSites)));
+      headers.put("Content-Security-Policy", List.of("frame-ancestors localhost 'self' " + String.join(" ", iframeAllowedSites)));
     }
   }
 }
