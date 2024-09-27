@@ -31,10 +31,11 @@ public class IFrameAllowanceFilter implements ContainerResponseFilter {
 
       // Two steps to allow configured domains to host login form in an iframe:
       // 1. remove (default) frame options header
+      //   NOTE: proxy server in front of this webapp (e.g. apache) may reappend this header automatically
       headers.remove("X-FRAME-OPTIONS");
 
       // 2. set frame ancestors to configured sites
-      headers.put("Content-Security-Policy", List.of("frame-ancestors localhost 'self' " + String.join(" ", iframeAllowedSites)));
+      headers.put("Content-Security-Policy", List.of("frame-ancestors 'self' " + String.join(" ", iframeAllowedSites)));
     }
   }
 }
