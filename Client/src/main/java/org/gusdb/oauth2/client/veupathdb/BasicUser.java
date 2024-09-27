@@ -28,7 +28,7 @@ public class BasicUser implements User {
   private String _organization;
   private String _groupName;
   private String _position;
-  private String _positionType;
+  private String _organizationType;
   private String _interests;
 
   public BasicUser(long userId, boolean isGuest, String signature, String stableId) {
@@ -202,13 +202,13 @@ public class BasicUser implements User {
   }
 
   @Override
-  public String getPositionType() {
-    return _positionType;
+  public String getOrganizationType() {
+    return _organizationType;
   }
 
   @Override
-  public BasicUser setPositionType(String positionType) {
-    _positionType = positionType;
+  public BasicUser setOrganizationType(String organizationType) {
+    _organizationType = organizationType;
     return this;
   }
 

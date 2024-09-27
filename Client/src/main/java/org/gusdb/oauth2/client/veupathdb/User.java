@@ -28,7 +28,7 @@ public interface User {
         new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, "last_name", true, true, InputType.TEXT, User::getLastName, User::setLastName),
         new UserProperty("country", "Country", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, User::getCountry, User::setCountry),
         new UserProperty("organization", "Organization Name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, User::getOrganization, User::setOrganization),
-        new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, User::getPositionType, User::setPositionType),
+        new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, User::getOrganizationType, User::setOrganizationType),
         new UserProperty("position", "Primary Position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, User::getPosition, User::setPosition),
         new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, User::getGroupName, User::setGroupName),
         new UserProperty("interests", "Interests", NO_VALUE, NO_VALUE, "interests", false, false, InputType.TEXTBOX, User::getInterests, User::setInterests)
@@ -66,13 +66,13 @@ public interface User {
   User setOrganization(String organization);
 
   String getGroupName();
-  User setGroupName(String lab);
+  User setGroupName(String groupName);
 
   String getPosition();
   User setPosition(String position);
 
-  String getPositionType();
-  User setPositionType(String positionType);
+  String getOrganizationType();
+  User setOrganizationType(String organizationType);
 
   String getInterests();
   User setInterests(String interests);
