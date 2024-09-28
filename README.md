@@ -219,3 +219,43 @@ To download and build the EuPathDB implementation:
     in Tomcat's lib directory so the UserDbAuthenticator can access the
     database.  A good test URL is
     &lt;scheme&gt;://&lt;domain&gt;:&lt;port&gt;/oauth/assets/login.html. 
+
+#### Generating Private Keys for Signing Bearer Tokens ####
+
+The JSON configuration file requires specification of a pkcs12 file containing
+the encrypted private key, protected by a pass phrase.  These values are
+configured with:
+
+```
+"keyStoreFile": "<absolute_path_to_pkcs12>"
+"keyStorePassPhrase": "<pass_phrase_for_access>"
+```
+
+You can produce the required file with the following commands:
+
+```
+> git clone https://github.com/VEuPathDB/OAuth2Server.git
+> OAuth2Server/bin/createPrivateKeyFile.sh <desired_pass_phrase>
+```
+
+#### Generating HMAC SHA512 Secret (Symmetric) Key Values ####
+
+The secret keys used in symmetric signatures must be of sufficient length.  Since
+this project uses client secrets as symmetric keys to sign non-bearer information
+tokens, a tool was written to produce client secret values.  A secret must be
+shared with each OAuth client and placed into the JSON configuration file under the
+"allowedClients" property, e.g.:
+
+```
+"clientId": "someClientId"
+"clientSecrets": [ "generatedClientSecret" ]
+```
+
+You can produce the required values with the following commands:
+
+```
+> git clone https://github.com/VEuPathDB/OAuth2Server.git
+> OAuth2Server/bin/createHmacSecretValue.sh
+```
+
+

@@ -1,0 +1,33 @@
+{
+  "issuer": "https://microbiomedb.org/oauth",
+  "tokenExpirationSecs": 3600,
+  "bearerTokenExpirationSecs": 94608000,
+  "loginFormPage": "eupathdb-login.html",
+  "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
+  "keyStorePassPhrase": "xxxxxx",
+  "authenticatorClass": "org.gusdb.oauth2.eupathdb.AccountDbAuthenticator",
+  "authenticatorConfig": {
+    "login": "db_login",
+    "password": "db_password",
+    "connectionUrl": "jdbc:oracle:oci:@acctdbN",
+    "platform": "Oracle",
+    "poolSize": 10,
+    "schema": "useraccounts."
+  },
+  "allowedClients": [
+    {
+      "clientId": "apiComponentSite",
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost", "*.plasmodb.org" ],
+      "allowUserManagement": true,
+      "allowROPCGrant": true,
+      "allowGuestObtainment": true,
+      "allowUserQueries": true
+    },{
+      "clientId": "veupathdbService",
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost", "*.plasmodb.org" ],
+      "allowUserQueries": true
+    }
+  ]
+}
