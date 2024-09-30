@@ -11,14 +11,14 @@ public class UserProperty {
     SELECT;
   }
 
-  private String _name;
-  private String _displayName;
-  private String _helpText;
-  private String _suggest;
-  private String _dbKey;
-  private InputType _inputType = InputType.TEXT;
-  private boolean _isRequired = false;
-  private boolean _isPublic = true;
+  private final String _name;
+  private final String _displayName;
+  private final String _helpText;
+  private final String _suggest;
+  private final String _dbKey;
+  private final InputType _inputType;
+  private final boolean _isRequired;
+  private final boolean _isPublic;
 
   private final Function<User,String> _getter;
   private final BiConsumer<User,String> _setter;
