@@ -30,7 +30,8 @@ public class StaticResource {
           ResponseType.javascript,
           ResponseType.jpeg,
           ResponseType.gif,
-          ResponseType.png
+          ResponseType.png,
+          ResponseType.json
       });
 
   private final String _name;
@@ -73,6 +74,10 @@ public class StaticResource {
 
   public boolean isValid() {
     return _isValid;
+  }
+
+  public Optional<URL> getResourceUrl() {
+    return Optional.ofNullable(_url);
   }
 
   public Optional<StreamingOutput> getStreamingOutput() {

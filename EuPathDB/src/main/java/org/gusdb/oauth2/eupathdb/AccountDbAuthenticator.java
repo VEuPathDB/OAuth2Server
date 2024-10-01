@@ -34,6 +34,8 @@ import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.User;
+import org.gusdb.oauth2.client.veupathdb.UserProperty;
+import org.gusdb.oauth2.client.veupathdb.UserProperty.InputType;
 import org.gusdb.oauth2.exception.ConflictException;
 import org.gusdb.oauth2.exception.InvalidPropertiesException;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
@@ -295,11 +297,23 @@ public class AccountDbAuthenticator implements Authenticator {
       ensureUniqueValue("username", accountMgr.getUserProfileByUsername(username), username, userId);
     }
 
-    // make sure required props are present; trimming of unsupported keys is done in AccountManager
-    // TODO: move this check into AccountManager
-    for (UserPropertyName prop : USER_PROPERTY_DEFS) {
-      if (prop.isRequired() && (!userProps.containsKey(prop.getName()) || userProps.get(prop.getName()).isBlank())) {
+    // property validation
+    for (UserProperty prop : User.USER_PROPERTIES.values()) {
+      String value = userProps.get(prop.getName());
+      boolean propPopulated = value != null && !value.isBlank();
+
+      // make sure required props are present; trimming of unsupported keys is done in AccountManager
+      if (prop.isRequired() && !propPopulated) {
         throw new InvalidPropertiesException("User property '" + prop.getName() + "' cannot be empty.");
+      }
+
+      // check select box values against vocabs used to populate the boxes
+      if (prop.getInputType() == InputType.SELECT && propPopulated) {
+        List<String> vocab = UserPropertyVocabulary.VOCAB_MAP.get(prop.getName());
+        if (!vocab.contains(value)) {
+          throw new InvalidPropertiesException("User property '" + prop.getName() +
+              "' must have one of the following values: [" + String.join(", ", vocab) + "]");
+        }
       }
     }
   }

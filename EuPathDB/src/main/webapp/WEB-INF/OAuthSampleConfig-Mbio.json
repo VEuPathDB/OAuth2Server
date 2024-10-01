@@ -22,7 +22,8 @@
       "allowUserManagement": true,
       "allowROPCGrant": true,
       "allowGuestObtainment": true,
-      "allowUserQueries": true
+      "allowUserQueries": true,
+      "allowIFrameEmbedding": true
     },{
       "clientId": "veupathdbService",
       "clientSecrets": [ "12345" ],
