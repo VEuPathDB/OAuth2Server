@@ -55,7 +55,8 @@ import org.gusdb.oauth2.tools.KeyPairReader;
       "allowUserManagement": true,
       "allowROPCGrant": true,
       "allowGuestObtainment": true,
-      "allowUserQueries": true
+      "allowUserQueries": true,
+      "allowIFrameEmbedding": false
     },{
       "clientId: "globusGenomics",
       "clientSecrets": [ "12345" ],
@@ -161,6 +162,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private final List<AllowedClient> _allowedClients;
   // map from clientId -> clientSecret
   private final Map<String,Set<String>> _secretsMap;
+  private final Set<String> _iframeAllowedSites;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
       String loginSuccessPage, int tokenExpirationSecs, int bearerTokenExpirationSecs, boolean anonymousLoginsAllowed,
@@ -175,11 +177,26 @@ public class ApplicationConfig extends SigningKeyStore {
     _bearerTokenExpirationSecs = bearerTokenExpirationSecs;
     _anonymousLoginsAllowed = anonymousLoginsAllowed;
     _validateDomains = validateDomains;
+
     _allowedClients = allowedClients;
     _secretsMap = new HashMap<>();
+    _iframeAllowedSites = new HashSet<>();
+
     for (AllowedClient client : _allowedClients) {
       _secretsMap.put(client.getId(), client.getSecrets());
       setClientSigningKeys(client.getId(), client.getSecrets());
+
+      // add all client domains to iframe allowed list if client flag is true
+      if (client.allowIFrameEmbedding()) {
+        for (String domain : client.getDomains()) {
+          String scheme = "localhost".equals(domain) ? "http://" : "https://";
+          _iframeAllowedSites.add(scheme + domain);
+          if (domain.startsWith("*.")) {
+            // if all subdomains are allowed, also allow the parent domain
+            _iframeAllowedSites.add(scheme + domain.substring(2));
+          }
+        }
+      }
     }
   }
 
@@ -237,4 +254,9 @@ public class ApplicationConfig extends SigningKeyStore {
       .append("}").append(NL)
       .toString();
   }
+
+  public Set<String> getIFrameAllowedSites() {
+    return _iframeAllowedSites;
+  }
+
 }

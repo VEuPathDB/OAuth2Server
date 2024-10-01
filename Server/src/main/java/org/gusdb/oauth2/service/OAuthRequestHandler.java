@@ -114,6 +114,7 @@ public class OAuthRequestHandler {
             TokenStore.addAuthCode(new AuthCodeData(authCode, oauthRequest.getClientId(), oauthRequest.getUsername(), userId.get(), null));
           }
           catch (Exception e) {
+            LOG.error("Could not perform token request.", e);
             return new OAuthResponseFactory().buildServerErrorResponse();
           }
           break;
