@@ -42,6 +42,10 @@
       "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ],
       "allowUserQueries": true
+    },{
+      "clientId": "apacheAnswer",
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost" ]
     }
   ]
 }
