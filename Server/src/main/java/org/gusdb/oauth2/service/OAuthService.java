@@ -143,6 +143,7 @@ public class OAuthService {
         // add username and userId to session to save a lookup later if /auth endpoint is hit with a known client session
         session.setLoginName(loginName);
         session.setUserId(validUserId.get());
+        session.setMaxInactiveIntervalSecs(config.getOauthSessionExpirationSecs());
 
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
         if (originalRequest == null) {

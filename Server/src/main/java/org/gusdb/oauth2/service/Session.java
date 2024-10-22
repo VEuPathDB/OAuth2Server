@@ -51,6 +51,10 @@ public class Session {
     _session.setAttribute(SESSION_USERID_KEY, userId);
   }
 
+  public void setMaxInactiveIntervalSecs(int maxInactiveIntervalSecs) {
+    _session.setMaxInactiveInterval(maxInactiveIntervalSecs);
+  }
+
   public AuthzRequest getOriginalRequest(String formId) {
     return getFormIdMap().get(formId);
   }
