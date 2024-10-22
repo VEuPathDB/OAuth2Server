@@ -78,9 +78,9 @@ public class ApplicationConfig extends SigningKeyStore {
   private static final String DEFAULT_LOGIN_FORM_PAGE = "login.html";
   private static final String DEFAULT_LOGIN_SUCCESS_PAGE = "success.html";
 
-  public static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300; // five minutes
+  public static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300; // 5 minutes
   public static final int DEFAULT_BEARER_TOKEN_EXPIRATION_SECS = 5184000; // 60 days
-  public static final int DEFAULT_OAUTH_SESSION_EXPIRATION_SECS = 2592000; // 30 days
+  public static final int DEFAULT_OAUTH_SESSION_EXPIRATION_SECS = 31536000; // 365 days
 
   private static enum JsonKey {
     issuer,
