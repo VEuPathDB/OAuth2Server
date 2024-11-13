@@ -81,6 +81,6 @@ function addEupathDecorators(siteData) {
 
   var optionalLoginProjects = [ "OrthoMCL", "ClinEpiDB", "MicrobiomeDB" ];
   if (!optionalLoginProjects.includes(siteData.projectId)) {
-    $(".banner").text("Welcome to " + siteData.projectId + "! To access our free site, please log in. Thanks for your support!");
+    $(".banner").html("Welcome to " + siteData.projectId + "!<br/>The site is free, but access requires login. Thanks for your support!");
   }
 }
