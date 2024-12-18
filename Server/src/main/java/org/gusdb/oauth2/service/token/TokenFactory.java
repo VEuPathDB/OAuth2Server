@@ -24,17 +24,13 @@ public class TokenFactory {
 
   private static final Logger LOG = LogManager.getLogger(TokenFactory.class);
 
-  public static JsonObject createTokenJson(Authenticator authenticator, String loginName,
+  public static JsonObject createTokenJson(Authenticator authenticator, String userId,
       IdTokenParams tokenParams, String issuer, int expirationSecs, DataScope scope)
-          throws OAuthProblemException, OAuthSystemException {
+          throws OAuthSystemException {
     assert(scope != DataScope.PROFILE);
 
     // get values from authenticator and use to populate fields
-    UserInfo user = getUserInfoForToken(authenticator, loginName, scope);
-    String userId = user.getUserId();
-    if (userId == null || userId.isEmpty())
-      throw OAuthProblemException.error("Authenticator returned null or empty " +
-          "user ID for login name [" + loginName + "].");
+    UserInfo user = getUserInfoForToken(authenticator, userId, scope);
 
     // get base object (common to ID and guest tokens, and user profiles)
     JsonObjectBuilder json = getBaseJson(user);
@@ -127,15 +123,15 @@ public class TokenFactory {
     return json.build();
   }
 
-  private static UserInfo getUserInfoForToken(Authenticator authenticator, String loginName, DataScope scope) throws OAuthSystemException {
+  private static UserInfo getUserInfoForToken(Authenticator authenticator, String userId, DataScope scope) throws OAuthSystemException {
     try {
-      return authenticator.getUserInfoByLoginName(loginName, scope).orElseThrow(() -> {
-        LOG.warn("Request made to get user token for login '" + loginName + "', which does not seem to exist.");
+      return authenticator.getUserInfoByUserId(userId, scope).orElseThrow(() -> {
+        LOG.warn("Request made to get user token for user ID '" + userId + "', which does not seem to exist.");
         return new ForbiddenException();
       });
     }
     catch (Exception e) {
-      LOG.error("Unable to retrieve user info for login name '" + loginName + "'", e);
+      LOG.error("Unable to retrieve user info for user ID '" + userId + "'", e);
       throw new OAuthSystemException(e);
     }
   }

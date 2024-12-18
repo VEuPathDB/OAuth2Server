@@ -27,14 +27,14 @@ public class BearerTokenGenerator extends ToolBase {
   private static final String PROP_KEYSTORE_PASSPHRASE = "keyStorePassPhrase";
   private static final String PROP_ACCOUNTDB_LOGIN = "accountDbLogin";
   private static final String PROP_ACCOUNTDB_PASSWORD = "accountDbPassword";
-  private static final String PROP_LOGIN_NAME = "loginName";
+  private static final String PROP_USER_ID = "userId";
 
   public static void main(String[] args) throws Exception {
     new BearerTokenGenerator(args).execute();
   }
 
   public BearerTokenGenerator(String[] args) {
-    super(args, new String[] { PROP_KEYSTORE_FILE, PROP_KEYSTORE_PASSPHRASE, PROP_ACCOUNTDB_LOGIN, PROP_ACCOUNTDB_PASSWORD, PROP_LOGIN_NAME });
+    super(args, new String[] { PROP_KEYSTORE_FILE, PROP_KEYSTORE_PASSPHRASE, PROP_ACCOUNTDB_LOGIN, PROP_ACCOUNTDB_PASSWORD, PROP_USER_ID });
   }
 
   public void execute() throws Exception {
@@ -43,14 +43,14 @@ public class BearerTokenGenerator extends ToolBase {
     String keyStorePassPhrase = findProp(PROP_KEYSTORE_PASSPHRASE);
     String accountDbLogin = findProp(PROP_ACCOUNTDB_LOGIN);
     String accountDbPassword = findProp(PROP_ACCOUNTDB_PASSWORD);
-    String loginName = findProp(PROP_LOGIN_NAME);
+    String userId = findProp(PROP_USER_ID);
 
     SigningKeyStore keyStore = new SigningKeyStore(new KeyPairReader().readKeyPair(Paths.get(keyStoreFile), keyStorePassPhrase));
     // dummy up a client; SigningKeyStore requires >0 but will not be used here
     keyStore.setClientSigningKeys("abc", Set.of("mug2kfCI8qhXzrnuE/nh1gK9JbSFaXaih+zdsfD8io25MWH4b3V5u+U8E7SW4x7iBAHdq6yWWrF/TP9p098lfQ=="));
 
     // generate a new token for this account
-    String token = generateToken(keyStore, accountDbLogin, accountDbPassword, loginName);
+    String token = generateToken(keyStore, accountDbLogin, accountDbPassword, userId);
     System.out.println("Bearer Token\n\n" + token + "\n");
 
     // verify token using same method as the client
@@ -71,7 +71,7 @@ public class BearerTokenGenerator extends ToolBase {
     System.out.println("Subject after parsing token: " + claims.getSubject());
   }
 
-  private static String generateToken(SigningKeyStore keyStore, String accountDbLogin, String accountDbPassword, String loginName) throws Exception {
+  private static String generateToken(SigningKeyStore keyStore, String accountDbLogin, String accountDbPassword, String userId) throws Exception {
 
     JsonObject authenticatorConfig = Json.createObjectBuilder()
         .add("login", accountDbLogin)
@@ -88,7 +88,7 @@ public class BearerTokenGenerator extends ToolBase {
 
       IdTokenParams params = new IdTokenParams("apiComponentSite", null);
 
-      JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, loginName, params,
+      JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, userId, params,
           "https://eupathdb.org/oauth", ApplicationConfig.DEFAULT_BEARER_TOKEN_EXPIRATION_SECS, DataScope.BEARER_TOKEN);
 
       return Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, keyStore, params.getClientId(), null);

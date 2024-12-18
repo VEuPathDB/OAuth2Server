@@ -138,10 +138,9 @@ public class OAuthService {
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
       Optional<String> validUserId = authenticator.isCredentialsValid(loginName, password);
       if (validUserId.isPresent()) {
-        LOG.info("Authentication successful.  Setting session loginName to " + loginName);
+        LOG.info("Authentication successful.  Setting session user ID to " + validUserId.get());
 
-        // add username and userId to session to save a lookup later if /auth endpoint is hit with a known client session
-        session.setLoginName(loginName);
+        // add userId to session to save a lookup later if /auth endpoint is hit with a known client session
         session.setUserId(validUserId.get());
         session.setMaxInactiveIntervalSecs(config.getOauthSessionExpirationSecs());
 
@@ -152,7 +151,7 @@ public class OAuthService {
               config.getLoginSuccessPage())).build();
         }
         authenticator.logSuccessfulLogin(loginName, validUserId.get(), originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
-        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, loginName, validUserId.get(), config.getTokenExpirationSecs());
+        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, validUserId.get(), config.getTokenExpirationSecs());
       }
       else {
         return Response.seeOther(getLoginUri(formId,
@@ -235,7 +234,7 @@ public class OAuthService {
         // user is already logged in; respond with auth code for user
         ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
-            session.getLoginName(), session.getUserId(), config.getTokenExpirationSecs());
+            session.getUserId(), config.getTokenExpirationSecs());
       }
       else {
         // no one is logged in; generate form ID and send

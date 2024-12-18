@@ -62,13 +62,11 @@ public class TokenStore {
   public static class AuthCodeData extends IdTokenParams {
 
     private final String _authCode;
-    private final String _loginName;
     private final String _userId;
 
-    public AuthCodeData(String authCode, String clientId, String loginName, String userId, String nonce) {
+    public AuthCodeData(String authCode, String clientId, String userId, String nonce) {
       super(clientId, nonce);
       _authCode = authCode;
-      _loginName = loginName;
       _userId = userId;
     }
 
@@ -77,7 +75,6 @@ public class TokenStore {
       return new StringBuilder()
         .append("{ authCode: ").append(_authCode)
         .append(", clientId: ").append(_clientId)
-        .append(", loginName: ").append(_loginName)
         .append(", nonce: ").append(_nonce)
         .append(", authTime: ").append(_creationTime)
         .append(" }").toString();
@@ -96,10 +93,6 @@ public class TokenStore {
 
     public String getAuthCode() {
       return _authCode;
-    }
-
-    public String getLoginName() {
-      return _loginName;
     }
 
     public String getUserId() {
@@ -132,18 +125,18 @@ public class TokenStore {
   }
 
   // maps to provide data lookup from code or token value
-  private static final Map<String, AuthCodeData> AUTH_CODE_MAP = new HashMap<>();
-  private static final Map<String, AccessTokenData> ACCESS_TOKEN_MAP = new HashMap<>();
-  private static final Map<String, List<AuthCodeData>> USER_AUTH_CODE_MAP = new HashMap<>();
-  private static final Map<String, List<AccessTokenData>> USER_ACCESS_TOKEN_MAP = new HashMap<>();
+  private static final Map<String /* key = auth_code */, AuthCodeData> AUTH_CODE_MAP = new HashMap<>();
+  private static final Map<String /* key = token     */, AccessTokenData> ACCESS_TOKEN_MAP = new HashMap<>();
+  private static final Map<String /* key = user_id   */, List<AuthCodeData>> USER_AUTH_CODE_MAP = new HashMap<>();
+  private static final Map<String /* key = user_id   */, List<AccessTokenData>> USER_ACCESS_TOKEN_MAP = new HashMap<>();
 
   public static synchronized void addAuthCode(AuthCodeData authCodeData) {
     AUTH_CODE_MAP.put(authCodeData.getAuthCode(), authCodeData);
     LOG.debug("Added auth code with data:" + authCodeData);
-    List<AuthCodeData> list = USER_AUTH_CODE_MAP.get(authCodeData.getLoginName());
+    List<AuthCodeData> list = USER_AUTH_CODE_MAP.get(authCodeData.getUserId());
     if (list == null) {
       list = new ArrayList<>();
-      USER_AUTH_CODE_MAP.put(authCodeData.getLoginName(), list);
+      USER_AUTH_CODE_MAP.put(authCodeData.getUserId(), list);
     }
     list.add(authCodeData);
   }
@@ -153,10 +146,10 @@ public class TokenStore {
     AuthCodeData authCodeData = AUTH_CODE_MAP.get(authCode);
     AccessTokenData accessTokenData = new AccessTokenData(accessToken, authCodeData);
     ACCESS_TOKEN_MAP.put(accessTokenData.tokenValue, accessTokenData);
-    List<AccessTokenData> list = USER_ACCESS_TOKEN_MAP.get(accessTokenData.authCodeData.getLoginName());
+    List<AccessTokenData> list = USER_ACCESS_TOKEN_MAP.get(accessTokenData.authCodeData.getUserId());
     if (list == null) {
       list = new ArrayList<>();
-      USER_ACCESS_TOKEN_MAP.put(accessTokenData.authCodeData.getLoginName(), list);
+      USER_ACCESS_TOKEN_MAP.put(accessTokenData.authCodeData.getUserId(), list);
     }
     list.add(accessTokenData);
     return accessTokenData;
@@ -181,20 +174,20 @@ public class TokenStore {
     return ACCESS_TOKEN_MAP.get(accessToken);
   }
 
-  public static String getUserForToken(String accessToken) {
+  public static String getUserIdForToken(String accessToken) {
     AccessTokenData data = ACCESS_TOKEN_MAP.get(accessToken);
     if (data != null) {
-      return data.authCodeData.getLoginName();
+      return data.authCodeData.getUserId();
     }
     return null;
   }
 
-  public static synchronized void clearObjectsForUser(String username) {
-    List<AuthCodeData> codeList = USER_AUTH_CODE_MAP.remove(username);
+  public static synchronized void clearObjectsForUser(String userId) {
+    List<AuthCodeData> codeList = USER_AUTH_CODE_MAP.remove(userId);
     if (codeList != null)
       for (AuthCodeData data : codeList)
         AUTH_CODE_MAP.remove(data.getAuthCode());
-    List<AccessTokenData> tokenList = USER_ACCESS_TOKEN_MAP.remove(username);
+    List<AccessTokenData> tokenList = USER_ACCESS_TOKEN_MAP.remove(userId);
     if (tokenList != null)
       for (AccessTokenData data : tokenList)
         ACCESS_TOKEN_MAP.remove(data.tokenValue);
@@ -211,10 +204,10 @@ public class TokenStore {
     LOG.debug("Expiring the following auth codes: " + Arrays.toString(expiredCodes.toArray()));
     for (String authCode : expiredCodes) {
       AuthCodeData removedCode = AUTH_CODE_MAP.remove(authCode);
-      String username = removedCode.getLoginName();
-      USER_AUTH_CODE_MAP.get(username).remove(removedCode);
-      if (USER_AUTH_CODE_MAP.get(username).isEmpty()) {
-        USER_AUTH_CODE_MAP.remove(username);
+      String userId = removedCode.getUserId();
+      USER_AUTH_CODE_MAP.get(userId).remove(removedCode);
+      if (USER_AUTH_CODE_MAP.get(userId).isEmpty()) {
+        USER_AUTH_CODE_MAP.remove(userId);
       }
     }
     List<String> expiredTokens = new ArrayList<>();
@@ -226,10 +219,10 @@ public class TokenStore {
     LOG.debug("Expiring the following access tokens: " + Arrays.toString(expiredTokens.toArray()));
     for (String accessToken : expiredTokens) {
       AccessTokenData removedToken = ACCESS_TOKEN_MAP.remove(accessToken);
-      String username = removedToken.authCodeData.getLoginName();
-      USER_ACCESS_TOKEN_MAP.get(username).remove(removedToken);
-      if (USER_ACCESS_TOKEN_MAP.get(username).isEmpty()) {
-        USER_ACCESS_TOKEN_MAP.remove(username);
+      String userId = removedToken.authCodeData.getUserId();
+      USER_ACCESS_TOKEN_MAP.get(userId).remove(removedToken);
+      if (USER_ACCESS_TOKEN_MAP.get(userId).isEmpty()) {
+        USER_ACCESS_TOKEN_MAP.remove(userId);
       }
     }
   }
