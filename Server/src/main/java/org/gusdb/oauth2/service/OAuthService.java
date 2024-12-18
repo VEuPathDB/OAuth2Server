@@ -138,7 +138,7 @@ public class OAuthService {
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
       Optional<String> validUserId = authenticator.isCredentialsValid(loginName, password);
       if (validUserId.isPresent()) {
-        LOG.info("Authentication successful.  Setting session loginName to " + loginName);
+        LOG.info("Authentication successful.  Setting session user ID to " + validUserId.get());
 
         // add userId to session to save a lookup later if /auth endpoint is hit with a known client session
         session.setUserId(validUserId.get());
