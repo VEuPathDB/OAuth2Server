@@ -54,6 +54,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.security.SignatureException;
 
 public class OAuthClient {
@@ -97,6 +98,15 @@ public class OAuthClient {
         new KeyStoreTrustManager(Paths.get(keyStoreFile), config.getKeyStorePassPhrase()));
   }
 
+  public static SSLContext getSSLContext(KeyStoreConfig config) {
+    try {
+      return createSslContext(getTrustManager(config));
+    }
+    catch (KeyManagementException | NoSuchAlgorithmException e) {
+      throw new RuntimeException("Unable to create SSL context using trust manager created by key store config pointing to " + config.getKeyStoreFile());
+    }
+  }
+
   // manages SSL certs needed to connect to OAuth server (SSL required)
   private final TrustManager _trustManager;
 
@@ -127,7 +137,7 @@ public class OAuthClient {
     // get JWKS response from OAuth server
     try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
-          .sslContext(createSslContext())
+          .sslContext(createSslContext(_trustManager))
           .build()
           .target(jwksEndpoint)
           .request(MediaType.APPLICATION_JSON)
@@ -162,7 +172,7 @@ public class OAuthClient {
     throw new RuntimeException("Unable to find EC key information in JWKS response: " + jwksJson.toString(2));
   }
 
-  private String readResponseBody(Response response) throws IOException {
+  public static String readResponseBody(Response response) throws IOException {
     InputStream entity = (InputStream)response.getEntity();
     ByteArrayOutputStream body = new ByteArrayOutputStream();
     entity.transferTo(body);
@@ -270,7 +280,7 @@ public class OAuthClient {
     // build request and get token response
     try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
-          .sslContext(createSslContext())
+          .sslContext(createSslContext(_trustManager))
           .build()
           .target(oauthUrl)
           .request(MediaType.APPLICATION_JSON)
@@ -341,7 +351,7 @@ public class OAuthClient {
     catch (ExpiredJwtException e) {
       throw new ExpiredTokenException(e);
     }
-    catch (ClassCastException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    catch (DecodingException | ClassCastException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
       throw new InvalidTokenException(e);
     }
   }
@@ -368,7 +378,7 @@ public class OAuthClient {
     catch (ExpiredJwtException e) {
       throw new ExpiredTokenException(e);
     }
-    catch (ClassCastException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+    catch (DecodingException | ClassCastException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
       throw new InvalidTokenException(e);
     }
   }
@@ -379,9 +389,9 @@ public class OAuthClient {
     //claims.getAudience()
   }
 
-  private SSLContext createSslContext() throws NoSuchAlgorithmException, KeyManagementException {
+  private static SSLContext createSslContext(TrustManager trustManager) throws NoSuchAlgorithmException, KeyManagementException {
     SSLContext sslContext = SSLContext.getInstance("SSL");
-    sslContext.init(null, new TrustManager[]{ _trustManager }, null);
+    sslContext.init(null, new TrustManager[]{ trustManager }, null);
     return sslContext;
   }
 
@@ -409,7 +419,7 @@ public class OAuthClient {
     // build request and get JSON response
     try (Response response = ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
-          .sslContext(createSslContext())
+          .sslContext(createSslContext(_trustManager))
           .build()
           .target(url)
           .request(MediaType.APPLICATION_JSON)
@@ -496,7 +506,7 @@ public class OAuthClient {
     try (Response response = responseSupplier.apply(
         ClientBuilder.newBuilder()
           .withConfig(new ClientConfig())
-          .sslContext(createSslContext())
+          .sslContext(createSslContext(_trustManager))
           .build()
           .target(endpoint)
           .request(MediaType.APPLICATION_JSON),

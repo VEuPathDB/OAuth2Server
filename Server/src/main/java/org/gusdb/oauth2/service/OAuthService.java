@@ -44,6 +44,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Variant;
@@ -110,9 +111,15 @@ public class OAuthService {
     if (name == null || name.isEmpty()) {
       return Response.notAcceptable(Collections.<Variant>emptyList()).build();
     }
+
+    // Only apply CORS header if path begins with "public/"
+    boolean isPublicResource = name.startsWith("public/");
+    Function<ResponseBuilder,ResponseBuilder> CORS =
+        response -> isPublicResource ? response.header("Access-Control-Allow-Origin", "*") : response;
+
     StaticResource resource = new StaticResource(name);
     return resource.getStreamingOutput()
-        .map(stream -> Response.ok(stream).type(resource.getMimeType()).build())
+        .map(stream -> CORS.apply(Response.ok(stream).type(resource.getMimeType())).build())
         .orElse(Response.status(Status.NOT_FOUND).build());
   }
 
@@ -135,11 +142,11 @@ public class OAuthService {
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
       Optional<String> validUserId = authenticator.isCredentialsValid(loginName, password);
       if (validUserId.isPresent()) {
-        LOG.info("Authentication successful.  Setting session loginName to " + loginName);
+        LOG.info("Authentication successful.  Setting session user ID to " + validUserId.get());
 
-        // add username and userId to session to save a lookup later if /auth endpoint is hit with a known client session
-        session.setLoginName(loginName);
+        // add userId to session to save a lookup later if /auth endpoint is hit with a known client session
         session.setUserId(validUserId.get());
+        session.setMaxInactiveIntervalSecs(config.getOauthSessionExpirationSecs());
 
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
         if (originalRequest == null) {
@@ -148,7 +155,7 @@ public class OAuthService {
           return Response.seeOther(new URI(baseUri + RESOURCE_PREFIX + config.getLoginSuccessPage())).build();
         }
         authenticator.logSuccessfulLogin(loginName, validUserId.get(), originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
-        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, loginName, validUserId.get(), config.getTokenExpirationSecs());
+        return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, validUserId.get(), config.getTokenExpirationSecs());
       }
       else {
         return Response.seeOther(getLoginUri(formId,
@@ -231,7 +238,7 @@ public class OAuthService {
         // user is already logged in; respond with auth code for user
         ApplicationConfig config = OAuthServlet.getApplicationConfig(_context);
         return OAuthRequestHandler.handleAuthorizationRequest(new AuthzRequest(oauthRequest),
-            session.getLoginName(), session.getUserId(), config.getTokenExpirationSecs());
+            session.getUserId(), config.getTokenExpirationSecs());
       }
       else {
         // no one is logged in; generate form ID and send
@@ -483,6 +490,10 @@ public class OAuthService {
     }
     catch (ConflictException e) {
       return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
+    }
+    catch (Exception e) {
+      LOG.error("Unable to edit user profile.", e);
+      throw e;
     }
   }
 

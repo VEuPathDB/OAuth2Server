@@ -22,7 +22,8 @@
       "allowUserManagement": true,
       "allowROPCGrant": true,
       "allowGuestObtainment": true,
-      "allowUserQueries": true
+      "allowUserQueries": true,
+      "allowIFrameEmbedding": true
     },{
       "clientId": "veupathdbService",
       "clientSecrets": [ "12345" ],
@@ -41,6 +42,10 @@
       "clientSecrets": [ "12345" ],
       "clientDomains": [ "localhost" ],
       "allowUserQueries": true
+    },{
+      "clientId": "apacheAnswer",
+      "clientSecrets": [ "12345" ],
+      "clientDomains": [ "localhost" ]
     }
   ]
 }

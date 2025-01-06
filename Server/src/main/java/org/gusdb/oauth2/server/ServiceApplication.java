@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import org.gusdb.oauth2.service.ExceptionMapper;
+import org.gusdb.oauth2.service.IFrameAllowanceFilter;
 import org.gusdb.oauth2.service.OAuthService;
 
 public class ServiceApplication extends Application {
@@ -15,6 +16,7 @@ public class ServiceApplication extends Application {
     Set<Class<?>> classes = new HashSet<>();
     classes.add(ExceptionMapper.class);
     classes.add(OAuthService.class);
+    classes.add(IFrameAllowanceFilter.class);
     return classes;
   }
 }

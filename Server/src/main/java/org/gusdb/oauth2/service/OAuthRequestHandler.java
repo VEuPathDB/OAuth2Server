@@ -50,7 +50,7 @@ public class OAuthRequestHandler {
 
   private static final Logger LOG = LogManager.getLogger(OAuthRequestHandler.class);
 
-  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String loginName, String userId, int expirationSecs)
+  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String userId, int expirationSecs)
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
@@ -70,7 +70,7 @@ public class OAuthRequestHandler {
     LOG.debug("Generating authorization code...");
     final String authorizationCode = oauthIssuerImpl.authorizationCode();
     TokenStore.addAuthCode(new AuthCodeData(authorizationCode,
-        oauthRequest.getClientId(), loginName, userId, oauthRequest.getNonce()));
+        oauthRequest.getClientId(), userId, oauthRequest.getNonce()));
     builder.setCode(authorizationCode);
 
     String redirectURI = oauthRequest.getRedirectUri();
@@ -111,9 +111,10 @@ public class OAuthRequestHandler {
 
             // valid credentials; stub an auth code to store the generated token
             authCode = oauthIssuerImpl.authorizationCode();
-            TokenStore.addAuthCode(new AuthCodeData(authCode, oauthRequest.getClientId(), oauthRequest.getUsername(), userId.get(), null));
+            TokenStore.addAuthCode(new AuthCodeData(authCode, oauthRequest.getClientId(), userId.get(), null));
           }
           catch (Exception e) {
+            LOG.error("Could not perform token request.", e);
             return new OAuthResponseFactory().buildServerErrorResponse();
           }
           break;
@@ -137,7 +138,7 @@ public class OAuthRequestHandler {
           .setExpiresIn(String.valueOf(expirationSecs));
 
       // always send id_token with access token response, create and add it
-      JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, tokenData.authCodeData.getLoginName(),
+      JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, tokenData.authCodeData.getUserId(),
           tokenData.authCodeData, config.getIssuer(), expirationSecs, scope);
 
       String signedToken = tokenSigner.getSignedEncodedToken(tokenJson, config,
