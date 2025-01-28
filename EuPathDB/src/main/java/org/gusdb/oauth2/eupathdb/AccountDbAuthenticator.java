@@ -32,8 +32,8 @@ import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
-import org.gusdb.oauth2.UserInfo;
-import org.gusdb.oauth2.client.veupathdb.User;
+import org.gusdb.oauth2.UserAccountInfo;
+import org.gusdb.oauth2.client.veupathdb.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.UserProperty;
 import org.gusdb.oauth2.client.veupathdb.UserProperty.InputType;
 import org.gusdb.oauth2.exception.ConflictException;
@@ -59,7 +59,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   // convert from new API to old
   private static final List<UserPropertyName> USER_PROPERTY_DEFS =
-      User.USER_PROPERTIES.values().stream()
+      UserInfo.USER_PROPERTIES.values().stream()
       .map(p -> new UserPropertyName(p.getName(), p.getDbKey(), p.isRequired()))
       .collect(Collectors.toList());
 
@@ -94,12 +94,12 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public Optional<UserInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception {
+  public Optional<UserAccountInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception {
     return getUserInfo(new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfileByUsernameOrEmail(loginName), scope);
   }
 
   @Override
-  public Optional<UserInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception {
+  public Optional<UserAccountInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception {
     return getUserInfo(new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(Long.valueOf(userId)), scope);
   }
 
@@ -128,12 +128,12 @@ public class AccountDbAuthenticator implements Authenticator {
     return buffer.toString();
   }
 
-  Optional<UserInfo> getUserInfo(UserProfile profile, DataScope scope) {
+  Optional<UserAccountInfo> getUserInfo(UserProfile profile, DataScope scope) {
     return Optional.ofNullable(profile).map(p -> createUserInfoObject(p, true, scope));
   }
 
-  private UserInfo createUserInfoObject(UserProfile profile, boolean isEmailVerified, DataScope scope) {
-    return new UserInfo() {
+  private UserAccountInfo createUserInfoObject(UserProfile profile, boolean isEmailVerified, DataScope scope) {
+    return new UserAccountInfo() {
       @Override
       public String getUserId() {
         return String.valueOf(profile.getUserId());
@@ -166,12 +166,12 @@ public class AccountDbAuthenticator implements Authenticator {
         Map<String,String> props = profile.getProperties();
         switch (scope) {
           case PROFILE:
-            for (String propName : User.USER_PROPERTIES.keySet()) {
+            for (String propName : UserInfo.USER_PROPERTIES.keySet()) {
               builder.add(propName, Optional.ofNullable(props.get(propName)).orElse(""));
             }
             break;
           case ID_TOKEN:
-            builder.add("name", User.formatDisplayName(
+            builder.add("name", UserInfo.formatDisplayName(
                 props.get("firstName"),
                 props.get("middleName"),
                 props.get("lastName")
@@ -265,7 +265,7 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws ConflictException, InvalidPropertiesException {
+  public UserAccountInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws ConflictException, InvalidPropertiesException {
     AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
     validateUserProps(accountMgr, userProps, Optional.empty());
     UserProfile newUser = Functions.mapException(
@@ -298,7 +298,7 @@ public class AccountDbAuthenticator implements Authenticator {
     }
 
     // property validation
-    for (UserProperty prop : User.USER_PROPERTIES.values()) {
+    for (UserProperty prop : UserInfo.USER_PROPERTIES.values()) {
       String value = userProps.get(prop.getName());
       boolean propPopulated = value != null && !value.isBlank();
 
@@ -345,7 +345,7 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public UserInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) throws ConflictException, InvalidPropertiesException {
+  public UserAccountInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) throws ConflictException, InvalidPropertiesException {
     AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
     Long userId = Long.valueOf(userIdStr);
     validateUserProps(accountMgr, userProps, Optional.of(userId));
@@ -358,7 +358,7 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public Optional<UserInfo> getGuestProfileInfo(String userId) {
+  public Optional<UserAccountInfo> getGuestProfileInfo(String userId) {
     try {
       // FIXME: since this code directly accesses the DB, it should live in AccountManager;
       //   however that complicates FgpUtil releases prior to move to bearer tokens, so adding it here.

@@ -7,16 +7,16 @@ import org.gusdb.oauth2.client.ValidatedToken;
 import org.gusdb.oauth2.shared.IdTokenFields;
 import org.json.JSONObject;
 
-public class BearerTokenUser extends BasicUser {
+public class UserImpl extends UserInfoImpl implements User {
 
-  private static final Logger LOG = LogManager.getLogger(BearerTokenUser.class);
+  private static final Logger LOG = LogManager.getLogger(UserImpl.class);
 
   private final OAuthClient _client;
   private final String _oauthUrl;
   private final ValidatedToken _token;
   private boolean _userInfoFetched = false;
 
-  public BearerTokenUser(OAuthClient client, String oauthUrl, ValidatedToken token) {
+  public UserImpl(OAuthClient client, String oauthUrl, ValidatedToken token) {
     // parent constructor sets immutable fields provided on the token
     super(
         Long.valueOf(token.getUserId()),
@@ -26,6 +26,11 @@ public class BearerTokenUser extends BasicUser {
     _client = client;
     _oauthUrl = oauthUrl;
     _token = token;
+  }
+
+  @Override
+  public ValidatedToken getAuthenticationToken() {
+    return _token;
   }
 
   @Override

@@ -18,23 +18,23 @@ public class OAuthQuerier {
 
   private static final Logger LOG = LogManager.getLogger(OAuthQuerier.class);
 
-  public static Map<String, User> getUsersByEmail(OAuthClient client, OAuthConfig config, Collection<String> emails) {
-    return getUsersByEmail(client, config, emails, BasicUser::new);
+  public static Map<String, UserInfo> getUsersByEmail(OAuthClient client, OAuthConfig config, Collection<String> emails) {
+    return getUsersByEmail(client, config, emails, UserInfoImpl::new);
   }
 
-  public static <T extends User> Map<String, T> getUsersByEmail(OAuthClient client, OAuthConfig config, Collection<String> emails, Function<JSONObject, T> userConverter) {
+  public static <T extends UserInfo> Map<String, T> getUsersByEmail(OAuthClient client, OAuthConfig config, Collection<String> emails, Function<JSONObject, T> userConverter) {
     return getUsers(client, config, emails, userConverter, "emails", u -> u.getString(IdTokenFields.email.name()));
   }
 
-  public static Map<Long, User> getUsersById(OAuthClient client, OAuthConfig config, Collection<Long> userIds) {
-    return getUsersById(client, config, userIds, BasicUser::new);
+  public static Map<Long, UserInfo> getUsersById(OAuthClient client, OAuthConfig config, Collection<Long> userIds) {
+    return getUsersById(client, config, userIds, UserInfoImpl::new);
   }
 
-  public static <T extends User> Map<Long, T> getUsersById(OAuthClient client, OAuthConfig config, Collection<Long> userIds, Function<JSONObject, T> userConverter) {
+  public static <T extends UserInfo> Map<Long, T> getUsersById(OAuthClient client, OAuthConfig config, Collection<Long> userIds, Function<JSONObject, T> userConverter) {
     return getUsers(client, config, userIds, userConverter, "userIds", u -> Long.valueOf(u.getString(IdTokenFields.sub.name())));
   }
 
-  private static <T extends User, S> Map<S, T> getUsers(OAuthClient client, OAuthConfig config, Collection<S> identifiers,
+  private static <T extends UserInfo, S> Map<S, T> getUsers(OAuthClient client, OAuthConfig config, Collection<S> identifiers,
       Function<JSONObject, T> userConverter, String identifiersJsonPropKey, Function<JSONObject,S> keyGenerator) {
     LOG.info("Using OAuthQuerier for multi-user request by " + identifiersJsonPropKey +
         ": [" + identifiers.stream().map(String::valueOf).collect(Collectors.joining(", ")) + "]");
