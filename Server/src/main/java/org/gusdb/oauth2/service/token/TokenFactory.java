@@ -16,7 +16,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
-import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.IdTokenFields;
 
@@ -30,7 +30,7 @@ public class TokenFactory {
     assert(scope != DataScope.PROFILE);
 
     // get values from authenticator and use to populate fields
-    UserInfo user = getUserInfoForToken(authenticator, userId, scope);
+    UserAccountInfo user = getUserInfoForToken(authenticator, userId, scope);
 
     // get base object (common to ID and guest tokens, and user profiles)
     JsonObjectBuilder json = getBaseJson(user);
@@ -39,13 +39,13 @@ public class TokenFactory {
     return json.build();
   }
 
-  public static JsonObjectBuilder getBaseJson(UserInfo user) {
+  public static JsonObjectBuilder getBaseJson(UserAccountInfo user) {
     return Json.createObjectBuilder()
       .add(IdTokenFields.sub.name(), user.getUserId())
       .add(IdTokenFields.is_guest.name(), user.isGuest());
   }
 
-  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserInfo user, DataScope scope) {
+  public static JsonObjectBuilder appendProfileFields(JsonObjectBuilder jsonBuilder, UserAccountInfo user, DataScope scope) {
     // add user's email if returned by Authenticator
     String email = user.getEmail();
     if (scope != DataScope.BEARER_TOKEN && email != null && !email.isBlank()) {
@@ -117,13 +117,13 @@ public class TokenFactory {
 
     // get base object (common to ID and guest tokens, and user profiles)
     String guestUserId = authenticator.getNextGuestId();
-    UserInfo guestUser = authenticator.getGuestProfileInfo(guestUserId).orElseThrow(); // just inserted on the last line
+    UserAccountInfo guestUser = authenticator.getGuestProfileInfo(guestUserId).orElseThrow(); // just inserted on the last line
     JsonObjectBuilder json = getBaseJson(guestUser);
     appendOidcFields(json, new IdTokenParams(clientId, null), issuer, expirationSecs);
     return json.build();
   }
 
-  private static UserInfo getUserInfoForToken(Authenticator authenticator, String userId, DataScope scope) throws OAuthSystemException {
+  private static UserAccountInfo getUserInfoForToken(Authenticator authenticator, String userId, DataScope scope) throws OAuthSystemException {
     try {
       return authenticator.getUserInfoByUserId(userId, scope).orElseThrow(() -> {
         LOG.warn("Request made to get user token for user ID '" + userId + "', which does not seem to exist.");

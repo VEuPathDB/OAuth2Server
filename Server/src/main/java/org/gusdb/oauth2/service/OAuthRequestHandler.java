@@ -35,7 +35,7 @@ import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.apache.oltu.oauth2.rs.response.OAuthRSResponse;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
-import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.config.ApplicationConfig;
 import org.gusdb.oauth2.service.token.TokenFactory;
 import org.gusdb.oauth2.service.token.TokenStore;
@@ -198,7 +198,7 @@ public class OAuthRequestHandler {
 
   public static Response handleUserInfoRequest(Authenticator authenticator, String userId, boolean isGuest) {
     try {
-      Optional<UserInfo> user = isGuest
+      Optional<UserAccountInfo> user = isGuest
         // treat user ID as guest ID
         ? authenticator.getGuestProfileInfo(userId)
         : authenticator.getUserInfoByUserId(userId, DataScope.PROFILE);
@@ -218,14 +218,14 @@ public class OAuthRequestHandler {
     }
   }
 
-  public static JsonObjectBuilder getUserInfoResponseJson(UserInfo user, Optional<String> password) {
+  public static JsonObjectBuilder getUserInfoResponseJson(UserAccountInfo user, Optional<String> password) {
     JsonObjectBuilder json = TokenFactory.getBaseJson(user);
     TokenFactory.appendProfileFields(json, user, DataScope.PROFILE);
     password.ifPresent(pw -> TokenFactory.appendPassword(json, pw));
     return json;
   }
 
-  public static String getUserInfoResponseString(UserInfo user, Optional<String> password) {
+  public static String getUserInfoResponseString(UserAccountInfo user, Optional<String> password) {
     return getUserInfoResponseJson(user, password).build().toString();
   }
 

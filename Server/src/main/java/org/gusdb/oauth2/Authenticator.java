@@ -89,7 +89,7 @@ public interface Authenticator extends AutoCloseable {
    * @return user information for the given scope, or empty optional if not found
    * @throws Exception if something goes wrong while fetching user info
    */
-  public Optional<UserInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception;
+  public Optional<UserAccountInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception;
 
   /**
    * Look up user information by user ID.
@@ -98,7 +98,7 @@ public interface Authenticator extends AutoCloseable {
    * @return user information for the given scope, or empty optional if not found
    * @throws Exception if something goes wrong while fetching user info
    */
-  public Optional<UserInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception;
+  public Optional<UserAccountInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception;
 
   /**
    * Looks up the user ID (must be a guest) and returns the user profile (returned by
@@ -108,7 +108,7 @@ public interface Authenticator extends AutoCloseable {
    * @param userId user ID of the guest user
    * @return user profile for a guest user with the passed ID, or empty if not found
    */
-  public default Optional<UserInfo> getGuestProfileInfo(String userId) {
+  public default Optional<UserAccountInfo> getGuestProfileInfo(String userId) {
     return Optional.empty();
   }
 
@@ -178,7 +178,7 @@ public interface Authenticator extends AutoCloseable {
    * @throws InvalidPropertiesException if input user props are invalid for another reason
    * @throws RuntimeException if unable to complete the operation
    */
-  public UserInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
+  public UserAccountInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
 
   /**
    * Modifies the user account for passed userId using the passed user props
@@ -190,7 +190,7 @@ public interface Authenticator extends AutoCloseable {
    * @throws InvalidPropertiesException if input user props are invalid for another reason
    * @throws RuntimeException if unable to complete the operation
    */
-  public UserInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
+  public UserAccountInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
 
   /**
    * Reset the password for the passed login to the passed password value

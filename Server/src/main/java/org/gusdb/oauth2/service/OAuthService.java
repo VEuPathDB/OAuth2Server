@@ -60,7 +60,7 @@ import org.apache.oltu.oauth2.rs.request.OAuthAccessResourceRequest;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.Authenticator.RequestingUser;
-import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.assets.StaticResource;
 import org.gusdb.oauth2.client.Endpoints;
 import org.gusdb.oauth2.client.HttpStatus;
@@ -434,7 +434,7 @@ public class OAuthService {
       UserPropertiesRequest userProps = new UserPropertiesRequest(input.getJsonObject("user"));
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
       String initialPassword = authenticator.generateNewPassword();
-      UserInfo newUser = authenticator.createUser(userProps, initialPassword);
+      UserAccountInfo newUser = authenticator.createUser(userProps, initialPassword);
       return Response.ok(OAuthRequestHandler.getUserInfoResponseString(newUser, Optional.of(initialPassword))).build();
     }
     catch (JsonParsingException | ClassCastException e) {
@@ -472,7 +472,7 @@ public class OAuthService {
 
       // non guest user with proper credentials from an allowed client
       UserPropertiesRequest userProps = new UserPropertiesRequest(input.getJsonObject("user"));
-      UserInfo modifiedUser = authenticator.modifyUser(user.getUserId(), userProps);
+      UserAccountInfo modifiedUser = authenticator.modifyUser(user.getUserId(), userProps);
       return Response.ok(OAuthRequestHandler.getUserInfoResponseString(modifiedUser, Optional.empty())).build();
 
     }
@@ -504,7 +504,7 @@ public class OAuthService {
       }
       String loginName = input.getString("loginName");
       Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
-      Optional<UserInfo> userOpt = authenticator.getUserInfoByLoginName(loginName, DataScope.PROFILE);
+      Optional<UserAccountInfo> userOpt = authenticator.getUserInfoByLoginName(loginName, DataScope.PROFILE);
       return userOpt.map(user -> {
         String newPassword = authenticator.generateNewPassword();
         authenticator.resetPassword(user.getUserId(), newPassword);

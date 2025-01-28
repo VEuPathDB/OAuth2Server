@@ -17,7 +17,7 @@ import javax.json.stream.JsonParsingException;
 import org.gusdb.fgputil.accountdb.AccountManager;
 import org.gusdb.fgputil.accountdb.UserProfile;
 import org.gusdb.oauth2.Authenticator.DataScope;
-import org.gusdb.oauth2.UserInfo;
+import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.service.OAuthRequestHandler;
 import org.gusdb.oauth2.shared.IdTokenFields;
 
@@ -95,7 +95,7 @@ public class UserQueryHandler {
         .build();
     }
     else {
-      UserInfo user = _authenticator.getUserInfo(userProfile, DataScope.PROFILE).get();
+      UserAccountInfo user = _authenticator.getUserInfo(userProfile, DataScope.PROFILE).get();
       return OAuthRequestHandler.getUserInfoResponseJson(user, Optional.empty())
         .add(FOUND_KEY, true)
         .build();
@@ -105,7 +105,7 @@ public class UserQueryHandler {
   private JsonObject getUserJsonById(long requestedUserId) {
     // look for registered user first
     UserProfile userProfile = _accountDb.getUserProfile(requestedUserId);
-    Optional<UserInfo> userOpt = userProfile == null
+    Optional<UserAccountInfo> userOpt = userProfile == null
       // no registered user found; look for guest
       ? _authenticator.getGuestProfileInfo(String.valueOf(requestedUserId))
       // convert profile to UserInfo
