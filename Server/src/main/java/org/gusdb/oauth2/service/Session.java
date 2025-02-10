@@ -16,7 +16,6 @@ public class Session {
 
   private static final Logger LOG = LogManager.getLogger(Session.class);
 
-  private static final String SESSION_LOGINNAME_KEY = "loginName";
   private static final String SESSION_USERID_KEY = "userId";
   private static final String SESSION_FORM_ID_MAP_KEY = "formIdMap";
 
@@ -32,15 +31,7 @@ public class Session {
   }
 
   public boolean isAuthenticated() {
-    return getLoginName() != null;
-  }
-
-  public String getLoginName() {
-    return (String)_session.getAttribute(SESSION_LOGINNAME_KEY);
-  }
-
-  public void setLoginName(String loginName) {
-    _session.setAttribute(SESSION_LOGINNAME_KEY, loginName);
+    return getUserId() != null;
   }
 
   public String getUserId() {
@@ -84,9 +75,9 @@ public class Session {
   }
 
   public void invalidate() {
-    String username = getLoginName();
-    if (username != null) {
-      TokenStore.clearObjectsForUser(username);
+    String userId = getUserId();
+    if (userId != null) {
+      TokenStore.clearObjectsForUser(userId);
     }
     _session.invalidate();
   }

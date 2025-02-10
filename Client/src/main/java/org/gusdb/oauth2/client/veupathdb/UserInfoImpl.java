@@ -49,6 +49,14 @@ public class UserInfoImpl implements UserInfo {
     setPropertyValues(json);
   }
 
+  public UserInfoImpl(UserInfo user) {
+    this(user.getUserId(), user.isGuest(), user.getSignature(), user.getStableId());
+    setEmail(user.getEmail());
+    for (UserProperty prop : USER_PROPERTIES.values()) {
+      prop.setValue(this, prop.getValue(user));
+    }
+  }
+
   @Override
   public void setPropertyValues(JSONObject userInfo) {
     // set email (standard property but mutable so set on user profile and not token

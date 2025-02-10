@@ -24,9 +24,9 @@ public class TokenFactory {
 
   private static final Logger LOG = LogManager.getLogger(TokenFactory.class);
 
-  public static JsonObject createTokenJson(Authenticator authenticator, String loginName,
+  public static JsonObject createTokenJson(Authenticator authenticator, String userId,
       IdTokenParams tokenParams, String issuer, int expirationSecs, DataScope scope)
-          throws OAuthProblemException, OAuthSystemException {
+          throws OAuthSystemException {
     assert(scope != DataScope.PROFILE);
 
     // get values from authenticator and use to populate fields
@@ -123,19 +123,15 @@ public class TokenFactory {
     return json.build();
   }
 
-<<<<<<< HEAD
-  private static UserInfo getUserInfoForToken(Authenticator authenticator, String loginName, DataScope scope) throws OAuthSystemException {
-=======
   private static UserAccountInfo getUserInfoForToken(Authenticator authenticator, String userId, DataScope scope) throws OAuthSystemException {
->>>>>>> f911f67... Rework user class hierarchy to support differentiating UserInfo vs User object roles (information vs action on user's behalf)
     try {
-      return authenticator.getUserInfoByLoginName(loginName, scope).orElseThrow(() -> {
-        LOG.warn("Request made to get user token for login '" + loginName + "', which does not seem to exist.");
+      return authenticator.getUserInfoByUserId(userId, scope).orElseThrow(() -> {
+        LOG.warn("Request made to get user token for user ID '" + userId + "', which does not seem to exist.");
         return new ForbiddenException();
       });
     }
     catch (Exception e) {
-      LOG.error("Unable to retrieve user info for login name '" + loginName + "'", e);
+      LOG.error("Unable to retrieve user info for user ID '" + userId + "'", e);
       throw new OAuthSystemException(e);
     }
   }
