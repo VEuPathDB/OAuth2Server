@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>base-pom</artifactId>
-    <version>2.22</version>
+    <version>2.23</version>
   </parent>
 
   <!-- Manage versions of libs specific to OAuth/tokens-->
@@ -18,7 +18,7 @@
     <java.version>11</java.version>
     <jjwt.version>0.11.5</jjwt.version>
     <oltu.version>1.0.2</oltu.version>
-    <bouncycastle.version>1.77</bouncycastle.version>
+    <bouncycastle.version>1.80</bouncycastle.version>
   </properties>
 
   <modules>
