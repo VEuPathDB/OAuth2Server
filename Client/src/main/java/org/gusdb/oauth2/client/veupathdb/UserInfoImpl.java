@@ -6,11 +6,12 @@ import org.gusdb.oauth2.shared.IdTokenFields;
 import org.json.JSONObject;
 
 /**
- * Represents a VEupathDB user
+ * Represents a VEupathDB user's information.  However, cannot be used to act
+ * on the user's behalf since it does not contain an authentication token.
  *
  * @author rdoherty
  */
-public class BasicUser implements User {
+public class UserInfoImpl implements UserInfo {
 
   // immutable fields supplied by bearer token
   private final long _userId;
@@ -31,14 +32,14 @@ public class BasicUser implements User {
   private String _organizationType;
   private String _interests;
 
-  public BasicUser(long userId, boolean isGuest, String signature, String stableId) {
+  public UserInfoImpl(long userId, boolean isGuest, String signature, String stableId) {
     _userId = userId;
     _isGuest = isGuest;
     _signature = signature;
     _stableId = stableId;
   }
 
-  public BasicUser(JSONObject json) {
+  public UserInfoImpl(JSONObject json) {
     this(
         Long.valueOf(json.getString(IdTokenFields.sub.name())),
         json.getBoolean(IdTokenFields.is_guest.name()),
@@ -46,6 +47,14 @@ public class BasicUser implements User {
         json.getString(IdTokenFields.preferred_username.name())
     );
     setPropertyValues(json);
+  }
+
+  public UserInfoImpl(UserInfo user) {
+    this(user.getUserId(), user.isGuest(), user.getSignature(), user.getStableId());
+    setEmail(user.getEmail());
+    for (UserProperty prop : USER_PROPERTIES.values()) {
+      prop.setValue(this, prop.getValue(user));
+    }
   }
 
   @Override
@@ -103,7 +112,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setEmail(String email) {
+  public UserInfoImpl setEmail(String email) {
     _email = email;
     return this;
   }
@@ -115,7 +124,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setUsername(String username) {
+  public UserInfoImpl setUsername(String username) {
     _username = username;
     return this;
   }
@@ -127,7 +136,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setFirstName(String firstName) {
+  public UserInfoImpl setFirstName(String firstName) {
     _firstName = firstName;
     return this;
   }
@@ -139,7 +148,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setMiddleName(String middleName) {
+  public UserInfoImpl setMiddleName(String middleName) {
     _middleName = middleName;
     return this;
   }
@@ -151,7 +160,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setLastName(String lastName) {
+  public UserInfoImpl setLastName(String lastName) {
     _lastName = lastName;
     return this;
   }
@@ -162,7 +171,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setCountry(String country) {
+  public UserInfoImpl setCountry(String country) {
     _country = country;
     return this;
   }
@@ -174,7 +183,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setOrganization(String organization) {
+  public UserInfoImpl setOrganization(String organization) {
     _organization = organization;
     return this;
   }
@@ -185,7 +194,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setGroupName(String groupName) {
+  public UserInfoImpl setGroupName(String groupName) {
     _groupName = groupName;
     return this;
   }
@@ -196,7 +205,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setPosition(String position) {
+  public UserInfoImpl setPosition(String position) {
     _position = position;
     return this;
   }
@@ -207,7 +216,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setOrganizationType(String organizationType) {
+  public UserInfoImpl setOrganizationType(String organizationType) {
     _organizationType = organizationType;
     return this;
   }
@@ -219,7 +228,7 @@ public class BasicUser implements User {
   }
 
   @Override
-  public BasicUser setInterests(String interests) {
+  public UserInfoImpl setInterests(String interests) {
     _interests = interests;
     return this;
   }
@@ -236,10 +245,10 @@ public class BasicUser implements User {
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof BasicUser)) {
+    if (!(obj instanceof UserInfoImpl)) {
       return false;
     }
-    return getUserId() == ((BasicUser)obj).getUserId();
+    return getUserId() == ((UserInfoImpl)obj).getUserId();
   }
 
 }

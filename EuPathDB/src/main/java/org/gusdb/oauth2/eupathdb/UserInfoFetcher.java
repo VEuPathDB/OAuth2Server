@@ -4,9 +4,9 @@ import org.gusdb.oauth2.client.KeyStoreTrustManager;
 import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.client.OAuthConfig;
 import org.gusdb.oauth2.client.ValidatedToken;
-import org.gusdb.oauth2.client.veupathdb.BasicUser;
-import org.gusdb.oauth2.client.veupathdb.BearerTokenUser;
-import org.gusdb.oauth2.client.veupathdb.User;
+import org.gusdb.oauth2.client.veupathdb.UserInfoImpl;
+import org.gusdb.oauth2.client.veupathdb.UserImpl;
+import org.gusdb.oauth2.client.veupathdb.UserInfo;
 import org.gusdb.oauth2.exception.ExpiredTokenException;
 import org.gusdb.oauth2.exception.InvalidTokenException;
 import org.json.JSONObject;
@@ -53,10 +53,10 @@ public class UserInfoFetcher extends ToolBase {
     // first try BasicUser method
     JSONObject json = client.getUserData(oauthConfig.getOauthUrl(), token);
     System.out.println("Raw Token Data:\n" + json.toString(2));
-    System.out.println(new BasicUser(json).getDisplayName());
+    System.out.println(new UserInfoImpl(json).getDisplayName());
 
     // second try BearerTokenUser method
-    User user = new BearerTokenUser(client, oauthConfig.getOauthUrl(), token);
+    UserInfo user = new UserImpl(client, oauthConfig.getOauthUrl(), token);
     System.out.println(user.getDisplayName());
   }
 

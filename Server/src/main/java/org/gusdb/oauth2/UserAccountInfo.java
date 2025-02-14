@@ -9,7 +9,7 @@ import javax.json.JsonValue;
  * 
  * @author rdoherty
  */
-public interface UserInfo {
+public interface UserAccountInfo {
   /**
    * Returns system-unique and static ID for a user; this identifier should be
    * suitable for representing a primary key for this user.  It will be
