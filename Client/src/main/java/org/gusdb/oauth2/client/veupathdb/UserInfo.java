@@ -17,6 +17,9 @@ import org.json.JSONObject;
  */
 public interface UserInfo {
 
+  public static final int MAX_EMAIL_LENGTH = 255;
+  public static final int MAX_PROPERTY_VALUE_SIZE = 4000;
+
   public static final Map<String,UserProperty> USER_PROPERTIES = createUserPropertyDefs();
 
   static final String USERNAME_HELP = "You are able to log in with this value or your email.";
