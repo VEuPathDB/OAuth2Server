@@ -7,8 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.MapBuilder;
 import org.gusdb.fgputil.Tuples.TwoTuple;
-import org.gusdb.fgputil.accountdb.UserProfile;
 import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
+import org.gusdb.oauth2.eupathdb.accountdb.UserProfile;
 
 public class TestAuthenticator extends AccountDbAuthenticator {
 

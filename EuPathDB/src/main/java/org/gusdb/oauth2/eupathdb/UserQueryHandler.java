@@ -14,9 +14,9 @@ import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 
-import org.gusdb.fgputil.accountdb.AccountManager;
-import org.gusdb.fgputil.accountdb.UserProfile;
 import org.gusdb.oauth2.Authenticator.DataScope;
+import org.gusdb.oauth2.eupathdb.accountdb.AccountManager;
+import org.gusdb.oauth2.eupathdb.accountdb.UserProfile;
 import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.service.OAuthRequestHandler;
 import org.gusdb.oauth2.shared.IdTokenFields;
