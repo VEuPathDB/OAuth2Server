@@ -16,7 +16,7 @@
     <!-- Expect this property to be passed in -->
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
 
-    <fgputil.version>2.15.2</fgputil.version>
+    <fgputil.version>2.16.0</fgputil.version>
   </properties>
 
   <dependencies>
@@ -34,12 +34,6 @@
     <dependency>
       <groupId>org.gusdb</groupId>
       <artifactId>oauth2-server</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.gusdb</groupId>
-      <artifactId>fgputil-accountdb</artifactId>
-      <version>${fgputil.version}</version>
     </dependency>
 
     <dependency>
