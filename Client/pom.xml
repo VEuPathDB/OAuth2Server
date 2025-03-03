@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>oauth2</artifactId>
-    <version>3.2.0-jakarta</version>
+    <version>3.2.1-jakarta-SNAPSHOT</version>
   </parent>
 
   <dependencies>
