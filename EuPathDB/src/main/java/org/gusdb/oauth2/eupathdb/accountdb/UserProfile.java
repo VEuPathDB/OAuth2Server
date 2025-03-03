@@ -8,9 +8,6 @@ import java.util.Map.Entry;
 
 public class UserProfile {
 
-  public static final int MAX_EMAIL_LENGTH = 255;
-  public static final int MAX_PROPERTY_VALUE_SIZE = 4000;
-
   private Long _userId;
   private String _email;
   private boolean _isGuest;
