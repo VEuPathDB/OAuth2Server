@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.eupathdb;
+package org.gusdb.oauth2.eupathdb.tools;
 
 import org.gusdb.oauth2.client.KeyStoreTrustManager;
 import org.gusdb.oauth2.client.OAuthClient;

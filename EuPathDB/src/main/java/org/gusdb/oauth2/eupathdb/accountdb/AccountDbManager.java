@@ -28,10 +28,11 @@ import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunner.ArgumentBatch;
 import org.gusdb.fgputil.iterator.IteratorUtil;
+import org.gusdb.oauth2.client.veupathdb.UserProperty;
 
-public class AccountManager {
+public class AccountDbManager {
 
-  private static final Logger LOG = Logger.getLogger(AccountManager.class);
+  private static final Logger LOG = Logger.getLogger(AccountDbManager.class);
 
   public static final String TABLE_ACCOUNTS = "accounts";
   public static final String TABLE_ACCOUNT_PROPS = "account_properties";
@@ -133,19 +134,19 @@ public class AccountManager {
 
   private final DatabaseInstance _accountDb;
   private final String _accountSchema;
-  private final Map<String, UserPropertyName> _propertyNames = new LinkedHashMap<>();
+  private final Map<String, UserProperty> _propertyNames = new LinkedHashMap<>();
   private final String _selectSql;
 
-  public AccountManager(DatabaseInstance accountDb, String accountSchema, List<UserPropertyName> propertyNames) {
+  public AccountDbManager(DatabaseInstance accountDb, String accountSchema, List<UserProperty> propertyNames) {
     _accountDb = accountDb;
     _accountSchema = accountSchema;
-    for (UserPropertyName prop : propertyNames) {
+    for (UserProperty prop : propertyNames) {
       _propertyNames.put(prop.getName(), prop);
     }
     _selectSql = getSelectSql(_accountSchema, propertyNames);
   }
 
-  private static String getSelectSql(String schema, List<UserPropertyName> propertyNames) {
+  private static String getSelectSql(String schema, List<UserProperty> propertyNames) {
     return SELECT_FLAT_USER_SQL
         .replace(ACCOUNT_SCHEMA_MACRO, schema)
         .replace(DEFINED_PROPERTY_NAMES_MACRO, join(mapToList(propertyNames,
@@ -153,7 +154,7 @@ public class AccountManager {
         .replace(DEFINED_PROPERTY_SELECTION_MACRO, getPropSelectionSql(propertyNames));
   }
 
-  private static String getPropSelectionSql(List<UserPropertyName> propertyNames) {
+  private static String getPropSelectionSql(List<UserProperty> propertyNames) {
     return join(mapToList(propertyNames, prop ->
       PROPERTY_COLUMN_SELECTION_SQL.replace(DEFINED_PROPERTY_NAME_MACRO, prop.getDbKey()
     )).toArray(), "");
@@ -224,7 +225,7 @@ public class AccountManager {
     });
   }
 
-  private static UserProfile loadUserProfile(ResultSet rs, Collection<UserPropertyName> props) throws SQLException {
+  private static UserProfile loadUserProfile(ResultSet rs, Collection<UserProperty> props) throws SQLException {
     UserProfile profile = new UserProfile();
     profile.setUserId(rs.getLong(COL_USER_ID));
     profile.setEmail(rs.getString(COL_EMAIL));
@@ -234,7 +235,7 @@ public class AccountManager {
     profile.setRegisterTime(rs.getDate(COL_REGISTER_TIME));
     profile.setLastLoginTime(rs.getDate(COL_LAST_LOGIN));
     Map<String, String> properties = new HashMap<>();
-    for (UserPropertyName prop : props) {
+    for (UserProperty prop : props) {
       String value = rs.getString(prop.getDbKey());
       if (!rs.wasNull()) {
         properties.put(prop.getName(), value);
@@ -417,7 +418,7 @@ public class AccountManager {
     });
   }
 
-  public static String getFlatPropertySql(List<UserPropertyName> propertyNames, String accountSchema, String accountDbLink) {
+  public static String getFlatPropertySql(List<UserProperty> propertyNames, String accountSchema, String accountDbLink) {
     return (SELECT_FLAT_USER_PROPS_SQL + accountDbLink)
         .replace(ACCOUNT_SCHEMA_MACRO, accountSchema)
         .replace(DEFINED_PROPERTY_SELECTION_MACRO, getPropSelectionSql(propertyNames));

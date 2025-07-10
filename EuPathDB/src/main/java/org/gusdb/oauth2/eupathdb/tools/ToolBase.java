@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.eupathdb;
+package org.gusdb.oauth2.eupathdb.tools;
 
 import java.io.FileInputStream;
 import java.io.IOException;

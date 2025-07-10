@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.eupathdb;
+package org.gusdb.oauth2.eupathdb.tools;
 
 import java.nio.file.Paths;
 import java.security.PublicKey;
@@ -11,6 +11,7 @@ import javax.json.JsonObject;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
 import org.gusdb.oauth2.config.ApplicationConfig;
+import org.gusdb.oauth2.eupathdb.AccountDbAuthenticator;
 import org.gusdb.oauth2.service.token.TokenFactory;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.ECPublicKeyRepresentation;

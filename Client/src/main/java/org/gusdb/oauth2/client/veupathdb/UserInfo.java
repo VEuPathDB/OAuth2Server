@@ -20,30 +20,33 @@ public interface UserInfo {
   public static final int MAX_EMAIL_LENGTH = 255;
   public static final int MAX_PROPERTY_VALUE_SIZE = 4000;
 
-  public static final Map<String,UserProperty> USER_PROPERTIES = createUserPropertyDefs();
-
   static final String USERNAME_HELP = "You are able to log in with this value or your email.";
   static final String ORGANIZATION_HELP = "Please use the full name of your academic institution, company, or foundation.";
   static final String GROUP_NAME_HELP = "Please use the official name of your group or lab or the full name of your primary investigator.";
+  static final String SUBSCRIPTION_TOKEN_HELP = "Enter your group's subscription token to become a subscribing user.";
   static final String ORGANIZATION_SUGGEST = "e.g. University of Pennsylvania";
   static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab";
   static final String NO_VALUE = null;
 
-  private static Map<String,UserProperty> createUserPropertyDefs() {
-    List<UserProperty> userProps = List.of(
-        new UserProperty("username", "Username", USERNAME_HELP, NO_VALUE, "username", false, false, InputType.TEXT, UserInfo::getUsername, UserInfo::setUsername),
-        new UserProperty("firstName", "First Name", NO_VALUE, NO_VALUE, "first_name", true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
-        new UserProperty("middleName", "Middle Name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, UserInfo::getMiddleName, UserInfo::setMiddleName),
-        new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, "last_name", true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
-        new UserProperty("country", "Country", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, UserInfo::getCountry, UserInfo::setCountry),
-        new UserProperty("organization", "Organization Name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
-        new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
-        new UserProperty("position", "Primary Position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, UserInfo::getPosition, UserInfo::setPosition),
-        new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, UserInfo::getGroupName, UserInfo::setGroupName),
-        new UserProperty("interests", "Interests", NO_VALUE, NO_VALUE, "interests", false, false, InputType.TEXTBOX, UserInfo::getInterests, UserInfo::setInterests)
-    );
-    return Collections.unmodifiableMap(userProps.stream().collect(Collectors.toMap(UserProperty::getName, x -> x, (a,b) -> a, () -> new LinkedHashMap<>())));
-  }
+  // define valid user properties and their attributes
+  public static final List<UserProperty> USER_PROPERTY_LIST = List.of(
+      new UserProperty("username", "Username", USERNAME_HELP, NO_VALUE, "username", false, false, InputType.TEXT, UserInfo::getUsername, UserInfo::setUsername),
+      new UserProperty("firstName", "First Name", NO_VALUE, NO_VALUE, "first_name", true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
+      new UserProperty("middleName", "Middle Name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, UserInfo::getMiddleName, UserInfo::setMiddleName),
+      new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, "last_name", true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
+      new UserProperty("country", "Country", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, UserInfo::getCountry, UserInfo::setCountry),
+      new UserProperty("organization", "Organization Name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
+      new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
+      new UserProperty("position", "Primary Position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, UserInfo::getPosition, UserInfo::setPosition),
+      new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, UserInfo::getGroupName, UserInfo::setGroupName),
+      new UserProperty("subscriptionToken", "Subscription Token", SUBSCRIPTION_TOKEN_HELP, NO_VALUE, "subscription_token", false, false, InputType.TEXT, UserInfo::getSubscriptionToken, UserInfo::setSubscriptionToken),
+      new UserProperty("interests", "Interests", NO_VALUE, NO_VALUE, "interests", false, false, InputType.TEXTBOX, UserInfo::getInterests, UserInfo::setInterests)
+  );
+
+  // convert user properties to a map keyed on property name (JSON key)
+  public static final Map<String,UserProperty> USER_PROPERTIES = Collections.unmodifiableMap(
+      USER_PROPERTY_LIST.stream().collect(
+          Collectors.toMap(UserProperty::getName, x -> x, (a,b) -> a, () -> new LinkedHashMap<>())));
 
   void setPropertyValues(JSONObject json);
   void setPropertyValues(Map<String,String> propertyValues);
@@ -76,6 +79,9 @@ public interface UserInfo {
 
   String getGroupName();
   UserInfo setGroupName(String groupName);
+
+  String getSubscriptionToken();
+  UserInfo setSubscriptionToken(String subscriptionToken);
 
   String getPosition();
   UserInfo setPosition(String position);

@@ -11,7 +11,6 @@ import javax.servlet.ServletException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.glassfish.jersey.servlet.ServletProperties;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
 import org.gusdb.oauth2.config.ApplicationConfig;
@@ -124,11 +123,4 @@ public class OAuthServlet extends ServletContainer {
     }
   }
 
-  @Override
-  public String getInitParameter(String name) {
-    if (name.equals(ServletProperties.JAXRS_APPLICATION_CLASS)) {
-      return ServiceApplication.class.getName();
-    }
-    return super.getInitParameter(name);
-  }
 }
