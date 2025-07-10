@@ -1,6 +1,7 @@
 package org.gusdb.oauth2.eupathdb;
 
 import static org.gusdb.fgputil.FormatUtil.getInnerClassLog4jName;
+import static org.gusdb.oauth2.client.veupathdb.UserInfo.USER_PROPERTY_LIST;
 
 import java.net.URI;
 import java.sql.SQLException;
@@ -33,9 +34,8 @@ import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.client.veupathdb.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.UserProperty;
 import org.gusdb.oauth2.client.veupathdb.UserProperty.InputType;
-import org.gusdb.oauth2.eupathdb.accountdb.AccountManager;
+import org.gusdb.oauth2.eupathdb.accountdb.AccountDbManager;
 import org.gusdb.oauth2.eupathdb.accountdb.UserProfile;
-import org.gusdb.oauth2.eupathdb.accountdb.UserPropertyName;
 import org.gusdb.oauth2.exception.ConflictException;
 import org.gusdb.oauth2.exception.InvalidPropertiesException;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
@@ -56,12 +56,6 @@ public class AccountDbAuthenticator implements Authenticator {
     poolSize,
     schema
   }
-
-  // convert from new API to old
-  private static final List<UserPropertyName> USER_PROPERTY_DEFS =
-      UserInfo.USER_PROPERTIES.values().stream()
-      .map(p -> new UserPropertyName(p.getName(), p.getDbKey(), p.isRequired()))
-      .collect(Collectors.toList());
 
   private DatabaseInstance _accountDb;
   private String _schema;
@@ -89,31 +83,35 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public Optional<String> isCredentialsValid(String username, String password) throws Exception {
     return Optional.ofNullable(
-        new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(username, password))
+        new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).getUserProfile(username, password))
       .map(profile -> profile.getUserId().toString());
   }
 
   @Override
   public Optional<UserAccountInfo> getUserInfoByLoginName(String loginName, DataScope scope) throws Exception {
-    return getUserInfo(new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfileByUsernameOrEmail(loginName), scope);
+    return getUserInfo(new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).getUserProfileByUsernameOrEmail(loginName), scope);
   }
 
   @Override
   public Optional<UserAccountInfo> getUserInfoByUserId(String userId, DataScope scope) throws Exception {
-    return getUserInfo(new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(Long.valueOf(userId)), scope);
+    return getUserInfo(new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).getUserProfile(Long.valueOf(userId)), scope);
   }
 
   @Override
   public void resetPassword(String userId, String newPassword) {
-    new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).updatePassword(Long.valueOf(userId), newPassword);
+    new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).updatePassword(Long.valueOf(userId), newPassword);
   }
 
   @Override
   public String generateNewPassword() {
+    return generateRandomChars(12);
+  }
+
+  public static String generateRandomChars(int numChars) {
     // generate a random password of 12 characters, each in the range [0-9A-Za-z]
     StringBuilder buffer = new StringBuilder();
     Random rand = new Random();
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < numChars; i++) {
       int value = rand.nextInt(62);
       if (value < 10) { // number
         buffer.append(value);
@@ -193,7 +191,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   // protected so TestAuthenticator can override
   protected UserProfile getUserProfile(String userId) {
-    return new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).getUserProfile(Long.valueOf(userId));
+    return new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).getUserProfile(Long.valueOf(userId));
   }
 
   @Override
@@ -207,7 +205,7 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public String getNextGuestId() {
     try {
-      String id = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).createGuestAccount("guest_").getUserId().toString();
+      String id = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).createGuestAccount("guest_").getUserId().toString();
       // FIXME: since this code directly accesses the DB, it should live in AccountManager;
       //   however that complicates FgpUtil releases prior to move to bearer tokens, so adding it here.
       String sql = "insert into useraccounts.guest_ids (user_id, creation_time) values (?, TO_DATE(SYSDATE))";
@@ -239,13 +237,13 @@ public class AccountDbAuthenticator implements Authenticator {
   @Override
   public void overwritePassword(String username, String newPassword) throws Exception {
     UserProfile profile = getUserProfile(username);
-    new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS).updatePassword(profile.getUserId(), newPassword);
+    new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).updatePassword(profile.getUserId(), newPassword);
   }
 
   @Override
   public JsonValue executeQuery(JsonObject querySpec)
       throws UnsupportedOperationException, IllegalArgumentException {
-    AccountManager acctDb = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    AccountDbManager acctDb = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
     return new UserQueryHandler(this, acctDb).handleQuery(querySpec);
   }
 
@@ -266,7 +264,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   @Override
   public UserAccountInfo createUser(UserPropertiesRequest userProps, String initialPassword) throws ConflictException, InvalidPropertiesException {
-    AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
     validateUserProps(accountMgr, userProps, Optional.empty());
     UserProfile newUser = Functions.mapException(
         () -> accountMgr.createAccount(userProps.getEmail(), initialPassword, userProps),
@@ -285,14 +283,14 @@ public class AccountDbAuthenticator implements Authenticator {
    * @throws ConflictException 
    * @throws InvalidPropertiesException 
    */
-  private void validateUserProps(AccountManager accountMgr, UserPropertiesRequest userProps, Optional<Long> userId) throws ConflictException, InvalidPropertiesException {
+  private void validateUserProps(AccountDbManager accountMgr, UserPropertiesRequest userProps, Optional<Long> userId) throws ConflictException, InvalidPropertiesException {
 
     // check email for uniqueness and format
     userProps.setEmail(validateAndFormatEmail(userProps.getEmail(), accountMgr, userId));
 
     // if user supplied a username, make sure it is unique
-    if (userProps.containsKey(AccountManager.USERNAME_PROPERTY_KEY)) {
-      String username = userProps.get(AccountManager.USERNAME_PROPERTY_KEY);
+    if (userProps.containsKey(AccountDbManager.USERNAME_PROPERTY_KEY)) {
+      String username = userProps.get(AccountDbManager.USERNAME_PROPERTY_KEY);
       // check whether the username exists in the database already under a different user
       ensureUniqueValue("username", accountMgr.getUserProfileByUsername(username), username, userId);
     }
@@ -318,12 +316,12 @@ public class AccountDbAuthenticator implements Authenticator {
     }
   }
 
-  private static String validateAndFormatEmail(String email, AccountManager accountMgr, Optional<Long> userId) throws InvalidPropertiesException, ConflictException {
+  private static String validateAndFormatEmail(String email, AccountDbManager accountMgr, Optional<Long> userId) throws InvalidPropertiesException, ConflictException {
     // trim and validate passed email address and extract stable name
     if (email == null)
       throw new InvalidPropertiesException("The user's email cannot be empty.");
     // format the info
-    email = AccountManager.trimAndLowercase(email);
+    email = AccountDbManager.trimAndLowercase(email);
     if (email.isEmpty())
       throw new InvalidPropertiesException("The user's email cannot be empty.");
     int atSignIndex = email.indexOf("@");
@@ -346,7 +344,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   @Override
   public UserAccountInfo modifyUser(String userIdStr, UserPropertiesRequest userProps) throws ConflictException, InvalidPropertiesException {
-    AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
     Long userId = Long.valueOf(userIdStr);
     validateUserProps(accountMgr, userProps, Optional.of(userId));
     Functions.mapException(
@@ -367,7 +365,7 @@ public class AccountDbAuthenticator implements Authenticator {
           .executeQuery(new Object[] { Long.valueOf(userId) }, new Integer[] { Types.BIGINT }, rs ->
               rs.next() ? Optional.of(rs.getDate("creation_time")) : Optional.empty());
       return creationDate.map(date -> {
-        UserProfile guest = AccountManager.createGuestProfile("guest", Long.valueOf(userId), date);
+        UserProfile guest = AccountDbManager.createGuestProfile("guest", Long.valueOf(userId), date);
         return createUserInfoObject(guest, false, DataScope.PROFILE);
       });
     }
@@ -378,7 +376,7 @@ public class AccountDbAuthenticator implements Authenticator {
 
   @Override
   public void updateLastLoginTimestamp(String userId) {
-    AccountManager accountMgr = new AccountManager(_accountDb, _schema, USER_PROPERTY_DEFS);
+    AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
     accountMgr.updateLastLogin(Long.valueOf(userId));
   }
 

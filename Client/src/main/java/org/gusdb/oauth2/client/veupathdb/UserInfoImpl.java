@@ -28,6 +28,7 @@ public class UserInfoImpl implements UserInfo {
   private String _country;
   private String _organization;
   private String _groupName;
+  private String _subscriptionToken;
   private String _position;
   private String _organizationType;
   private String _interests;
@@ -196,6 +197,17 @@ public class UserInfoImpl implements UserInfo {
   @Override
   public UserInfoImpl setGroupName(String groupName) {
     _groupName = groupName;
+    return this;
+  }
+
+  @Override
+  public String getSubscriptionToken() {
+    return _subscriptionToken;
+  }
+
+  @Override
+  public UserInfo setSubscriptionToken(String subscriptionToken) {
+    _subscriptionToken = subscriptionToken;
     return this;
   }
 

@@ -15,7 +15,7 @@ import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 
 import org.gusdb.oauth2.Authenticator.DataScope;
-import org.gusdb.oauth2.eupathdb.accountdb.AccountManager;
+import org.gusdb.oauth2.eupathdb.accountdb.AccountDbManager;
 import org.gusdb.oauth2.eupathdb.accountdb.UserProfile;
 import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.service.OAuthRequestHandler;
@@ -33,9 +33,9 @@ public class UserQueryHandler {
   private static final String FOUND_KEY = "found";
 
   private final AccountDbAuthenticator _authenticator;
-  private final AccountManager _accountDb;
+  private final AccountDbManager _accountDb;
 
-  public UserQueryHandler(AccountDbAuthenticator authenticator, AccountManager accountDb) {
+  public UserQueryHandler(AccountDbAuthenticator authenticator, AccountDbManager accountDb) {
     _authenticator = authenticator;
     _accountDb = accountDb;
   }
