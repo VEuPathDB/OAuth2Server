@@ -1,28 +1,32 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
-import javax.ws.rs.POST;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-@Path("/subscriptions")
 public class SubscriptionService {
 
-  // insert subscriber id and expiration date
-  @POST
-  public Response createSubscription(String body) {
+  // returns list of subscriptions
+  @GET
+  @Path("/subscriptions")
+  public Response getSubscriptions() {
+    return Response.ok().build();
+  }
+
+  // returns info about a single subscription including groups/leads/members
+  @GET
+  @Path("/subscriptions/{subscriptionId}")
+  public Response getSubscription(@QueryParam("subscriptionId") int subscriptionId) {
+    return Response.ok().build();
     
   }
 
-  // allow update to subscriber id or expiration date (by email?)
-  @POST
-  @Path("{subscriptionId}")
-  public Response updateSubscription(@QueryParam("subscriptionId") int subscriptionId, String body) {
-    
+  // returns known groups that are not subscribed
+  @GET
+  @Path("/groups/orphan")
+  public Response getOrphanGroups() {
+    return Response.ok().build();
   }
 
-  @POST
-  @Path("{subscriptionId}/groups")
-
-  
 }
