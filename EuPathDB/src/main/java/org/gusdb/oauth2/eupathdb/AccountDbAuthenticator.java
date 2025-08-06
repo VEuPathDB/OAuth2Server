@@ -60,6 +60,9 @@ public class AccountDbAuthenticator implements Authenticator {
   private DatabaseInstance _accountDb;
   private String _schema;
 
+  public DatabaseInstance getAccountDb() { return _accountDb; }
+  public String getUserAccountsSchema() { return _schema; }
+
   @Override
   public void initialize(JsonObject configJson) throws InitializationException {
     ConnectionPoolConfig dbConfig = SimpleDbConfig.create(
