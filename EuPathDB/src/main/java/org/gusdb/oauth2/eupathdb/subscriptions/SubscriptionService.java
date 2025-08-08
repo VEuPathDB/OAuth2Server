@@ -11,7 +11,9 @@ import javax.servlet.ServletContext;
 import javax.sql.DataSource;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.gusdb.fgputil.IoUtil;
@@ -21,6 +23,7 @@ import org.gusdb.oauth2.server.OAuthServlet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+@Path("/groups")
 public class SubscriptionService {
 
   @Context
@@ -36,7 +39,7 @@ public class SubscriptionService {
 
   // returns list of subscribed groups
   @GET
-  @Path("/groups")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response getSubscribedGroups() {
     // TODO: break DB work out of the service class; ok here for now
     return Response.ok(new SQLRunner(getAcctDbDs(), GROUP_LEADS_SQL).executeQuery(rs -> {
