@@ -39,6 +39,7 @@ public interface UserInfo {
       new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
       new UserProperty("position", "Primary Position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, UserInfo::getPosition, UserInfo::setPosition),
       new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, UserInfo::getGroupName, UserInfo::setGroupName),
+      new UserProperty("groupType", "Group Type", NO_VALUE, NO_VALUE, "group_type", true, true, InputType.SELECT, UserInfo::getGroupType, UserInfo::setGroupType),
       new UserProperty("subscriptionToken", "Subscription Token", SUBSCRIPTION_TOKEN_HELP, NO_VALUE, "subscription_token", false, false, InputType.TEXT, UserInfo::getSubscriptionToken, UserInfo::setSubscriptionToken),
       new UserProperty("interests", "Interests", NO_VALUE, NO_VALUE, "interests", false, false, InputType.TEXTBOX, UserInfo::getInterests, UserInfo::setInterests)
   );
@@ -79,6 +80,9 @@ public interface UserInfo {
 
   String getGroupName();
   UserInfo setGroupName(String groupName);
+
+  String getGroupType();
+  UserInfo setGroupType(String groupType);
 
   String getSubscriptionToken();
   UserInfo setSubscriptionToken(String subscriptionToken);
