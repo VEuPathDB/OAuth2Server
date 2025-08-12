@@ -17,17 +17,20 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 import org.gusdb.fgputil.FormatUtil;
+import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.DBStateException;
 import org.gusdb.fgputil.db.SqlUtils;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunner.ArgumentBatch;
 import org.gusdb.fgputil.iterator.IteratorUtil;
+import org.gusdb.oauth2.client.veupathdb.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.UserProperty;
 
 public class AccountDbManager {
@@ -36,6 +39,7 @@ public class AccountDbManager {
 
   public static final String TABLE_ACCOUNTS = "accounts";
   public static final String TABLE_ACCOUNT_PROPS = "account_properties";
+  public static final String TABLE_SUBSCRIPTION_GROUP_LEADS = "subscription_group_leads";
 
   private static final String COL_USER_ID = "user_id";
   private static final String COL_EMAIL = "email";
@@ -132,6 +136,14 @@ public class AccountDbManager {
       "  from " + ACCOUNT_SCHEMA_MACRO + TABLE_ACCOUNTS +
       " where " + COL_USER_ID + " in (" + ID_LIST_MACRO + ")";
 
+  private static final String DELETE_USER_PROPERTIES =
+      "delete from " + ACCOUNT_SCHEMA_MACRO + TABLE_ACCOUNT_PROPS +
+      " where " + COL_USER_ID + " = ?";
+
+  private static final String DELETE_USER_GROUP_LEADS =
+      "delete from " + ACCOUNT_SCHEMA_MACRO + TABLE_SUBSCRIPTION_GROUP_LEADS +
+      " where " + COL_USER_ID + " = ?";
+
   private final DatabaseInstance _accountDb;
   private final String _accountSchema;
   private final Map<String, UserProperty> _propertyNames = new LinkedHashMap<>();
@@ -181,12 +193,6 @@ public class AccountDbManager {
     return getSingleUserProfile(" where " + COL_EMAIL + " = ?",
         new Object[] { trimAndLowercase(email) },
         new Integer[] { Types.VARCHAR });
-  }
-
-  // kept temporarily for backward compatibility
-  @Deprecated
-  public UserProfile getUserProfile(String usernameOrEmail) {
-    return getUserProfileByUsernameOrEmail(usernameOrEmail);
   }
 
   public UserProfile getUserProfileByUsernameOrEmail(String usernameOrEmail) {
@@ -456,5 +462,39 @@ public class AccountDbManager {
       }
     }
     return result;
+  }
+
+  public void anonymizeUser(Long userId) {
+
+    // delete all user's account properties
+    String propsSql = DELETE_USER_PROPERTIES
+        .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
+    new SQLRunner(_accountDb.getDataSource(), propsSql, "delete-user-props")
+      .executeStatement(new Object[] { userId }, new Integer[] { Types.BIGINT });
+
+    // put back first_name and last_name with stub values
+    for (Entry<String,String> propUpdate : List.of(
+        new TwoTuple<>(UserInfo.FIRST_NAME_PROP_KEY, "deleted-user"),
+        new TwoTuple<>(UserInfo.LAST_NAME_PROP_KEY, userId.toString())
+    )) {
+      new SQLRunner(_accountDb.getDataSource(), INSERT_PROPERTY_SQL, "modify-prop-for-deletion")
+          .executeStatement(new Object[] { userId, propUpdate.getKey(), propUpdate.getValue() }, INSERT_PROPERTY_PARAM_TYPES);
+    }
+
+    // delete user as subscription group leads
+    String leadsSql = DELETE_USER_GROUP_LEADS
+        .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
+    new SQLRunner(_accountDb.getDataSource(), leadsSql, "delete-user-as-group-leads")
+      .executeStatement(new Object[] { userId }, new Integer[] { Types.BIGINT });
+
+    // modify user props to anonymize and prevent future login or password reset
+    for (Entry<String,String> columnUpdate : List.of(
+        new TwoTuple<>(COL_EMAIL, "deleted-user." + userId + "@veupathdb.org"),
+        new TwoTuple<>(COL_PASSWORD, ""),
+        new TwoTuple<>(COL_STABLE_ID, "deleted-user." + userId)
+    )) {
+      new SQLRunner(_accountDb.getDataSource(), getUpdateColumnSql(columnUpdate.getKey()), "modify-col-for-deletion")
+          .executeStatement(new Object[] { columnUpdate.getValue(), userId }, new Integer[] { Types.VARCHAR, Types.BIGINT });
+    }
   }
 }

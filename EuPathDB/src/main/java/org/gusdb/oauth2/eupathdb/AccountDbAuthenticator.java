@@ -359,6 +359,13 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
+  public void deleteUser(String userIdStr) {
+    AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
+    Long userId = Long.valueOf(userIdStr);
+    accountMgr.anonymizeUser(userId);
+  }
+
+  @Override
   public Optional<UserAccountInfo> getGuestProfileInfo(String userId) {
     try {
       // FIXME: since this code directly accesses the DB, it should live in AccountManager;

@@ -24,6 +24,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletContext;
@@ -485,6 +486,50 @@ public class OAuthService {
     }
     catch (ConflictException e) {
       return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
+    }
+    catch (Exception e) {
+      LOG.error("Unable to edit user profile.", e);
+      throw e;
+    }
+  }
+
+  // Using POST here instead of DELETE because we still want an entity body to
+  //   submit client-id and client-secret for a client with perms; some client
+  //   libraries (including Jersey-Client, used by OAuthClient) do not support
+  //   message bodies in DELETEs.
+  @POST
+  @Path(Endpoints.USER_DELETE)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response deleteUser(String body) {
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      if (!isUserManagementClient(input)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      if (authHeader == null) {
+        return Response.status(Status.UNAUTHORIZED).build();
+      }
+      String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+      RequestingUser user = parseRequestingUser(token);
+      if (user.isGuest()) {
+        return Response.status(Status.FORBIDDEN).build();
+      }
+
+      // make sure credentials match the user to be deleted
+      JsonString userIdStr = input.getJsonString("userId");
+      if (userIdStr == null || !user.getUserId().equals(userIdStr.toString())) {
+        return Response.status(Status.FORBIDDEN).build();
+      }
+
+      // non guest user with proper credentials from an allowed client; delete this user
+      authenticator.deleteUser(user.getUserId());
+
+      return Response.accepted().build();
+    }
+    catch (JsonParsingException | ClassCastException e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
     }
     catch (Exception e) {
       LOG.error("Unable to edit user profile.", e);

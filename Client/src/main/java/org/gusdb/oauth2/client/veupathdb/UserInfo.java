@@ -28,12 +28,15 @@ public interface UserInfo {
   static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab";
   static final String NO_VALUE = null;
 
+  public static final String FIRST_NAME_PROP_KEY = "first_name";
+  public static final String LAST_NAME_PROP_KEY = "last_name";
+
   // define valid user properties and their attributes
   public static final List<UserProperty> USER_PROPERTY_LIST = List.of(
       new UserProperty("username", "Username", USERNAME_HELP, NO_VALUE, "username", false, false, InputType.TEXT, UserInfo::getUsername, UserInfo::setUsername),
-      new UserProperty("firstName", "First Name", NO_VALUE, NO_VALUE, "first_name", true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
+      new UserProperty("firstName", "First Name", NO_VALUE, NO_VALUE, FIRST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
       new UserProperty("middleName", "Middle Name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, UserInfo::getMiddleName, UserInfo::setMiddleName),
-      new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, "last_name", true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
+      new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, LAST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
       new UserProperty("country", "Country", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, UserInfo::getCountry, UserInfo::setCountry),
       new UserProperty("organization", "Organization Name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
       new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
