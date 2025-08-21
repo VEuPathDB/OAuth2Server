@@ -25,7 +25,7 @@ public interface UserInfo {
   static final String GROUP_NAME_HELP = "Please use the official name of your group or lab or the full name of your primary investigator.";
   static final String SUBSCRIPTION_TOKEN_HELP = "Enter your group's subscription token to become a subscribing user.";
   static final String ORGANIZATION_SUGGEST = "e.g. University of Pennsylvania";
-  static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab";
+  static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab, Professor Jones Bioinformatics 101";
   static final String NO_VALUE = null;
 
   public static final String FIRST_NAME_PROP_KEY = "first_name";
