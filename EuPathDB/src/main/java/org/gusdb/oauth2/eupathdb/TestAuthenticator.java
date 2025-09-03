@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.eupathdb;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,7 +27,7 @@ public class TestAuthenticator extends AccountDbAuthenticator {
       .toMap();
 
   @Override
-  protected void initialize(ConnectionPoolConfig dbConfig, String userSchema) {
+  protected void initialize(ConnectionPoolConfig dbConfig, String userSchema, String[] adminUserIds) {
     LOG.info("Authenticator initialized with userSchema '" + userSchema + "' and dbConfig:\n" + dbConfig);
   }
 
@@ -58,6 +60,11 @@ public class TestAuthenticator extends AccountDbAuthenticator {
   public void overwritePassword(String username, String newPassword) {
     TwoTuple<Long, String[]> user = USERS.get(username);
     user.getSecond()[0] = newPassword;
+  }
+
+  @Override
+  public List<String> getAdminUserIds() {
+    return Collections.emptyList();
   }
 
   @Override

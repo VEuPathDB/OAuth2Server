@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <form method="POST" enctype="multipart/form-data" action="/oauth/groups/upload">
+      Upload AccountDB TSV file: <input type="file" name="file"/><br/>
+      <input type="checkbox" name="returnGroupDetail"/>Return group details<br/>
+      <input type="checkbox" name="writeToDb"/>Write to database?<br/>
+      <input type="submit" value="Submit"/>
+    </form>
+  </body>
+</html>

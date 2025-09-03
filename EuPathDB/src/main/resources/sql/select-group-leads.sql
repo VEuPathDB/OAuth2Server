@@ -20,3 +20,4 @@ left join (
     group by user_id
 ) p
 on g.user_id = p.user_id
+order by g.group_name asc
