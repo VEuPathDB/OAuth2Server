@@ -76,7 +76,6 @@ public class SubscriptionService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public Response getSubscribedGroups() {
-    assertAdmin();
 
     // TODO: break DB work out of the service class; ok here for now
     return Response.ok(new SQLRunner(getAcctDbDs().getDataSource(), GROUP_LEADS_SQL).executeQuery(rs -> {
