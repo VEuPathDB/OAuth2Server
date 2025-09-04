@@ -534,6 +534,11 @@ public class OAuthClient {
         return readResponseBody(response);
       }
 
+      // some requests do not return content; this is ok
+      if (response.getStatus() == 204) {
+        return null;
+      }
+
       // check for input validation issues
       if (response.getStatusInfo().getFamily().equals(Status.Family.CLIENT_ERROR)) {
         if (response.getStatus() == HttpStatus.UNPROCESSABLE_CONTENT.getStatusCode()) {

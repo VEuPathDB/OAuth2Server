@@ -528,7 +528,7 @@ public class OAuthService {
       LOG.info("Deleting user with ID " + user.getUserId());
       authenticator.deleteUser(user.getUserId());
 
-      return Response.accepted().build();
+      return Response.noContent().build();
     }
     catch (JsonParsingException | ClassCastException e) {
       throw new BadRequestException("Unable to parse client credentials", e);
