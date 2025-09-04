@@ -514,12 +514,14 @@ public class OAuthService {
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
       RequestingUser user = parseRequestingUser(token);
       if (user.isGuest()) {
+        LOG.warn("Denying deletion request for guest user: " + user.getUserId());
         return Response.status(Status.FORBIDDEN).build();
       }
 
       // make sure credentials match the user to be deleted
       JsonString userIdStr = input.getJsonString("userId");
       if (userIdStr == null || !user.getUserId().equals(userIdStr.toString())) {
+        LOG.warn("Denying deletion request.  Requesting user " + user.getUserId() + " asked to delete user " + userIdStr);
         return Response.status(Status.FORBIDDEN).build();
       }
 
