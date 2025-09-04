@@ -467,9 +467,9 @@ public class AccountDbManager {
   public void anonymizeUser(Long userId) {
 
     // delete all user's account properties
-    String propsSql = DELETE_USER_PROPERTIES
+    String sql = DELETE_USER_PROPERTIES
         .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
-    new SQLRunner(_accountDb.getDataSource(), propsSql, "delete-user-props")
+    new SQLRunner(_accountDb.getDataSource(), sql, "delete-user-props")
       .executeStatement(new Object[] { userId }, new Integer[] { Types.BIGINT });
 
     // put back first_name and last_name with stub values
@@ -477,16 +477,16 @@ public class AccountDbManager {
         new TwoTuple<>(UserInfo.FIRST_NAME_PROP_KEY, "deleted-user"),
         new TwoTuple<>(UserInfo.LAST_NAME_PROP_KEY, userId.toString())
     )) {
-      propsSql = INSERT_PROPERTY_SQL
+      sql = INSERT_PROPERTY_SQL
           .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
-      new SQLRunner(_accountDb.getDataSource(), propsSql, "modify-prop-for-deletion")
+      new SQLRunner(_accountDb.getDataSource(), sql, "modify-prop-for-deletion")
           .executeStatement(new Object[] { userId, propUpdate.getKey(), propUpdate.getValue() }, INSERT_PROPERTY_PARAM_TYPES);
     }
 
     // delete user as subscription group leads
-    String leadsSql = DELETE_USER_GROUP_LEADS
+    sql = DELETE_USER_GROUP_LEADS
         .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
-    new SQLRunner(_accountDb.getDataSource(), leadsSql, "delete-user-as-group-leads")
+    new SQLRunner(_accountDb.getDataSource(), sql, "delete-user-as-group-leads")
       .executeStatement(new Object[] { userId }, new Integer[] { Types.BIGINT });
 
     // modify user props to anonymize and prevent future login or password reset
@@ -495,7 +495,9 @@ public class AccountDbManager {
         new TwoTuple<>(COL_PASSWORD, ""),
         new TwoTuple<>(COL_STABLE_ID, "deleted-user." + userId)
     )) {
-      new SQLRunner(_accountDb.getDataSource(), getUpdateColumnSql(columnUpdate.getKey()), "modify-col-for-deletion")
+      sql = getUpdateColumnSql(columnUpdate.getKey())
+          .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
+      new SQLRunner(_accountDb.getDataSource(), sql, "modify-col-for-deletion")
           .executeStatement(new Object[] { columnUpdate.getValue(), userId }, new Integer[] { Types.VARCHAR, Types.BIGINT });
     }
   }
