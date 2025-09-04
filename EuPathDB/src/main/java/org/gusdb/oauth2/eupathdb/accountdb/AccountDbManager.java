@@ -492,7 +492,7 @@ public class AccountDbManager {
     // modify user props to anonymize and prevent future login or password reset
     for (Entry<String,String> columnUpdate : List.of(
         new TwoTuple<>(COL_EMAIL, "deleted-user." + userId + "@veupathdb.org"),
-        new TwoTuple<>(COL_PASSWORD, ""),
+        new TwoTuple<>(COL_PASSWORD, "noaccess_password"),
         new TwoTuple<>(COL_STABLE_ID, "deleted-user." + userId)
     )) {
       sql = getUpdateColumnSql(columnUpdate.getKey())
