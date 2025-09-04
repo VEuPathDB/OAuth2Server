@@ -524,6 +524,7 @@ public class OAuthService {
       }
 
       // non guest user with proper credentials from an allowed client; delete this user
+      LOG.info("Deleting user with ID " + user.getUserId());
       authenticator.deleteUser(user.getUserId());
 
       return Response.accepted().build();

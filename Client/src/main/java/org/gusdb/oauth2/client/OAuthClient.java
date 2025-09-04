@@ -465,7 +465,9 @@ public class OAuthClient {
           Endpoints.USER_DELETE,
           oauthConfig,
           json -> json.put("userId", token.getUserId()),
-          (builder,entity) -> builder.post(entity)
+          (builder,entity) -> builder
+            .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
+            .post(entity)
       );
     }
     catch (InvalidPropertiesException | ConflictException e) {
