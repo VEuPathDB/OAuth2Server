@@ -477,7 +477,9 @@ public class AccountDbManager {
         new TwoTuple<>(UserInfo.FIRST_NAME_PROP_KEY, "deleted-user"),
         new TwoTuple<>(UserInfo.LAST_NAME_PROP_KEY, userId.toString())
     )) {
-      new SQLRunner(_accountDb.getDataSource(), INSERT_PROPERTY_SQL, "modify-prop-for-deletion")
+      propsSql = INSERT_PROPERTY_SQL
+          .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);
+      new SQLRunner(_accountDb.getDataSource(), propsSql, "modify-prop-for-deletion")
           .executeStatement(new Object[] { userId, propUpdate.getKey(), propUpdate.getValue() }, INSERT_PROPERTY_PARAM_TYPES);
     }
 
