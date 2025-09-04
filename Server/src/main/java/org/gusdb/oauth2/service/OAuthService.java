@@ -24,7 +24,6 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
-import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 import javax.servlet.ServletContext;
@@ -519,7 +518,7 @@ public class OAuthService {
       }
 
       // make sure credentials match the user to be deleted
-      JsonString userIdStr = input.getJsonString("userId");
+      String userIdStr = input.getString("userId");
       if (userIdStr == null || !user.getUserId().equals(userIdStr.toString())) {
         LOG.warn("Denying deletion request.  Requesting user " + user.getUserId() + " asked to delete user " + userIdStr);
         return Response.status(Status.FORBIDDEN).build();
