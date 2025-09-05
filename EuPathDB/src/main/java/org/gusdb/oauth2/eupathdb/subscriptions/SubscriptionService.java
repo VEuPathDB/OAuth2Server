@@ -18,7 +18,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -130,8 +129,8 @@ public class SubscriptionService {
   public Response uploadNewGroupsFile(
       @FormDataParam("file") InputStream uploadedInputStream,
       @FormDataParam("file") FormDataContentDisposition fileDetail,
-      @FormParam("writeToDb") String writeToDbStr,
-      @FormParam("returnGroupDetail") String returnGroupDetailStr) throws IOException {
+      @FormDataParam("writeToDb") String writeToDbStr,
+      @FormDataParam("returnGroupDetail") String returnGroupDetailStr) throws IOException {
 
     assertAdmin();
 
