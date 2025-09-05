@@ -138,8 +138,8 @@ public class SubscriptionService {
 
     LOG.info("Handling upload request. file=" + fileDetail.getFileName() +
         ", writeToDb=" + writeToDbStr + ", returnGroupDetail=" + returnGroupDetailStr);
-    boolean writeToDb = "yes".equals(writeToDbStr);
-    boolean returnGroupDetail = "yes".equals(returnGroupDetailStr);
+    boolean writeToDb = "on".equals(writeToDbStr);
+    boolean returnGroupDetail = "on".equals(returnGroupDetailStr);
 
     // save uploaded file into temporary location
     String uploadedFileLocation = "/tmp/" + fileDetail.getFileName() + "_" + UUID.randomUUID().toString();
