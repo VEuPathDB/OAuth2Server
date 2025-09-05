@@ -27,7 +27,7 @@ public class TestAuthenticator extends AccountDbAuthenticator {
       .toMap();
 
   @Override
-  protected void initialize(ConnectionPoolConfig dbConfig, String userSchema, String[] adminUserIds) {
+  protected void initialize(ConnectionPoolConfig dbConfig, String userSchema, List<String> adminUserIds) {
     LOG.info("Authenticator initialized with userSchema '" + userSchema + "' and dbConfig:\n" + dbConfig);
   }
 
