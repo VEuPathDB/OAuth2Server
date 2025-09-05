@@ -117,9 +117,9 @@ public class SubscriptionGroupReloader {
   private static final String SUBSCRIPTION_TOKEN_KEY = "subscription_token";
 
   private static final int USERID_INDEX = 0;
-  private static final int GROUPCLEAN_INDEX = 12;
-  private static final int HASINVOICE_INDEX = 14;
-  private static final int ISLEAD_INDEX = 15;
+  private static final int GROUPCLEAN_INDEX = 13;
+  private static final int HASINVOICE_INDEX = 15;
+  private static final int ISLEAD_INDEX = 16;
 
   private static final int REQUIRED_NUM_COLS = ISLEAD_INDEX + 1;
 

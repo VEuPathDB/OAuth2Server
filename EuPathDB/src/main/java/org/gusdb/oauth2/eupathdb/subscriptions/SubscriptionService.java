@@ -66,7 +66,7 @@ public class SubscriptionService {
         return;
       }
     }
-    LOG.warn("Attempt by " + userId + " to access admin endpoing denied (must be one of [ " + String.join(", ", adminUserIds) + " ].");
+    LOG.warn("Attempt by " + userId + " to access admin endpoint denied (must be one of [ " + String.join(", ", adminUserIds) + " ].");
     throw new ForbiddenException();
   }
 
