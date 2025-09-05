@@ -3,11 +3,11 @@ from (
     select l.user_id, s.*
     from (
       select g.subscription_token, g.group_name, g.group_id
-      from useraccounts.subscription_groups g, useraccounts.subscriptions s
+      from $$accountschema$$subscription_groups g, $$accountschema$$subscriptions s
       where g.subscription_id = s.subscription_id
       and s.is_active = 1
     ) s
-    left join useraccounts.subscription_group_leads l
+    left join $$accountschema$$subscription_group_leads l
     on l.group_id = s.group_id
 ) g
 left join (
@@ -16,7 +16,7 @@ left join (
       max(case when key = 'first_name' then value end) as first_name,
       max(case when key = 'last_name' then value end) as last_name,
       max(case when key = 'organization' then value end) as organization
-    from useraccounts.account_properties
+    from $$accountschema$$account_properties
     group by user_id
 ) p
 on g.user_id = p.user_id

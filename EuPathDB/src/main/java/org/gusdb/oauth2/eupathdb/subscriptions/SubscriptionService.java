@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
@@ -50,8 +51,8 @@ public class SubscriptionService {
   @Context
   private HttpServletRequest _request;
 
-  private DatabaseInstance getAcctDbDs() {
-    return ((AccountDbAuthenticator) OAuthServlet.getAuthenticator(_context)).getAccountDb();
+  private AccountDbAuthenticator getAuthenticator() {
+    return ((AccountDbAuthenticator) OAuthServlet.getAuthenticator(_context));
   }
 
   private void assertAdmin() {
@@ -78,8 +79,10 @@ public class SubscriptionService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getSubscribedGroups() {
 
-    // TODO: break DB work out of the service class; ok here for now
-    return Response.ok(new SQLRunner(getAcctDbDs().getDataSource(), GROUP_LEADS_SQL).executeQuery(rs -> {
+    AccountDbAuthenticator authenticator = getAuthenticator();
+    DataSource ds = authenticator.getAccountDb().getDataSource();
+    String sql = GROUP_LEADS_SQL.replace("$$accountschema$$", authenticator.getUserAccountsSchema());
+    return Response.ok(new SQLRunner(ds, sql).executeQuery(rs -> {
       Map<String, JSONObject> groups = new LinkedHashMap<>(); // keyed on subscription token
 
       // each row represents a group + group lead (group lead may be null if group has no leads)
@@ -151,8 +154,9 @@ public class SubscriptionService {
       throw e;
     }
 
-    DatabaseInstance acctDb = getAcctDbDs();
-    JSONObject result = new SubscriptionGroupReloader(getAcctDbDs().getDataSource(), acctDb.getPlatform(), acctDb.getDefaultSchema())
+    AccountDbAuthenticator authenticator = getAuthenticator();
+    DatabaseInstance acctDb = authenticator.getAccountDb();
+    JSONObject result = new SubscriptionGroupReloader(acctDb.getDataSource(), acctDb.getPlatform(), authenticator.getUserAccountsSchema())
       .loadSubscriptions(Paths.get(uploadedFileLocation), returnGroupDetail, writeToDb);
 
     return Response.ok(result.toString(2)).build();
