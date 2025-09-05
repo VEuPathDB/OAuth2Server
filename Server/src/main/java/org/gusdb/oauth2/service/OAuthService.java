@@ -491,6 +491,53 @@ public class OAuthService {
     }
   }
 
+  // Using POST here instead of DELETE because we still want an entity body to
+  //   submit client-id and client-secret for a client with perms; some client
+  //   libraries (including Jersey-Client, used by OAuthClient) do not support
+  //   message bodies in DELETEs.
+  @POST
+  @Path(Endpoints.USER_DELETE)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response deleteUser(String body) {
+    try {
+      JsonObject input = Json.createReader(new StringReader(body)).readObject();
+      if (!isUserManagementClient(input)) {
+        return new OAuthResponseFactory().buildInvalidClientResponse();
+      }
+      String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+      Authenticator authenticator = OAuthServlet.getAuthenticator(_context);
+      if (authHeader == null) {
+        return Response.status(Status.UNAUTHORIZED).build();
+      }
+      String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+      RequestingUser user = parseRequestingUser(token);
+      if (user.isGuest()) {
+        LOG.warn("Denying deletion request for guest user: " + user.getUserId());
+        return Response.status(Status.FORBIDDEN).build();
+      }
+
+      // make sure credentials match the user to be deleted
+      String userIdStr = input.getString("userId");
+      if (userIdStr == null || !user.getUserId().equals(userIdStr.toString())) {
+        LOG.warn("Denying deletion request.  Requesting user " + user.getUserId() + " asked to delete user " + userIdStr);
+        return Response.status(Status.FORBIDDEN).build();
+      }
+
+      // non guest user with proper credentials from an allowed client; delete this user
+      LOG.info("Deleting user with ID " + user.getUserId());
+      authenticator.deleteUser(user.getUserId());
+
+      return Response.noContent().build();
+    }
+    catch (JsonParsingException | ClassCastException e) {
+      throw new BadRequestException("Unable to parse client credentials", e);
+    }
+    catch (Exception e) {
+      LOG.error("Unable to edit user profile.", e);
+      throw e;
+    }
+  }
+
   @POST
   @Path(Endpoints.PASSWORD_RESET)
   @Consumes(MediaType.APPLICATION_JSON)
