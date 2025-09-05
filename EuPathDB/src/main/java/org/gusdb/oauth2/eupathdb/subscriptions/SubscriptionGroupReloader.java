@@ -247,7 +247,7 @@ public class SubscriptionGroupReloader {
       result.put("tableCounts", tableCounts);
 
       // first clear out the old data (without disturbing the schema)
-      Map<String,String> cleanCommands = new MapBuilder<String,String>()
+      Map<String,String> cleanCommands = new MapBuilder<String,String>(new LinkedHashMap<>())
           .put("account_properties", "DELETE FROM USERACCOUNTS.ACCOUNT_PROPERTIES WHERE KEY = 'subscription_token'")
           .put("subscription_group_leads", "DELETE FROM USERACCOUNTS.SUBSCRIPTION_GROUP_LEADS")
           .put("subscription_groups", "DELETE FROM USERACCOUNTS.SUBSCRIPTION_GROUPS")
