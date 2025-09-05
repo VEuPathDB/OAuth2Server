@@ -136,8 +136,10 @@ public class SubscriptionService {
 
     assertAdmin();
 
-    boolean writeToDb = "yes".equals("writeToDbStr");
-    boolean returnGroupDetail = "yes".equals("returnGroupDetail");
+    LOG.info("Handling upload request. file=" + fileDetail.getFileName() +
+        ", writeToDb=" + writeToDbStr + ", returnGroupDetail=" + returnGroupDetailStr);
+    boolean writeToDb = "yes".equals(writeToDbStr);
+    boolean returnGroupDetail = "yes".equals(returnGroupDetailStr);
 
     // save uploaded file into temporary location
     String uploadedFileLocation = "/tmp/" + fileDetail.getFileName() + "_" + UUID.randomUUID().toString();

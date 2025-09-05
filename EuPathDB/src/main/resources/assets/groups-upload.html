@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html>
   <body>
+    <h3>Upload New Groups TSV File</h3>
+    <p>Note: this will replace all existing groups data!</p>
     <form method="POST" enctype="multipart/form-data" action="/oauth/groups/upload">
-      Upload AccountDB TSV file: <input type="file" name="file"/><br/>
-      <input type="checkbox" name="returnGroupDetail"/>Return group details<br/>
-      <input type="checkbox" name="writeToDb"/>Write to database?<br/>
+      <h2>Options:</h2>
+      <p><input type="checkbox" name="returnGroupDetail"/> Return group details</p>
+      <p><input type="checkbox" name="writeToDb"/> Write to database?</p>
+      <p>
+        Upload AccountDB TSV file:<br/>
+        <input type="file" name="file"/>
+      </p>
       <input type="submit" value="Submit"/>
     </form>
   </body>
