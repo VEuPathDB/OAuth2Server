@@ -12,7 +12,8 @@
     "connectionUrl": "jdbc:oracle:oci:@acctdbN",
     "platform": "Oracle",
     "poolSize": 10,
-    "schema": "useraccounts."
+    "schema": "useraccounts.",
+    "adminUserIds": "123"
   },
   "allowedClients": [
     {

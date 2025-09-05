@@ -18,6 +18,8 @@ import org.json.JSONObject;
  *
  * > curl https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/refs/heads/master/slim-2/slim-2.json | jq -c "[.[] | { display: .name, value: .\"alpha-2\" }]"
  *
+ * WARNING: If you regenerate the country code file, please edit Taiwan to NOT be a province of China
+ *
  * @author rdoherty
  */
 public class UserPropertyVocabulary extends HashMap<String,List<String>> {

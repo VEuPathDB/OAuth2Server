@@ -16,6 +16,10 @@
       <param-name>oauth.config.file</param-name>
       <param-value>${oauthConfigFile}</param-value>
     </init-param>
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>org.gusdb.oauth2.eupathdb.ServiceApplication</param-value>
+    </init-param>
     <load-on-startup>0</load-on-startup>
   </servlet>
   <servlet-mapping>
