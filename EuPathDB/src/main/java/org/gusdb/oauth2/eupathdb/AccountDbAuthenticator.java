@@ -60,10 +60,11 @@ public class AccountDbAuthenticator implements Authenticator {
 
   private DatabaseInstance _accountDb;
   private String _schema;
-  private String[] _adminUserIds;
+  private List<String> _adminUserIds;
 
   public DatabaseInstance getAccountDb() { return _accountDb; }
   public String getUserAccountsSchema() { return _schema; }
+  public List<String> getAdminUserIds() { return _adminUserIds; }
 
   @Override
   public void initialize(JsonObject configJson) throws InitializationException {
@@ -74,11 +75,11 @@ public class AccountDbAuthenticator implements Authenticator {
         configJson.getString(JsonKey.password.name()),
         (short)configJson.getInt(JsonKey.poolSize.name()));
     String schema = configJson.getString(JsonKey.schema.name());
-    String[] adminUserIds = configJson.getString(JsonKey.adminUserIds.name(), "").split(",");
+    List<String> adminUserIds = List.of(configJson.getString(JsonKey.adminUserIds.name(), "").split(","));
     initialize(dbConfig, schema, adminUserIds);
   }
 
-  protected void initialize(ConnectionPoolConfig dbConfig, String schema, String[] adminUserIds) {
+  protected void initialize(ConnectionPoolConfig dbConfig, String schema, List<String> adminUserIds) {
     LOG.info("Initializing database using: " + dbConfig);
     _accountDb = new DatabaseInstance(dbConfig, true);
     if (!schema.isEmpty() && !schema.endsWith(".")) schema += ".";
@@ -392,10 +393,6 @@ public class AccountDbAuthenticator implements Authenticator {
   public void updateLastLoginTimestamp(String userId) {
     AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
     accountMgr.updateLastLogin(Long.valueOf(userId));
-  }
-
-  public List<String> getAdminUserIds() {
-    return List.of(_adminUserIds);
   }
 
 }

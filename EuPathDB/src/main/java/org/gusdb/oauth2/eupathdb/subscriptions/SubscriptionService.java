@@ -56,15 +56,17 @@ public class SubscriptionService {
 
   private void assertAdmin() {
     Session session = new Session(_request.getSession());
+    String userId = "none";
+    List<String> adminUserIds = ((AccountDbAuthenticator) OAuthServlet.getAuthenticator(_context)).getAdminUserIds();
     if (session.isAuthenticated()) {
       // user is logged in; get user ID and compare to known admin IDs
-      String userId = session.getUserId();
-      List<String> adminUserIds = ((AccountDbAuthenticator) OAuthServlet.getAuthenticator(_context)).getAdminUserIds();
+      userId = session.getUserId();
       if (adminUserIds.contains(userId)) {
         // current user is an admin
         return;
       }
     }
+    LOG.warn("Attempt by " + userId + " to access admin endpoing denied (must be one of [ " + String.join(", ", adminUserIds) + " ].");
     throw new ForbiddenException();
   }
 

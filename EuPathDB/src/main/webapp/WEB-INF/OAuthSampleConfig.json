@@ -13,7 +13,7 @@
     "platform": "Oracle",
     "poolSize": 10,
     "schema": "useraccounts.",
-    "adminUserIds": "376,7145453"
+    "adminUserIds": "123"
   },
   "allowedClients": [
     {
