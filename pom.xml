@@ -4,7 +4,7 @@
   <name>OAuth2</name>
   <artifactId>oauth2</artifactId>
   <packaging>pom</packaging>
-  <version>3.2.2-SNAPSHOT</version>
+  <version>4.0.0-RC6-SNAPSHOT</version>
 
   <parent>
     <groupId>org.gusdb</groupId>

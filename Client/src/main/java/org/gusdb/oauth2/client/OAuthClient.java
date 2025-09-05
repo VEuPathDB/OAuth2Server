@@ -459,6 +459,23 @@ public class OAuthClient {
     ));
   }
 
+  public void deleteUser(OAuthConfig oauthConfig, ValidatedToken token) {
+    try {
+      performCredentialsBasedRequest(
+          Endpoints.USER_DELETE,
+          oauthConfig,
+          json -> json.put("userId", token.getUserId()),
+          (builder,entity) -> builder
+            .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
+            .post(entity)
+      );
+    }
+    catch (InvalidPropertiesException | ConflictException e) {
+      // these should never happen on delete
+      throw new RuntimeException(e);
+    }
+  }
+
   public JSONObject resetPassword(OAuthConfig oauthConfig, String loginName) throws InvalidPropertiesException {
     try {
       return new JSONObject(performCredentialsBasedRequest(
@@ -515,6 +532,11 @@ public class OAuthClient {
       // return new user's user info object
       if (response.getStatus() == 200) {
         return readResponseBody(response);
+      }
+
+      // some requests do not return content; this is ok
+      if (response.getStatus() == 204) {
+        return null;
       }
 
       // check for input validation issues

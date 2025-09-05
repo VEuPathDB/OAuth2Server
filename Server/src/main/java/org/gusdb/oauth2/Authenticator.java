@@ -193,6 +193,13 @@ public interface Authenticator extends AutoCloseable {
   public UserAccountInfo modifyUser(String userId, UserPropertiesRequest userProps) throws IllegalArgumentException, ConflictException, InvalidPropertiesException;
 
   /**
+   * Deletes the user from the system (implementation dependent)
+   *
+   * @param userId ID of user to delete
+   */
+  public void deleteUser(String userId);
+
+  /**
    * Reset the password for the passed login to the passed password value
    *
    * @param loginName login for which to change password
