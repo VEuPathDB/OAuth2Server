@@ -3,6 +3,7 @@ package org.gusdb.oauth2.eupathdb.subscriptions;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Types;
@@ -154,7 +155,7 @@ public class SubscriptionGroupReloader {
 
     // first load accounts file
     LOG.info("Opening accounts file");
-    try (BufferedReader in = new BufferedReader(new FileReader(accountsFile.toFile()))) {
+    try (BufferedReader in = new BufferedReader(new FileReader(accountsFile.toFile(), StandardCharsets.UTF_8))) {
       String[] headerTokens = in.readLine().split("\t"); // read header
 
       JSONArray discoveredColumns = new JSONArray();

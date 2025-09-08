@@ -64,6 +64,8 @@ public class AccountDbAuthenticator implements Authenticator {
 
   public DatabaseInstance getAccountDb() { return _accountDb; }
   public String getUserAccountsSchema() { return _schema; }
+
+  @Override
   public List<String> getAdminUserIds() { return _adminUserIds; }
 
   @Override
