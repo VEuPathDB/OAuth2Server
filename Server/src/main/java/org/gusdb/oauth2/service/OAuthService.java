@@ -511,22 +511,29 @@ public class OAuthService {
         return Response.status(Status.UNAUTHORIZED).build();
       }
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser user = parseRequestingUser(token);
-      if (user.isGuest()) {
-        LOG.warn("Denying deletion request for guest user: " + user.getUserId());
+      RequestingUser requestingUser = parseRequestingUser(token);
+      if (requestingUser.isGuest()) {
+        LOG.warn("Denying deletion request for guest user: " + requestingUser.getUserId());
         return Response.status(Status.FORBIDDEN).build();
       }
 
-      // make sure credentials match the user to be deleted
-      String userIdStr = input.getString("userId");
-      if (userIdStr == null || !user.getUserId().equals(userIdStr.toString())) {
-        LOG.warn("Denying deletion request.  Requesting user " + user.getUserId() + " asked to delete user " + userIdStr);
+      // make sure user ID is specified
+      String userToBeDeleted = input.getString("userId");
+      if (userToBeDeleted == null) {
+        LOG.warn("Request made to delete user but no ID provided.");
+        return Response.status(Status.BAD_REQUEST).entity("No user ID provided.").build();
+      }
+
+      // make sure credentials match the user to be deleted or an admin
+      String requestingUserId = requestingUser.getUserId();
+      if (!(requestingUserId.equals(userToBeDeleted.toString()) || authenticator.getAdminUserIds().contains(requestingUserId))) {
+        LOG.warn("Denying deletion request.  Requesting user " + requestingUser.getUserId() + " asked to delete user " + userToBeDeleted);
         return Response.status(Status.FORBIDDEN).build();
       }
 
       // non guest user with proper credentials from an allowed client; delete this user
-      LOG.info("Deleting user with ID " + user.getUserId());
-      authenticator.deleteUser(user.getUserId());
+      LOG.info("Deleting user with ID " + requestingUser.getUserId());
+      authenticator.deleteUser(requestingUser.getUserId());
 
       return Response.noContent().build();
     }

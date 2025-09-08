@@ -1,6 +1,7 @@
 package org.gusdb.oauth2;
 
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Optional;
 
 import javax.json.JsonObject;
@@ -222,5 +223,12 @@ public interface Authenticator extends AutoCloseable {
    * @param userId user for whom a new token was generated
    */
   public void updateLastLoginTimestamp(String userId);
+
+  /**
+   * Provide a list of admin user IDs for users who can perform admin operations
+   *
+   * @return list of admin user IDs
+   */
+  public List<String> getAdminUserIds();
 
 }
