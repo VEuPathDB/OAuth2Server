@@ -459,12 +459,21 @@ public class OAuthClient {
     ));
   }
 
-  public void deleteUser(OAuthConfig oauthConfig, ValidatedToken token) {
+  /**
+   * Attempts to delete the user with the passed ID.  On the OAuth Server,
+   * the token must represent the user to be deleted (user is deleting
+   * themselves) or must represent an admin user.
+   *
+   * @param oauthConfig configuration of OAuth client
+   * @param token valid bearer token for the user trying to perform this action
+   * @param userIdToDelete ID of the user to delete
+   */
+  public void deleteUser(OAuthConfig oauthConfig, ValidatedToken token, String userIdToDelete) {
     try {
       performCredentialsBasedRequest(
           Endpoints.USER_DELETE,
           oauthConfig,
-          json -> json.put("userId", token.getUserId()),
+          json -> json.put("userId", userIdToDelete),
           (builder,entity) -> builder
             .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
             .post(entity)
