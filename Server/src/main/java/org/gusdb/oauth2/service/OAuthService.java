@@ -531,9 +531,9 @@ public class OAuthService {
         return Response.status(Status.FORBIDDEN).build();
       }
 
-      // non guest user with proper credentials from an allowed client; delete this user
-      LOG.info("Deleting user with ID " + requestingUser.getUserId());
-      authenticator.deleteUser(requestingUser.getUserId());
+      // non guest user with proper credentials from an allowed client; delete specified user
+      LOG.info("Deleting user with ID " + userToBeDeleted);
+      authenticator.deleteUser(userToBeDeleted);
 
       return Response.noContent().build();
     }
