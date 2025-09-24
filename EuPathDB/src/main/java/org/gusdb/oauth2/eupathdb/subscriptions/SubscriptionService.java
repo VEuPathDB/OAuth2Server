@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import javax.servlet.ServletContext;
@@ -68,7 +70,13 @@ public class SubscriptionService {
       ).writeAccountDetails(out);
     };
 
-    return Response.ok(writer).build();
+    String contentDisposition = "attachment; filename=accountdb-dump." +
+    new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv";
+
+    return Response
+        .ok(writer)
+        .header("Content-Disposition", contentDisposition)
+        .build();
   }
 
   @GET
