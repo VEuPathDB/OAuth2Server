@@ -1,8 +1,8 @@
-select g.subscription_token, g.group_name, p.first_name, p.last_name, p.organization
+select g.subscription_token, g.group_name, p.first_name, p.last_name, p.organization, g.display_name as subscriber_name
 from (
     select l.user_id, s.*
     from (
-      select g.subscription_token, g.group_name, g.group_id
+      select g.subscription_token, g.group_name, g.group_id, s.display_name
       from $$accountschema$$subscription_groups g, $$accountschema$$subscriptions s
       where g.subscription_id = s.subscription_id
       and s.is_active = 1

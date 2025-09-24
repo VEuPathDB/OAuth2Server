@@ -36,6 +36,7 @@ import org.gusdb.fgputil.iterator.IteratorUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+@Deprecated
 public class SubscriptionGroupReloader {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionGroupReloader.class);
