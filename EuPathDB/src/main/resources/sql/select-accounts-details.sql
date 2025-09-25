@@ -2,7 +2,7 @@ SELECT
   u.user_id,
   name,
   email,
-  last_login
+  last_login,
   country,
   organization,
   organization_type,
