@@ -57,7 +57,7 @@ public class SubscriptionService {
 
   @GET
   @Path("users")
-  @Produces(TSV_MEDIA_TYPE)
+  @Produces(TSV_MEDIA_TYPE + ";charset=utf-8")
   public Response getAccountsDetails() {
 
     assertAdmin();
@@ -81,7 +81,7 @@ public class SubscriptionService {
 
   @GET
   @Path("groups")
-  @Produces(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
   public Response getSubscribedGroups() {
 
     AccountDbAuthenticator authenticator = getAuthenticator();
@@ -92,4 +92,45 @@ public class SubscriptionService {
 
     return Response.ok(groupsJson.toString(2)).build();
   }
+
+  
+  
+  /* What does Nupur have to do?
+   * 
+   * Main Menu / Back to Main Menu
+   * What do you want to do?
+   * - Add a subscriber -> empty form, redirect to View a Subscriber
+   * - View/Edit a subscriber -> show subscriber name w/group links "Click to View/Edit a Group", edit button
+   * -     edit button goes to form with values filled in and different action link, redirect to View
+   * - Add a group -> empty form, redirect to View a Group
+   * - View/Edit a group -> similar flow
+   * 
+   * Endpoints:
+   * GET  /subscribers (for select box)
+   * POST /subscribers
+   * GET  /subscribers/{id}
+   * POST /subscribers/{id}
+   * POST /groups
+   * GET  /groups/{id}
+   * POST /groups/{id}
+   * GET  /user-names?userId1,userId2 (just for the check!)
+   * 
+   * Add new subscriber:
+- Name
+- IsActive (default to checked)
+
+Add new group:
+- Subscriber (select from subscribers)
+- Name (group_clean) filled in with subscriber name if empty
+- (optional) GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
+
+Update subscription
+- Name
+- IsActive
+
+Update existing group:
+- Name
+- GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
+   */
+  
 }
