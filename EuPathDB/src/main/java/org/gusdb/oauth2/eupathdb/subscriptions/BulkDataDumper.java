@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -60,7 +61,7 @@ public class BulkDataDumper {
   public void writeAccountDetails(OutputStream outStream) {
 
     String sql = ACCOUNTS_DETAILS_SQL.replace(ACCOUNTS_SCHEMA_MACRO, _accountsSchema);
-    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outStream));
+    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outStream, StandardCharsets.UTF_8));
     List<String> buffer = new ArrayList<>();
 
     new SQLRunner(_db.getDataSource(), sql).executeQuery(rs -> {

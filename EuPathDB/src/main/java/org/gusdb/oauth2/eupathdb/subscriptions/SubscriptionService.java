@@ -57,7 +57,7 @@ public class SubscriptionService {
 
   @GET
   @Path("users")
-  @Produces(TSV_MEDIA_TYPE + ";charset=utf-8")
+  @Produces(TSV_MEDIA_TYPE)
   public Response getAccountsDetails() {
 
     assertAdmin();
@@ -81,7 +81,7 @@ public class SubscriptionService {
 
   @GET
   @Path("groups")
-  @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response getSubscribedGroups() {
 
     AccountDbAuthenticator authenticator = getAuthenticator();
