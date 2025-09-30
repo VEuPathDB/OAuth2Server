@@ -29,9 +29,9 @@ public class BulkDataDumper {
   // edit these values to run locally
   private static final String ACCTDB_CONNECTION_URL = "jdbc:oracle:thin:@//localhost:5011/acctdb.upenn.edu";
   private static final String ACCOUNTS_SCHEMA = "useraccounts.";
-  private static final String ACCTDB_USER = "wdkmaint";
-  private static final String ACCTDB_PASS = "gua7yeru";
-  private static final String OUTPUT_FILE = "/home/rdoherty/Desktop/accountdb-dump." + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv";
+  private static final String ACCTDB_USER = "*****";
+  private static final String ACCTDB_PASS = "*****";
+  private static final String OUTPUT_FILE = "/home/myuser/Desktop/accountdb-dump." + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".tsv";
   
   public static void main(String[] args) throws Exception {
     System.out.println("Connecting to database...");
@@ -46,6 +46,7 @@ public class BulkDataDumper {
   }
 
   private static final String ACCOUNTS_SCHEMA_MACRO = "$$accountschema$$";
+  private static final String ALLOWED_IS_ACTIVE_VALUES_MACRO = "$$allowedIsActiveValues$$";
 
   private static final String GROUP_LEADS_SQL = readResourceSql("sql/select-group-leads.sql");
   private static final String ACCOUNTS_DETAILS_SQL = readResourceSql("sql/select-accounts-details.sql");
@@ -90,9 +91,13 @@ public class BulkDataDumper {
     });
   }
 
-  public JSONArray getGroupsJson() {
+  public JSONArray getGroupsJson(boolean includeUnsubscribedGroups) {
 
-    String sql = GROUP_LEADS_SQL.replace(ACCOUNTS_SCHEMA_MACRO, _accountsSchema);
+    String isActiveValues = includeUnsubscribedGroups ? "1, 0" : "1";
+
+    String sql = GROUP_LEADS_SQL
+        .replace(ACCOUNTS_SCHEMA_MACRO, _accountsSchema)
+        .replace(ALLOWED_IS_ACTIVE_VALUES_MACRO, isActiveValues);
 
     return new SQLRunner(_db.getDataSource(), sql).executeQuery(rs -> {
 
@@ -102,6 +107,8 @@ public class BulkDataDumper {
       while (rs.next()) {
 
         // parse columns
+        long groupId = rs.getLong("group_id");
+        long subscriptionId = rs.getLong("subscription_id");
         String subscriptionToken = rs.getString("subscription_token");
         String groupName = rs.getString("group_name");
         String leadFirstName = rs.getString("first_name");
@@ -118,6 +125,8 @@ public class BulkDataDumper {
         JSONObject group = groups.get(subscriptionToken);
         if (group == null) {
           group = new JSONObject()
+              .put("groupId", groupId)
+              .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)

@@ -7,6 +7,10 @@ public class SubscriptionTokenGenerator {
   private static final int SUBSCRIPTION_TOKEN_SIZE = 10;
 
   public static void main(String[] args) {
-    System.out.println(AccountDbAuthenticator.generateRandomChars(SUBSCRIPTION_TOKEN_SIZE));
+    System.out.println(getNewToken());
+  }
+
+  public static String getNewToken() {
+    return AccountDbAuthenticator.generateRandomChars(SUBSCRIPTION_TOKEN_SIZE);
   }
 }
