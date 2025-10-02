@@ -2,7 +2,7 @@ select g.group_id, g.subscription_token, g.group_name, p.first_name, p.last_name
 from (
     select l.user_id, s.*
     from (
-      select g.subscription_token, g.group_name, g.group_id, s.display_name
+      select g.subscription_token, g.group_name, g.group_id, s.display_name, g.subscription_id
       from $$accountschema$$subscription_groups g, $$accountschema$$subscriptions s
       where g.subscription_id = s.subscription_id
       and s.is_active in ($$allowedIsActiveValues$$)
