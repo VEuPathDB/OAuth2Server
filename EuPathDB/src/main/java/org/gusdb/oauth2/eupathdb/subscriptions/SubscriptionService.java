@@ -27,6 +27,8 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.eupathdb.AccountDbAuthenticator;
+import org.gusdb.oauth2.eupathdb.AccountDbInfo;
+import org.gusdb.oauth2.eupathdb.tools.SubscriptionTokenGenerator;
 import org.gusdb.oauth2.server.OAuthServlet;
 import org.gusdb.oauth2.service.Session;
 import org.json.JSONArray;
@@ -49,9 +51,12 @@ public class SubscriptionService {
     return ((AccountDbAuthenticator) OAuthServlet.getAuthenticator(_context));
   }
 
+  private AccountDbInfo getAccountDb() {
+    return getAuthenticator().getAccountDbInfo();
+  }
+
   private SubscriptionManager getSubscriptionManager() {
-    AccountDbAuthenticator authenticator = getAuthenticator();
-    return new SubscriptionManager(authenticator.getAccountDb(), authenticator.getUserAccountsSchema());
+    return new SubscriptionManager(getAccountDb());
   }
 
   private void assertAdmin() {
@@ -78,11 +83,7 @@ public class SubscriptionService {
     assertAdmin();
 
     StreamingOutput writer = out -> {
-      AccountDbAuthenticator authenticator = getAuthenticator();
-      new BulkDataDumper(
-          authenticator.getAccountDb(),
-          authenticator.getUserAccountsSchema()
-      ).writeAccountDetails(out);
+      new BulkDataDumper(getAccountDb()).writeAccountDetails(out);
     };
 
     String contentDisposition = "attachment; filename=accountdb-dump." +
@@ -119,7 +120,8 @@ public class SubscriptionService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response addSubscription(String body) {
     assertAdmin();
-    getSubscriptionManager().addSubscription(new Subscription(new JSONObject(body)));
+    getSubscriptionManager().addSubscription(
+        new Subscription(getAccountDb(), new JSONObject(body)));
     return Response.noContent().build();
   }
 
@@ -139,9 +141,9 @@ public class SubscriptionService {
   @Path("subscriptions/{id}")
   public Response updateSubscription(@PathParam("id") String subscriptionId, String body) {
     assertAdmin();
-    getSubscriptionManager().updateSubscription(new Subscription(subscriptionId, new JSONObject(body)));
+    getSubscriptionManager().updateSubscription(
+        new Subscription(subscriptionId, new JSONObject(body)));
     return Response.noContent().build();
-    
   }
 
 
@@ -149,13 +151,8 @@ public class SubscriptionService {
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-
-    AccountDbAuthenticator authenticator = getAuthenticator();
-    JSONArray groupsJson = new BulkDataDumper(
-        authenticator.getAccountDb(),
-        authenticator.getUserAccountsSchema()
-    ).getGroupsJson(includeUnsubscribedGroups);
-
+    JSONArray groupsJson = new BulkDataDumper(getAccountDb())
+        .getGroupsJson(includeUnsubscribedGroups);
     return Response.ok(groupsJson.toString()).build();
   }
 
@@ -163,7 +160,9 @@ public class SubscriptionService {
   @Path("groups")
   public Response addGroup(String body) {
     assertAdmin();
-    getSubscriptionManager().addGroup(new Group(new JSONObject(body)));
+    getSubscriptionManager().addGroup(
+        new Group(getAccountDb(), new JSONObject(body)),
+        SubscriptionTokenGenerator.getNewToken());
     return Response.noContent().build();
   }
 
@@ -183,7 +182,8 @@ public class SubscriptionService {
   @Path("groups/{id}")
   public Response updateGroup(@PathParam("id") String groupId, String body) {
     assertAdmin();
-    getSubscriptionManager().updateGroup(new Group(groupId, new JSONObject(body)));
+    getSubscriptionManager().updateGroup(
+        new Group(groupId, new JSONObject(body)));
     return Response.noContent().build();
   }
 

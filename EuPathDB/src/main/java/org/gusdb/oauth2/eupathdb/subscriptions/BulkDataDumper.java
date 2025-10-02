@@ -21,6 +21,7 @@ import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
 import org.gusdb.fgputil.db.runner.SQLRunner;
+import org.gusdb.oauth2.eupathdb.AccountDbInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -39,7 +40,7 @@ public class BulkDataDumper {
          DatabaseInstance db = new DatabaseInstance(SimpleDbConfig.create(
             SupportedPlatform.ORACLE, ACCTDB_CONNECTION_URL, ACCTDB_USER, ACCTDB_PASS))) {
       System.out.println("Writing accounts dump...");
-      new BulkDataDumper(db, ACCOUNTS_SCHEMA).writeAccountDetails(output);
+      new BulkDataDumper(new AccountDbInfo(db, ACCOUNTS_SCHEMA)).writeAccountDetails(output);
       System.out.println("Done writing file.");
     }
     System.out.println("Database connection closed.");
@@ -48,24 +49,22 @@ public class BulkDataDumper {
   private static final String ACCOUNTS_SCHEMA_MACRO = "$$accountschema$$";
   private static final String ALLOWED_IS_ACTIVE_VALUES_MACRO = "$$allowedIsActiveValues$$";
 
-  private static final String GROUP_LEADS_SQL = readResourceSql("sql/select-group-leads.sql");
+  private static final String GROUP_LEADS_SQL = readResourceSql("sql/select-group-vocabulary.sql");
   private static final String ACCOUNTS_DETAILS_SQL = readResourceSql("sql/select-accounts-details.sql");
 
-  private final DatabaseInstance _db;
-  private final String _accountsSchema;
+  private final AccountDbInfo _db;
 
-  public BulkDataDumper(DatabaseInstance db, String accountsSchema) {
+  public BulkDataDumper(AccountDbInfo db) {
     _db = db;
-    _accountsSchema = accountsSchema;
   }
 
   public void writeAccountDetails(OutputStream outStream) {
 
-    String sql = ACCOUNTS_DETAILS_SQL.replace(ACCOUNTS_SCHEMA_MACRO, _accountsSchema);
+    String sql = ACCOUNTS_DETAILS_SQL.replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA);
     BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outStream, StandardCharsets.UTF_8));
     List<String> buffer = new ArrayList<>();
 
-    new SQLRunner(_db.getDataSource(), sql).executeQuery(rs -> {
+    new SQLRunner(_db.DATASOURCE, sql).executeQuery(rs -> {
       try {
         int numCols = rs.getMetaData().getColumnCount();
         for (int i = 1; i <= numCols; i++) {
@@ -96,10 +95,10 @@ public class BulkDataDumper {
     String isActiveValues = includeUnsubscribedGroups ? "1, 0" : "1";
 
     String sql = GROUP_LEADS_SQL
-        .replace(ACCOUNTS_SCHEMA_MACRO, _accountsSchema)
+        .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
         .replace(ALLOWED_IS_ACTIVE_VALUES_MACRO, isActiveValues);
 
-    return new SQLRunner(_db.getDataSource(), sql).executeQuery(rs -> {
+    return new SQLRunner(_db.DATASOURCE, sql).executeQuery(rs -> {
 
       Map<String, JSONObject> groups = new LinkedHashMap<>(); // keyed on subscription token
 
@@ -146,7 +145,7 @@ public class BulkDataDumper {
     });
   }
 
-  private static String readResourceSql(String resourceName) {
+  public static String readResourceSql(String resourceName) {
     URL url = Thread.currentThread().getContextClassLoader().getResource(resourceName);
     if (url == null) throw new RuntimeException("Unable to read resource " + resourceName);
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
