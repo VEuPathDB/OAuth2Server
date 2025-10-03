@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>VEuPathDB Subscription Administration Console</title>
+    <script type="application/javascript" src="js/lib/jquery-2.1.1.min.js"></script>
+    <script type="application/javascript" src="js/lib/subscriptions.js"></script>
+  </head>
+  <body>
+    <h1>VEuPathDB Subscription Administration Console</h1>
+    <hr/>
+    <h2>What would you like to do?</h2>
+    <ul>
+      <li>
+        <a href="/oauth/admin/new-subscription.html">Create a new subscriber</a>
+      </li>
+      <li>
+        View/Edit a subscriber by name<br/>
+        <select id="subscriberPicker"></select> <input type="button" value="Go"/>
+      </li>
+      <li>
+        <a href="/oauth/admin/new-group.html">Create a new group</a>
+      </li>
+      <li>
+        View/Edit a group by name<br/>
+        <select id="groupPicker"></select> <input type="button" value="Go"/>
+      </li>
+    </ul>
+  </body>
+</html>

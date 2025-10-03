@@ -9,6 +9,7 @@ public class Endpoints {
   public static final String /* POST */ LOGIN           = "/login";          // submission from HTML form
   public static final String /* POST */ USER_CHANGE_PW  = "/changePassword"; // submission from HTML form
   public static final String /* GET  */ LOGOUT          = "/logout";
+  public static final String /* GET  */ CHECK_ADMIN     = "/check-admin";
   public static final String /* GET  */ AUTHORIZE       = "/authorize";
   public static final String /* POST */ ID_TOKEN        = "/token";          // requires client secret + (auth code or username/password)
   public static final String /* POST */ BEARER_TOKEN    = "/bearer-token";   // requires client secret + (auth code or username/password)
