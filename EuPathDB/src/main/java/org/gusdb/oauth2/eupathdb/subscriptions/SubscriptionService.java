@@ -127,6 +127,7 @@ public class SubscriptionService {
 
   @GET
   @Path("subscriptions/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response getSubscriber(@PathParam("id") String subscriberId) {
     assertAdmin();
     return Response
@@ -168,6 +169,7 @@ public class SubscriptionService {
 
   @GET
   @Path("groups/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response getGroup(@PathParam("id") String groupId) {
     assertAdmin();
     return Response
@@ -189,6 +191,7 @@ public class SubscriptionService {
 
   @GET
   @Path("user-names/{userIds}")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response getUserNames(@PathParam("userIds") String userIdsStr) {
     assertAdmin();
     List<Long> userIds = Arrays.asList(userIdsStr.split(",")).stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
