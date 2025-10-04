@@ -49,7 +49,7 @@ public class BulkDataDumper {
   private static final String ACCOUNTS_SCHEMA_MACRO = "$$accountschema$$";
   private static final String ALLOWED_IS_ACTIVE_VALUES_MACRO = "$$allowedIsActiveValues$$";
 
-  private static final String GROUP_LEADS_SQL = readResourceSql("sql/select-group-vocabulary.sql");
+  private static final String GROUP_VOCABULARY_SQL = readResourceSql("sql/select-group-vocabulary.sql");
   private static final String ACCOUNTS_DETAILS_SQL = readResourceSql("sql/select-accounts-details.sql");
 
   private final AccountDbInfo _db;
@@ -94,7 +94,7 @@ public class BulkDataDumper {
 
     String isActiveValues = includeUnsubscribedGroups ? "1, 0" : "1";
 
-    String sql = GROUP_LEADS_SQL
+    String sql = GROUP_VOCABULARY_SQL
         .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
         .replace(ALLOWED_IS_ACTIVE_VALUES_MACRO, isActiveValues);
 
@@ -109,6 +109,7 @@ public class BulkDataDumper {
         long groupId = rs.getLong("group_id");
         long subscriptionId = rs.getLong("subscription_id");
         String subscriptionToken = rs.getString("subscription_token");
+        boolean isActive = rs.getBoolean("is_active");
         String groupName = rs.getString("group_name");
         String leadFirstName = rs.getString("first_name");
         String leadLastName = rs.getString("last_name");
@@ -127,6 +128,7 @@ public class BulkDataDumper {
               .put("groupId", groupId)
               .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
+              .put("isActive", isActive)
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)
               .put("groupLeads", new JSONArray());

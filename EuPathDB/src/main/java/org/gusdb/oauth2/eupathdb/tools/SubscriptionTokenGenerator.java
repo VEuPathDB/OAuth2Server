@@ -7,7 +7,9 @@ public class SubscriptionTokenGenerator {
   private static final int SUBSCRIPTION_TOKEN_SIZE = 10;
 
   public static void main(String[] args) {
-    System.out.println(getNewToken());
+    for (int i = 0; i < 17; i++) {
+      System.out.println(getNewToken());
+    }
   }
 
   public static String getNewToken() {
