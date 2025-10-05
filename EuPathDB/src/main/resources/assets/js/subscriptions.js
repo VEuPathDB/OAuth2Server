@@ -4,7 +4,7 @@
 $(function() {
 
   // discover URL and id query param if present
-  let pathAray = document.location.pathname.split("/");
+  let pathArray = document.location.pathname.split("/");
   let page = pathArray[pathArray.length - 1];
   let query = window.location.search.substr(1).split("&").filter(p => p.startsWith("id"));
   let id = query.length > 0 ? query[0].substr(3) : undefined;
