@@ -26,11 +26,9 @@ $(function() {
             break;
           case "subscription.html":
             if (id) loadSubscription(id);
-            else setForNewSubscription();
             break;
           case "group.html":
             if (id) loadGroup(id);
-            else setForNewGroup();
             break;
           default:
             console.error("subscriptions.js file loaded for non-standard page");
@@ -87,6 +85,14 @@ function refreshGroupSelect() {
 function visitSubscription() {
   let subscriptionId = $("#subscriptionPicker")[0].selectedOptions[0].value;
   window.location.href = "/oauth/assets/admin/subscription.html?id=" + subscriptionId;
+}
+
+function loadSubscription(id) {
+  $("#title").html("Subscription " + id);
+}
+
+function loadGroup(id) {
+  $("#title").html("Group " + id);
 }
 
 function visitGroup() {
