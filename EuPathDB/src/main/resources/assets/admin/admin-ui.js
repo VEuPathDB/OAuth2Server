@@ -21,7 +21,7 @@ $(function() {
       else {
         // set up the dynamic parts of each page
         switch(page) {
-          case "admin.html":
+          case "home.html":
             loadAdminSelects();
             break;
           case "subscription.html":
@@ -31,7 +31,7 @@ $(function() {
             if (id) loadGroup(id);
             break;
           default:
-            console.error("subscriptions.js file loaded for non-standard page");
+            console.error("Unknown page: " + page);
         }
       }
     },
