@@ -35,13 +35,19 @@ var globalState = {
 };
 
 function loadAdminSelects() {
+  $("#message").html("Loading...");
+  let partsLoaded = 0;
   doGet("/oauth/subscriptions", subs => {
     subscriptionMeta = subs;
     refreshSubscriptionSelect();
+    partsLoaded++;
+    if (partsLoaded == 2) $("#message").html("");
   });
   doGet("/oauth/groups?includeUnsubscribedGroups=true", groups => {
     groupsMeta = groups;
     refreshGroupsSelect();
+    partsLoaded++;
+    if (partsLoaded == 2) $("#message").html("");
   });
 }
 
