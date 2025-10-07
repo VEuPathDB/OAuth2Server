@@ -93,7 +93,9 @@ function visitGroup() {
 }
 
 function loadSubscription(id) {
+  $("#edit").hide();
   doGet("/oauth/subscriptions/" + id, sub => {
+    $("#display").show();
     $("#title").html("Subscription: " + sub.displayName);
     $("#subscriptionId").html(sub.subscriptionId);
     $("#isActive").html(sub.isActive)
@@ -108,12 +110,14 @@ function userArrayToHtml(users) {
 }
 
 function loadGroup(id) {
+  $("#edit").hide();
   const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
   doGet("/oauth/groups/" + id, group => {
     doGet("/oauth/subscriptions", subs => {
+      $("#display").show();
       globalState.subscriptionMeta = subs;
       let sub = subs.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#title").html("Group: " + group.groupName);
+      $("#title").html("Group: " + group.displayName);
       $("#groupId").html(group.groupId);
       $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + (sub.isActive ? " active" : " inactive") + '</a>');
       $("#subscriptionToken").html(group.subscriptionToken);
