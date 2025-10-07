@@ -9,15 +9,18 @@
   <body>
     <h1>VEuPathDB Subscription Administration Console</h1>
     <hr/>
+    <div><a href="/oauth/assets/admin/home.html">Home</a></div>
     <h2 id="title">New Subscription</h2>
 
     <div id="display" style="display: none">
       Subscription ID: <span id="subscriptionId"></span><br/>
       Is Active? <span id="isActive"></span><br/>
-      Groups:<br/><ul id="groups"></ul>
+      Groups:<br/><ul id="groups"></ul><br/>
+      <input type="button" value="Edit" onClick="useEditMode()"/>
     </div>
 
     <div id="edit" style="display: block">
+      <input type="button" value="Cancel" onClick="useDisplayMode()"/>
     </div>
 
   </body>

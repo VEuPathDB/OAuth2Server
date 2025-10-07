@@ -105,10 +105,6 @@ function loadSubscription(id) {
   });
 }
 
-function userArrayToHtml(users) {
-  return users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
-}
-
 function loadGroup(id) {
   $("#edit").hide();
   const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
@@ -125,6 +121,16 @@ function loadGroup(id) {
       $("#members").html(userArrayToHtml(group.members));
     });
   });
+}
+
+function useEditMode() {
+  $("#edit").show();
+  $("#display").hide();
+}
+
+function useDisplayMode() {
+  $("#edit").hide();
+  $("#display").show();
 }
 
 function doGet(url, successCallback) {
