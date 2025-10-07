@@ -34,6 +34,44 @@ import org.gusdb.oauth2.service.Session;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**
+ * What does Nupur have to do?
+ *
+ * Main Menu / Back to Main Menu
+ * What do you want to do?
+ * - Add a subscriber -> empty form, redirect to View a Subscriber
+ * - View/Edit a subscriber -> show subscriber name w/group links "Click to View/Edit a Group", edit button
+ * -     edit button goes to form with values filled in and different action link, redirect to View
+ * - Add a group -> empty form, redirect to View a Group
+ * - View/Edit a group -> similar flow
+ *
+ * Endpoints:
+ * GET  /subscribers (for select box)
+ * POST /subscribers
+ * GET  /subscribers/{id}
+ * POST /subscribers/{id}
+ * POST /groups
+ * GET  /groups/{id}
+ * POST /groups/{id}
+ * GET  /user-names?userId1,userId2 (just for the check!)
+ *
+ * Add new subscriber:
+ * - Name
+ * - IsActive (default to checked)
+ *
+ * Add new group:
+ * - Subscriber (select from subscribers)
+ * - Name (group_clean) filled in with subscriber name if empty
+ * - (optional) GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
+ *
+ * Update subscription
+ * - Name
+ * - IsActive
+ *
+ * Update existing group:
+ * - Name
+ * - GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
+ */
 @Path("/")
 public class SubscriptionService {
 
@@ -95,23 +133,19 @@ public class SubscriptionService {
         .build();
   }
 
-  /**
-   * @return [{ id, name, isActive }]
-   *    round 2: list of groups in the subscription
-   */
   @GET
   @Path("subscriptions")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getSubscriptions() {
     assertAdmin();
     return Response
-      .ok(new JSONArray(
+      .ok(JsonCache.getSubscriptionJson(() -> new JSONArray(
         getSubscriptionManager()
           .getSubscriptions()
           .stream()
           .map(Subscription::toJson)
           .collect(Collectors.toList())
-      ).toString())
+      ).toString()))
       .build();
   }
 
@@ -122,6 +156,7 @@ public class SubscriptionService {
     assertAdmin();
     getSubscriptionManager().addSubscription(
         new Subscription(getAccountDb(), new JSONObject(body)));
+    JsonCache.expireSubscriptionsJson();
     return Response.noContent().build();
   }
 
@@ -144,6 +179,7 @@ public class SubscriptionService {
     assertAdmin();
     getSubscriptionManager().updateSubscription(
         new Subscription(subscriptionId, new JSONObject(body)));
+    JsonCache.expireSubscriptionsJson();
     return Response.noContent().build();
   }
 
@@ -151,9 +187,11 @@ public class SubscriptionService {
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-    JSONArray groupsJson = new BulkDataDumper(getAccountDb())
-        .getGroupsJson(includeUnsubscribedGroups);
-    return Response.ok(groupsJson.toString()).build();
+    return Response.ok(JsonCache.getGroupsJson(() -> 
+      new BulkDataDumper(getAccountDb())
+        .getGroupsJson(includeUnsubscribedGroups)
+        .toString()
+    )).build();
   }
 
   @POST
@@ -163,6 +201,7 @@ public class SubscriptionService {
     getSubscriptionManager().addGroup(
         new Group(getAccountDb(), new JSONObject(body)),
         SubscriptionTokenGenerator.getNewToken());
+    JsonCache.expireGroupsJson();
     return Response.noContent().build();
   }
 
@@ -185,6 +224,7 @@ public class SubscriptionService {
     assertAdmin();
     getSubscriptionManager().updateGroup(
         new Group(groupId, new JSONObject(body)));
+    JsonCache.expireGroupsJson();
     return Response.noContent().build();
   }
 
@@ -200,43 +240,4 @@ public class SubscriptionService {
     return Response.ok(queryResult.toString()).build();
   }
 
-  
-  /* What does Nupur have to do?
-   * 
-   * Main Menu / Back to Main Menu
-   * What do you want to do?
-   * - Add a subscriber -> empty form, redirect to View a Subscriber
-   * - View/Edit a subscriber -> show subscriber name w/group links "Click to View/Edit a Group", edit button
-   * -     edit button goes to form with values filled in and different action link, redirect to View
-   * - Add a group -> empty form, redirect to View a Group
-   * - View/Edit a group -> similar flow
-   * 
-   * Endpoints:
-   * GET  /subscribers (for select box)
-   * POST /subscribers
-   * GET  /subscribers/{id}
-   * POST /subscribers/{id}
-   * POST /groups
-   * GET  /groups/{id}
-   * POST /groups/{id}
-   * GET  /user-names?userId1,userId2 (just for the check!)
-   * 
-   * Add new subscriber:
-- Name
-- IsActive (default to checked)
-
-Add new group:
-- Subscriber (select from subscribers)
-- Name (group_clean) filled in with subscriber name if empty
-- (optional) GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
-
-Update subscription
-- Name
-- IsActive
-
-Update existing group:
-- Name
-- GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
-   */
-  
 }
