@@ -147,7 +147,6 @@ public class SubscriptionService {
     return Response.noContent().build();
   }
 
-
   @GET
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)

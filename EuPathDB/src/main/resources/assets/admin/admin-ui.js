@@ -87,18 +87,40 @@ function visitSubscription() {
   window.location.href = "/oauth/assets/admin/subscription.html?id=" + subscriptionId;
 }
 
-function loadSubscription(id) {
-  $("#title").html("Subscription " + id);
-}
-
-function loadGroup(id) {
-  $("#title").html("Group " + id);
-}
-
 function visitGroup() {
   let groupId = $("#groupPicker")[0].selectedOptions[0].value;
   window.location.href = "/oauth/assets/admin/group.html?id=" + groupId;
-  
+}
+
+function loadSubscription(id) {
+  doGet("/oauth/subscriptions/" + id, sub => {
+    $("#title").html("Subscription: " + sub.displayName);
+    $("#subscriptionId").html(sub.subscriptionId);
+    $("#isActive").html(sub.isActive)
+    $("#groups").html(sub.groups.map(group =>
+        '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.displayName + '(' + group.groupId + ')</a></li>'
+    ));
+  });
+}
+
+function userArrayToHtml(users) {
+  return users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
+}
+
+function loadGroup(id) {
+  const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
+  doGet("/oauth/groups/" + id, group => {
+    doGet("/oauth/subscriptions", subs => {
+      globalState.subscriptionMeta = subs;
+      let sub = subs.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
+      $("#title").html("Group: " + group.groupName);
+      $("#groupId").html(group.groupId);
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + (sub.isActive ? " active" : " inactive") + '</a>');
+      $("#subscriptionToken").html(group.subscriptionToken);
+      $("#leads").html(userArrayToHtml(group.leadUsers));
+      $("#members").html(userArrayToHtml(group.members));
+    });
+  });
 }
 
 function doGet(url, successCallback) {

@@ -223,7 +223,7 @@ public class SubscriptionManager {
           List<Long> leadIds = new ArrayList<>();
           Group g = new Group(
               rs.getLong("group_id"),
-              rs.getLong("subscriptionId"),
+              rs.getLong("subscription_id"),
               rs.getString("group_name"),
               leadIds);
           String subscriptionToken = rs.getString("subscription_token");
