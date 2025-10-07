@@ -22,6 +22,8 @@ public class SubscriptionManager {
 
   private static final String GROUP_USERS_SQL = BulkDataDumper.readResourceSql("sql/select-group-users.sql");
 
+  private static final String SCHEMA_MACRO = "$$accountschema$$";
+
   private final DataSource _ds;
   private final DBPlatform _platform;
   private final String _schema;
@@ -35,9 +37,9 @@ public class SubscriptionManager {
   public List<Subscription> getSubscriptions() {
     String sql = (
         "select subscription_id, is_active, display_name " +
-        "from $$schema$$subscriptions s " +
+        "from " + SCHEMA_MACRO + "subscriptions s " +
         "order by display_name"
-    ).replace("$$schema$$", _schema);
+    ).replace(SCHEMA_MACRO, _schema);
     return new SQLRunner(_ds, sql).executeQuery(rs -> {
       List<Subscription> subs = new ArrayList<>();
       while (rs.next()) {
@@ -52,9 +54,9 @@ public class SubscriptionManager {
 
   public void addSubscription(Subscription subscription) {
     String sql = (
-        "insert into $$schema$$subscriptions " +
+        "insert into " + SCHEMA_MACRO + "subscriptions " +
         "(subscription_id, is_active, display_name) values (?, ?, ?)"
-    ).replace("$$schema$$", _schema);
+    ).replace(SCHEMA_MACRO, _schema);
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             subscription.getSubscriptionId(),
@@ -72,13 +74,13 @@ public class SubscriptionManager {
   public SubscriptionWithGroups getSubscription(long subscriptionId) {
     String sql = (
         "select s.subscription_id, s.is_active, s.display_name, g.group_id, g.group_name, l.user_id " +
-        "from $$schema$$subscriptions s, $$schema$$subscription_groups g " +
-        "left join $$schema$$subscription_group_leads l " +
+        "from " + SCHEMA_MACRO +"subscriptions s, " + SCHEMA_MACRO + "subscription_groups g " +
+        "left join " + SCHEMA_MACRO + "subscription_group_leads l " +
         "on l.group_id = g.group_id " +
         "where s.subscription_id = g.subscription_id " +
         "and g.subscription_id = ? " +
         "order by group_id"
-    ).replace("$$schema$$", _schema);
+    ).replace(SCHEMA_MACRO, _schema);
     Optional<SubscriptionWithGroups> result = new SQLRunner(_ds, sql).executeQuery(
         new Object[] { subscriptionId },
         new Integer[] { Types.BIGINT },
@@ -116,8 +118,8 @@ public class SubscriptionManager {
 
   public void updateSubscription(Subscription subscription) {
     String sql = (
-        "update $$schema$$subscriptions set is_active = ?, displayName = ? where subscription_id = ?"
-    ).replace("$$schema$$", _schema);
+        "update " + SCHEMA_MACRO + "subscriptions set is_active = ?, displayName = ? where subscription_id = ?"
+    ).replace(SCHEMA_MACRO, _schema);
     boolean updated = 0 < new SQLRunner(_ds, sql).executeUpdate(
         new Object[] {
             _platform.convertBoolean(subscription.isActive()),
@@ -138,9 +140,9 @@ public class SubscriptionManager {
   public void addGroup(Group group, String subscriptionToken) {
     // 1. insert the group
     String sql = (
-        "insert into $$schema$$subscription_groups " +
+        "insert into " + SCHEMA_MACRO + "subscription_groups " +
         "(group_id, subscription_id, group_name, subscription_token) values (?, ?, ?, ?)"
-    ).replace("$$schema$$", _schema);
+    ).replace(SCHEMA_MACRO, _schema);
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             group.getGroupId(),
@@ -163,8 +165,8 @@ public class SubscriptionManager {
   public void updateGroup(Group group) {
     // 1. update the group
     String sql = (
-        "update $$schema$$subscription_groups set subscription_id = ?, group_name = ? where group_id = ?"
-    ).replace("$$schema$$", _schema);
+        "update " + SCHEMA_MACRO + "subscription_groups set subscription_id = ?, group_name = ? where group_id = ?"
+    ).replace(SCHEMA_MACRO, _schema);
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             group.getSubscriptionId(),
@@ -180,8 +182,8 @@ public class SubscriptionManager {
 
     // 2. remove any existing group leads (rather than reconcile)
     String removeSql = (
-        "delete from $$schema$$subscription_group_leads where group_id = ?"
-    ).replace("$$schema$$", _schema);
+        "delete from " + SCHEMA_MACRO + "subscription_group_leads where group_id = ?"
+    ).replace(SCHEMA_MACRO, _schema);
     new SQLRunner(_ds, removeSql).executeStatement(
         new Object[] { group.getGroupId() },
         new Integer[] { Types.BIGINT }
@@ -193,9 +195,9 @@ public class SubscriptionManager {
 
   private void insertGroupLeads(Group group) {
     String leadSql = (
-        "insert into $$schema$$subscription_group_leads " +
+        "insert into " + SCHEMA_MACRO + "subscription_group_leads " +
         "(group_id, user_id) values (?, ?)"
-    ).replace("$$schema$$", _schema);
+    ).replace(SCHEMA_MACRO, _schema);
     for (Long leadUserId : group.getGroupLeadIds()) {
       new SQLRunner(_ds, leadSql).executeStatement(
           new Object[] { group.getGroupId(), leadUserId },
@@ -209,12 +211,12 @@ public class SubscriptionManager {
     // 1. Fill in group
     String groupSql = (
         "select s.subscription_id, s.is_active, s.display_name, g.group_id, g.group_name, g.subscription_token, l.user_id " +
-        "from useraccounts.subscriptions s, useraccounts.subscription_groups g " +
-        "left join useraccounts.subscription_group_leads l " +
+        "from " + SCHEMA_MACRO + "subscriptions s, " + SCHEMA_MACRO + "subscription_groups g " +
+        "left join " + SCHEMA_MACRO + "subscription_group_leads l " +
         "on l.group_id = g.group_id " +
         "where s.subscription_id = g.subscription_id " +
         "and g.group_id = ?"
-    ).replace("$$schema$$", _schema);
+    ).replace(SCHEMA_MACRO, _schema);
     TwoTuple<Group,String> group = new SQLRunner(_ds, groupSql).executeQuery(
         new Object[] { groupId },
         new Integer[] { Types.BIGINT },
@@ -242,7 +244,7 @@ public class SubscriptionManager {
     String leadIdsStr = group.getFirst().getGroupLeadIds().stream()
         .map(l -> String.valueOf(l)).collect(Collectors.joining(", "));
     String sql = GROUP_USERS_SQL
-        .replace("$$schema$$", _schema)
+        .replace(SCHEMA_MACRO, _schema)
         .replace("$$userids$$", leadIdsStr);
     return new SQLRunner(_ds, sql).executeQuery(
         new Object[] { group.getSecond() }, // subscription token
