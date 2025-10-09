@@ -201,7 +201,7 @@ function fillGroupNameWithSubscriptionName() {
 }
 
 function checkLeadIds() {
-  var getUserDisplayValue = user => idResult.firstName + " " + idResult.lastName + " (" + idResult.organization + "), " + idResult.email;
+  var getUserDisplayValue = user => user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email;
   var enteredIds = $("#leadIds").val().split(",");
   doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
     $("#resultOfLeadIdCheck").html(enteredIds.map(id => {
