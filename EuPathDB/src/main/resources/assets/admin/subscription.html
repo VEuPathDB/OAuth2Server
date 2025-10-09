@@ -10,17 +10,27 @@
     <h1>VEuPathDB Subscription Administration Console</h1>
     <hr/>
     <div><a href="/oauth/assets/admin/home.html">Home</a></div>
-    <h2 id="title">New Subscription</h2>
+    <h2 id="title"></h2>
 
     <div id="display" style="display: none">
       Subscription ID: <span id="subscriptionId"></span><br/>
       Is Active? <span id="isActive"></span><br/>
       Groups:<br/><ul id="groups"></ul><br/>
-      <input type="button" value="Edit" onClick="useEditMode()"/>
+      <input type="button" value="Edit" onClick="useEditPanel()"/>
     </div>
 
-    <div id="edit" style="display: block">
-      <input type="button" value="Cancel" onClick="useDisplayMode()"/>
+    <div id="edit" style="display: none">
+      <form>
+        <input id="mode" type="hidden"/>
+        Name: <input id="nameInput" type="text"/><br/>
+        Is Active?
+          <select id="isActiveInput">
+            <option value="yes" selected="selected">Yes</option>
+            <option value="no">No</option>
+          </select><br/>
+        <input type="button" value="Save" onclick="saveSubscription()"/>
+        <input style="display: none" id="cancelButton" type="button" value="Cancel" onClick="useDisplayPanel()"/>
+      </form>
     </div>
 
   </body>

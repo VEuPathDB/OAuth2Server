@@ -59,6 +59,13 @@ CREATE TABLE USERACCOUNTS.SUBSCRIPTION_GROUP_LEADS (
      REFERENCES USERACCOUNTS.ACCOUNTS ("USER_ID")
 );
 
+-- Indexes
+CREATE INDEX useraccounts.subscription_groups_idx1
+ON useraccounts.subscription_groups(subscription_id);
+
+CREATE INDEX useraccounts.subscription_group_leads_idx2
+ON useraccounts.subscription_group_leads(group_id);
+
 -- SUBSCRIPTIONS_PKSEQ sequence
 -- NOTE: Care must be taken to set the sequence start value appropriately.
 --       This involves recreating the sequence with different values on

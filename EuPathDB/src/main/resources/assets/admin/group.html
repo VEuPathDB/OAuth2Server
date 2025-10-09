@@ -10,17 +10,30 @@
     <h1>VEuPathDB Subscription Administration Console</h1>
     <hr/>
     <div><a href="/oauth/assets/admin/home.html">Home</a></div>
-    <h2 id="title">New Group</h2>
+    <h2 id="title"></h2>
 
     <div id="display" style="display: none">
-      Group ID: <span id="groupId"></span><br/>
-      Parent Subscription: <span id="subscriptionName"></span><br/>
-      Subscription Token: <span id="subscriptionToken"></span><br/>
+      <p>
+        Group ID: <span id="groupId"></span><br/>
+        Parent Subscription: <span id="subscriptionName"></span><br/>
+        Subscription Token: <span id="subscriptionToken"></span>
+      </p>
       Leads:<br/><ul id="leads"></ul>
       Members:<br/><ul id="members"></ul>
+      <input type="button" value="Edit" onClick="useEditPanel()"/>
     </div>
 
-    <div id="edit" style="display: block">
+    <div id="edit" style="display: none">
+      <form>
+        <input id="mode" type="hidden"/>
+        Choose parent subscription: <select id="subscriptionPicker"></select><br/>
+        <input id="inactiveSubscriptions" type="checkbox" onClick="refreshSubscriptionSelect()"/> Include inactive subscriptions<br/>
+        Group name: <input id="groupNameInput" type="text"/> <input type="button" value="Mirror subscription name" onClick="fillGroupNameWithSubscriptionName()"/><br/>
+        Group lead user IDs (comma delimited): <input id="leadIds" type="text"/> <input type="button" value="Check IDs" onClick="checkLeadIds()"/><br/>
+        <ul id="leadIdCheckList"></ul>
+        <input type="button" value="Save" onclick="saveGroup()"/>
+        <input style="display: none" type="button" value="Cancel" onClick="useDisplayPanel()"/>
+      </form>
     </div>
 
   </body>

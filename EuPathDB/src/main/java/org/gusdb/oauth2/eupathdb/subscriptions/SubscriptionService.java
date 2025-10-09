@@ -152,12 +152,13 @@ public class SubscriptionService {
   @POST
   @Path("subscriptions")
   @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
   public Response addSubscription(String body) {
     assertAdmin();
-    getSubscriptionManager().addSubscription(
-        new Subscription(getAccountDb(), new JSONObject(body)));
+    Subscription sub = new Subscription(getAccountDb(), new JSONObject(body));
+    getSubscriptionManager().addSubscription(sub);
     JsonCache.expireSubscriptionsJson();
-    return Response.noContent().build();
+    return Response.ok(sub.toJson().toString()).build();
   }
 
   @GET
@@ -175,6 +176,7 @@ public class SubscriptionService {
 
   @POST
   @Path("subscriptions/{id}")
+  @Consumes(MediaType.APPLICATION_JSON)
   public Response updateSubscription(@PathParam("id") String subscriptionId, String body) {
     assertAdmin();
     getSubscriptionManager().updateSubscription(
@@ -196,13 +198,15 @@ public class SubscriptionService {
 
   @POST
   @Path("groups")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
   public Response addGroup(String body) {
     assertAdmin();
-    getSubscriptionManager().addGroup(
-        new Group(getAccountDb(), new JSONObject(body)),
+    Group group = new Group(getAccountDb(), new JSONObject(body));
+    getSubscriptionManager().addGroup(group,
         SubscriptionTokenGenerator.getNewToken());
     JsonCache.expireGroupsJson();
-    return Response.noContent().build();
+    return Response.ok(group.toJson().toString()).build();
   }
 
   @GET
@@ -220,6 +224,7 @@ public class SubscriptionService {
 
   @POST
   @Path("groups/{id}")
+  @Consumes(MediaType.APPLICATION_JSON)
   public Response updateGroup(@PathParam("id") String groupId, String body) {
     assertAdmin();
     getSubscriptionManager().updateGroup(
@@ -229,9 +234,9 @@ public class SubscriptionService {
   }
 
   @GET
-  @Path("user-names/{userIds}")
+  @Path("user-names")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserNames(@PathParam("userIds") String userIdsStr) {
+  public Response getUserNames(@QueryParam("userIds") String userIdsStr) {
     assertAdmin();
     List<Long> userIds = Arrays.asList(userIdsStr.split(",")).stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
     JsonValue queryResult = getAuthenticator().executeQuery(

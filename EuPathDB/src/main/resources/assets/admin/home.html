@@ -9,9 +9,12 @@
   <body>
     <h1>VEuPathDB Subscription Administration Console</h1>
     <hr/>
-    <div><span id="message"></span></div>
+    <div id="loading" style="display: none"><img src="/oauth/assets/images/spinner.gif"/> Loading...</div>
     <h2>What would you like to do?</h2>
     <ul>
+      <li>
+        <a href="/oauth/users">Download an AccountDB snapshot (tab-separated-values)</a>
+      </li>
       <li>
         <a href="/oauth/assets/admin/subscription.html">Create a new subscription</a>
       </li>

@@ -1,6 +1,14 @@
-/**
- * Bootstrap various pages
- */
+
+/********************************************
+ *** Bootstrap various pages
+ *******************************************/
+
+var globalState = {
+  loadingRequests: 0,
+  subscriptionMeta: null,
+  groupMeta: null
+};
+
 $(function() {
 
   // discover URL and id query param if present
@@ -22,13 +30,20 @@ $(function() {
         // set up the dynamic parts of each page
         switch(page) {
           case "home.html":
-            loadAdminSelects();
+            loadGroupPicker();
+            loadSubscriptionPicker();
             break;
           case "subscription.html":
-            if (id) loadSubscription(id);
+            if (id)
+              loadSubscription(id);
+            else
+              initNewSubscriptionForm();
             break;
           case "group.html":
-            if (id) loadGroup(id);
+            if (id)
+              loadGroup(id);
+            else
+              initloadNewGroupForm();
             break;
           default:
             console.error("Unknown page: " + page);
@@ -39,31 +54,18 @@ $(function() {
   });
 });
 
-var globalState = {
-  subscriptionMeta: null,
-  groupMeta: null
-};
-
-function ajaxErrorHandler(response, status, error) {
-  let message = "Error occurred:\nStatus: " + status + "\nError: " + error;
-  console.log(message);
-  alert(message);
-}
-
-function loadAdminSelects() {
-  $("#message").html("Loading...");
-  let partsLoaded = 0;
+function loadSubscriptionPicker(additionalCallback) {
   doGet("/oauth/subscriptions", subs => {
     globalState.subscriptionMeta = subs;
     refreshSubscriptionSelect();
-    partsLoaded++;
-    if (partsLoaded == 2) $("#message").html("");
+    if (additionalCallback) additionalCallback();
   });
+}
+
+function loadGroupPicker() {
   doGet("/oauth/groups?includeUnsubscribedGroups=true", groups => {
     globalState.groupMeta = groups;
     refreshGroupSelect();
-    partsLoaded++;
-    if (partsLoaded == 2) $("#message").html("");
   });
 }
 
@@ -79,65 +81,197 @@ function refreshGroupSelect() {
   $("#groupPicker").html(globalState.groupMeta
     .filter(group => showInactiveGroups || group.isActive)
     .map(group => '<option value="' + group.groupId + '">' + group.groupName + '</option>'));
-  
 }
 
-function visitSubscription() {
-  let subscriptionId = $("#subscriptionPicker")[0].selectedOptions[0].value;
+function visitSubscription(subscriptionId) {
+  if (!subscriptionId) subscriptionId = $("#subscriptionPicker")[0].selectedOptions[0].value;
   window.location.href = "/oauth/assets/admin/subscription.html?id=" + subscriptionId;
 }
 
-function visitGroup() {
-  let groupId = $("#groupPicker")[0].selectedOptions[0].value;
+function visitGroup(groupId) {
+  if (!groupId) groupId = $("#groupPicker")[0].selectedOptions[0].value;
   window.location.href = "/oauth/assets/admin/group.html?id=" + groupId;
 }
 
+function initNewSubscriptionForm() {
+  $("#title").html("Add New Subscription");
+  $("#mode").val("new");
+  useEditPanel();
+}
+
 function loadSubscription(id) {
-  $("#edit").hide();
   doGet("/oauth/subscriptions/" + id, sub => {
-    $("#display").show();
     $("#title").html("Subscription: " + sub.displayName);
+    useDisplayPanel();
+
+    // fill display area
     $("#subscriptionId").html(sub.subscriptionId);
     $("#isActive").html(sub.isActive)
     $("#groups").html(sub.groups.map(group =>
         '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.displayName + '(' + group.groupId + ')</a></li>'
     ));
+
+    // fill form
+    $("#mode").val("edit");
+    $("#cancelButton").show();
+    $("#nameInput").val(sub.displayName);
+    let activeValue = isActive ? "yes" : "no";
+    $('#isActiveInput option[value="' + activeValue + '"]').prop('selected', true);
   });
+}
+
+function saveSubscription() {
+  // gather data
+  var isNew = $("#mode").val() == "new";
+  var data = {
+    "name": $("#nameInput").val(),
+    "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
+  };
+  if (isNew) {
+    doPostTest("/oauth/subscriptions", data, response => {
+      visitSubscription(response.subscriptionId);
+    });
+  }
+  else {
+    var subscriptionId = $("#subscriptionId").html();
+    doPostTest("/oauth/subscriptions/" + subscriptionId, data, () => {
+      visitSubscription(subscriptionId);
+    });
+  }
+}
+
+function initloadNewGroupForm() {
+  $("#title").html("Add New Group");
+  $("#mode").val("new");
+  useEditPanel();
+  loadSubscriptionPicker();
 }
 
 function loadGroup(id) {
-  $("#edit").hide();
   const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
   doGet("/oauth/groups/" + id, group => {
-    doGet("/oauth/subscriptions", subs => {
-      $("#display").show();
-      globalState.subscriptionMeta = subs;
-      let sub = subs.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#title").html("Group: " + group.displayName);
-      $("#groupId").html(group.groupId);
+
+    // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
+    loadSubscriptionPicker(() => {
+      $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
+      let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
       $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + (sub.isActive ? " active" : " inactive") + '</a>');
-      $("#subscriptionToken").html(group.subscriptionToken);
-      $("#leads").html(userArrayToHtml(group.leadUsers));
-      $("#members").html(userArrayToHtml(group.members));
     });
+
+    $("#title").html("Group: " + group.displayName);
+    useDisplayPanel();
+
+    // fill display area
+    $("#groupId").html(group.groupId);
+    $("#subscriptionToken").html(group.subscriptionToken);
+    $("#leads").html(userArrayToHtml(group.leadUsers));
+    $("#members").html(userArrayToHtml(group.members));
+
+      // fill form
+    $("#mode").val("edit");
+    $("#cancelButton").show();
+    $("#groupNameInput").val(group.displayName);
+    $("#leadIds").val(group.groupLeadIds.join());
   });
 }
 
-function useEditMode() {
+function saveGroup() {
+  // gather data
+  var isNew = $("#mode").val() == "new";
+  var data = {
+    "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
+    "displayName": $("#groupNameInput").val(),
+    "groupLeadIds": $("#leadIds").val().split(",")
+  };
+  if (isNew) {
+    doPostTest("/oauth/groups", data, response => {
+      visitGroup(response.groupId);
+    });
+  }
+  else {
+    var groupId = $("#groupId").html();
+    doPostTest("/oauth/groups/" + groupId, data, () => {
+      visitGroup(groupId);
+    });
+  }
+}
+
+function fillGroupNameWithSubscriptionName() {
+  $("#groupNameInput").val($("#subscriptionPicker")[0].selectedOptions[0].html());
+}
+
+function checkLeadIds() {
+  var getUserDisplayValue = user => idResult.firstName + " " + idResult.lastName + " (" + idResult.organization + "), " + idResult.email;
+  var enteredIds = $("#leadIds").val().split(",");
+  doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
+    $("#resultOfLeadIdCheck").html(enteredIds.map(id => {
+      var idResult = users.filter(u => u.sub == id)[0];
+      var userStr = idResult.found ? getUserDisplayValue(idResult) : "Not Found";
+      return "<li>" + id + ": " + userStr + "</li>";
+    }));
+  });
+}
+
+/********************************************
+ *** Utilities
+ *******************************************/
+
+function ajaxErrorHandler(response, status, error) {
+  let message = "Error occurred:\nStatus: " + status + "\nError: " + error;
+  console.log(message);
+  alert(message);
+}
+
+function doGet(url, successCallback) {
+  showLoading();
+  $.ajax(url, {
+    cache: false,
+    dataType: "json",
+    success: successCallback,
+    error: ajaxErrorHandler,
+    complete: hideLoading
+  });
+}
+
+function doPost(url, data, successCallback) {
+  showLoading();
+  $.ajax(url, {
+    type: "POST",
+    cache: false,
+    contentType: "application/json",
+    data: JSON.stringify(data),
+    success: successCallback,
+    error: ajaxErrorHandler,
+    complete: hideLoading
+  })
+}
+
+function doPostTest(url, data, successCallback) {
+  alert("Will run a POST to " + url + " with data " + data);
+  successCallback(123);
+}
+
+function showLoading() {
+  globalState.loadingRequests++;
+  if (globalState.loadingRequests > 0) {
+    $("#loading").show();
+  }
+}
+
+function hideLoading() {
+  globalState.loadingRequests--;
+  if (globalState.loadingRequests <= 0) {
+    globalState.loadingRequests = 0;
+    $("#loading").hide();
+  }
+}
+
+function useEditPanel() {
   $("#edit").show();
   $("#display").hide();
 }
 
-function useDisplayMode() {
+function useDisplayPanel() {
   $("#edit").hide();
   $("#display").show();
-}
-
-function doGet(url, successCallback) {
-  $.ajax(url,{
-    cache: false,
-    dataType: "json",
-    success: successCallback,
-    error: ajaxErrorHandler
-  });
 }
