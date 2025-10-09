@@ -114,7 +114,7 @@ function loadSubscription(id) {
     // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
-    $("#nameInput").val(sub.displayName);
+    $("#displayNameInput").val(sub.displayName);
     let activeValue = isActive ? "yes" : "no";
     $('#isActiveInput option[value="' + activeValue + '"]').prop('selected', true);
   });
@@ -124,7 +124,7 @@ function saveSubscription() {
   // gather data
   var isNew = $("#mode").val() == "new";
   var data = {
-    "name": $("#nameInput").val(),
+    "name": $("#displayNameInput").val(),
     "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
   };
   if (isNew) {
@@ -170,8 +170,8 @@ function loadGroup(id) {
       // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
-    $("#groupNameInput").val(group.displayName);
-    $("#leadIds").val(group.groupLeadIds.join());
+    $("#displayNameInput").val(group.displayName);
+    $("#groupLeadIds").val(group.groupLeadIds.join());
   });
 }
 
@@ -180,8 +180,8 @@ function saveGroup() {
   var isNew = $("#mode").val() == "new";
   var data = {
     "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
-    "displayName": $("#groupNameInput").val(),
-    "groupLeadIds": $("#leadIds").val().split(",")
+    "displayName": $("#displayNameInput").val(),
+    "groupLeadIds": $("#groupLeadIds").val().split(",")
   };
   if (isNew) {
     doPostTest("/oauth/groups", data, response => {
@@ -197,12 +197,12 @@ function saveGroup() {
 }
 
 function fillGroupNameWithSubscriptionName() {
-  $("#groupNameInput").val($("#subscriptionPicker")[0].selectedOptions[0].html());
+  $("#displayNameInput").val($("#subscriptionPicker")[0].selectedOptions[0].html());
 }
 
 function checkLeadIds() {
   var getUserDisplayValue = user => user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email;
-  var enteredIds = $("#leadIds").val().split(",");
+  var enteredIds = $("#groupLeadIds").val().split(",");
   doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
     $("#resultOfLeadIdCheck").html(enteredIds.map(id => {
       var idResult = users.filter(u => u.sub == id)[0];
@@ -247,7 +247,7 @@ function doPost(url, data, successCallback) {
 }
 
 function doPostTest(url, data, successCallback) {
-  alert("Will run a POST to " + url + " with data " + data);
+  alert("Will run a POST to " + url + " with data " + JSON.stringify(data);
   successCallback(123);
 }
 
