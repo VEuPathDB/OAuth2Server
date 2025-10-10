@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import javax.ws.rs.NotFoundException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.runner.SQLRunner;
@@ -19,6 +21,8 @@ import org.gusdb.oauth2.eupathdb.subscriptions.Group.SimpleUser;
 import org.gusdb.oauth2.eupathdb.subscriptions.Subscription.SubscriptionWithGroups;
 
 public class SubscriptionManager {
+
+  private static final Logger LOG = LogManager.getLogger(SubscriptionManager.class);
 
   private static final String GROUP_USERS_SQL = BulkDataDumper.readResourceSql("sql/select-group-users.sql");
 
@@ -53,6 +57,7 @@ public class SubscriptionManager {
   }
 
   public void addSubscription(Subscription subscription) {
+    LOG.info("Inserting new subscription: " + subscription.toJson().toString());
     String sql = (
         "insert into " + SCHEMA_MACRO + "subscriptions " +
         "(subscription_id, is_active, display_name) values (?, ?, ?)"
@@ -117,6 +122,7 @@ public class SubscriptionManager {
   }
 
   public void updateSubscription(Subscription subscription) {
+    LOG.info("Updating subscription: " + subscription.toJson().toString());
     String sql = (
         "update " + SCHEMA_MACRO + "subscriptions set is_active = ?, displayName = ? where subscription_id = ?"
     ).replace(SCHEMA_MACRO, _schema);
@@ -138,6 +144,8 @@ public class SubscriptionManager {
   }
 
   public void addGroup(Group group, String subscriptionToken) {
+    LOG.info("Inserting new group: " + group.toJson().toString());
+
     // 1. insert the group
     String sql = (
         "insert into " + SCHEMA_MACRO + "subscription_groups " +
@@ -163,6 +171,8 @@ public class SubscriptionManager {
   }
 
   public void updateGroup(Group group) {
+    LOG.info("Updating group: " + group.toJson().toString());
+
     // 1. update the group
     String sql = (
         "update " + SCHEMA_MACRO + "subscription_groups set subscription_id = ?, group_name = ? where group_id = ?"
