@@ -46,6 +46,8 @@ public class BulkDataDumper {
     System.out.println("Database connection closed.");
   }
 
+  public static final int FETCH_SIZE = 5000;
+
   private static final String ACCOUNTS_SCHEMA_MACRO = "$$accountschema$$";
   private static final String ALLOWED_IS_ACTIVE_VALUES_MACRO = "$$allowedIsActiveValues$$";
 
@@ -87,7 +89,7 @@ public class BulkDataDumper {
       catch (IOException e) {
         throw new RuntimeException("Could not write to output file", e);
       }
-    });
+    }, FETCH_SIZE);
   }
 
   public JSONArray getGroupsJson(boolean includeUnsubscribedGroups) {
@@ -144,7 +146,8 @@ public class BulkDataDumper {
       }
 
       return new JSONArray(groups.values());
-    });
+
+    }, FETCH_SIZE);
   }
 
   public static String readResourceSql(String resourceName) {
