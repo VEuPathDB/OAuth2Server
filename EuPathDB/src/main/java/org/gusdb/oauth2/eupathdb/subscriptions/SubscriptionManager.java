@@ -12,6 +12,7 @@ import javax.ws.rs.NotFoundException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.fgputil.Timer;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.runner.SQLRunner;
@@ -44,9 +45,11 @@ public class SubscriptionManager {
         "from " + SCHEMA_MACRO + "subscriptions s " +
         "order by display_name"
     ).replace(SCHEMA_MACRO, _schema);
+    Timer t = new Timer();
     return new SQLRunner(_ds, sql).executeQuery(rs -> {
       List<Subscription> subs = new ArrayList<>();
       while (rs.next()) {
+        LOG.info(t.getElapsedStringAndRestart());
         //subs.add(new Subscription(
         //    rs.getLong("subscription_id"),
         //    rs.getBoolean("is_active"),
