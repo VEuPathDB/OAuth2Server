@@ -238,7 +238,8 @@ public class SubscriptionService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getUserNames(@QueryParam("userIds") String userIdsStr) {
     assertAdmin();
-    List<Long> userIds = Arrays.asList(userIdsStr.split(",")).stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
+    List<Long> userIds = Arrays.asList(userIdsStr.split(",")).stream()
+        .map(s -> Long.parseLong(s.trim())).collect(Collectors.toList());
     JsonValue queryResult = getAuthenticator().executeQuery(
         Json.createObjectBuilder().add("userIds",
             Json.createArrayBuilder(userIds)).build());

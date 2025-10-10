@@ -155,7 +155,7 @@ function loadGroup(id) {
     loadSubscriptionPicker(() => {
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + (sub.isActive ? " active" : " inactive") + '</a>');
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + "</a> (" + (sub.isActive ? " active" : " inactive") + ")");
     });
 
     $("#title").html("Group: " + group.displayName);
@@ -181,7 +181,7 @@ function saveGroup() {
   var data = {
     "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
     "displayName": $("#displayNameInput").val(),
-    "groupLeadIds": $("#groupLeadIds").val().split(",")
+    "groupLeadIds": getCleanLeadIdsAsArray().join()
   };
   if (isNew) {
     doPost("/oauth/groups", data, response => {
@@ -197,12 +197,16 @@ function saveGroup() {
 }
 
 function fillGroupNameWithSubscriptionName() {
-  $("#displayNameInput").val($("#subscriptionPicker")[0].selectedOptions[0].html());
+  $("#displayNameInput").val($("#subscriptionPicker option:selected").text());
+}
+
+function getCleanLeadIdsAsArray(str) {
+  return $("#groupLeadIds").val().split(",").map(s => s.trim());
 }
 
 function checkLeadIds() {
   var getUserDisplayValue = user => user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email;
-  var enteredIds = $("#groupLeadIds").val().split(",");
+  var enteredIds = getCleanLeadIdsAsArray();
   doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
     $("#resultOfLeadIdCheck").html(enteredIds.map(id => {
       var idResult = users.filter(u => u.sub == id)[0];

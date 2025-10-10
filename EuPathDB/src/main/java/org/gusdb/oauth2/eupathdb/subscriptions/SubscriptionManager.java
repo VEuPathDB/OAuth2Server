@@ -133,7 +133,7 @@ public class SubscriptionManager {
   public void updateSubscription(Subscription subscription) {
     LOG.info("Updating subscription: " + subscription.toJson().toString());
     String sql = (
-        "update " + SCHEMA_MACRO + "subscriptions set is_active = ?, displayName = ? where subscription_id = ?"
+        "update " + SCHEMA_MACRO + "subscriptions set is_active = ?, display_name = ? where subscription_id = ?"
     ).replace(SCHEMA_MACRO, _schema);
     boolean updated = 0 < new SQLRunner(_ds, sql).executeUpdate(
         new Object[] {
