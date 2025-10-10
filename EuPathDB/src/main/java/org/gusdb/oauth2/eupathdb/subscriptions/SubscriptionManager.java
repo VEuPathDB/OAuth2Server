@@ -47,10 +47,10 @@ public class SubscriptionManager {
     return new SQLRunner(_ds, sql).executeQuery(rs -> {
       List<Subscription> subs = new ArrayList<>();
       while (rs.next()) {
-        subs.add(new Subscription(
-            rs.getLong("subscription_id"),
-            rs.getBoolean("is_active"),
-            rs.getString("display_name")));
+        //subs.add(new Subscription(
+        //    rs.getLong("subscription_id"),
+        //    rs.getBoolean("is_active"),
+        //    rs.getString("display_name")));
       }
       return subs;
     });
