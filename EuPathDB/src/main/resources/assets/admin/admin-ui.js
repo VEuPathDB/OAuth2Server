@@ -243,11 +243,11 @@ function doPost(url, data, successCallback) {
     success: successCallback,
     error: ajaxErrorHandler,
     complete: hideLoading
-  })
+  });
 }
 
 function doPostTest(url, data, successCallback) {
-  alert("Will run a POST to " + url + " with data " + JSON.stringify(data);
+  alert("Will run a POST to " + url + " with data " + JSON.stringify(data));
   successCallback(123);
 }
 
