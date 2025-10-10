@@ -124,17 +124,17 @@ function saveSubscription() {
   // gather data
   var isNew = $("#mode").val() == "new";
   var data = {
-    "name": $("#displayNameInput").val(),
+    "displayName": $("#displayNameInput").val(),
     "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
   };
   if (isNew) {
-    doPostTest("/oauth/subscriptions", data, response => {
+    doPost("/oauth/subscriptions", data, response => {
       visitSubscription(response.subscriptionId);
     });
   }
   else {
     var subscriptionId = $("#subscriptionId").html();
-    doPostTest("/oauth/subscriptions/" + subscriptionId, data, () => {
+    doPost("/oauth/subscriptions/" + subscriptionId, data, () => {
       visitSubscription(subscriptionId);
     });
   }
@@ -184,13 +184,13 @@ function saveGroup() {
     "groupLeadIds": $("#groupLeadIds").val().split(",")
   };
   if (isNew) {
-    doPostTest("/oauth/groups", data, response => {
+    doPost("/oauth/groups", data, response => {
       visitGroup(response.groupId);
     });
   }
   else {
     var groupId = $("#groupId").html();
-    doPostTest("/oauth/groups/" + groupId, data, () => {
+    doPost("/oauth/groups/" + groupId, data, () => {
       visitGroup(groupId);
     });
   }
@@ -244,11 +244,6 @@ function doPost(url, data, successCallback) {
     error: ajaxErrorHandler,
     complete: hideLoading
   });
-}
-
-function doPostTest(url, data, successCallback) {
-  alert("Will run a POST to " + url + " with data " + JSON.stringify(data));
-  successCallback(123);
 }
 
 function showLoading() {
