@@ -79,11 +79,12 @@ public class SubscriptionManager {
   public SubscriptionWithGroups getSubscription(long subscriptionId) {
     String sql = (
         "select s.subscription_id, s.is_active, s.display_name, g.group_id, g.group_name, l.user_id " +
-        "from " + SCHEMA_MACRO +"subscriptions s, " + SCHEMA_MACRO + "subscription_groups g " +
+        "from " + SCHEMA_MACRO +"subscriptions s " +
+        "left join " + SCHEMA_MACRO + "subscription_groups g " +
+        "on s.subscription_id = g.subscription_id " +
         "left join " + SCHEMA_MACRO + "subscription_group_leads l " +
         "on l.group_id = g.group_id " +
-        "where s.subscription_id = g.subscription_id " +
-        "and g.subscription_id = ? " +
+        "where s.subscription_id = ? " +
         "order by group_id"
     ).replace(SCHEMA_MACRO, _schema);
     Optional<SubscriptionWithGroups> result = new SQLRunner(_ds, sql).executeQuery(
@@ -98,6 +99,14 @@ public class SubscriptionManager {
               rs.getBoolean("is_active"),
               rs.getString("display_name"));
           List<Group> groups = new ArrayList<>();
+
+          // allow subscriptions with no assigned groups; if group_id in the first row is null, no groups
+          rs.getLong("group_id");
+          if (rs.wasNull()) {
+            return Optional.of(new SubscriptionWithGroups(sub, groups));
+          }
+
+          // at least one group; process them
           do {
             List<Long> leads = new ArrayList<>();
             Group group = new Group(
