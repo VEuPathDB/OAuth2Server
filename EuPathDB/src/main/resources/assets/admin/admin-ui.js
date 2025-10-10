@@ -106,7 +106,7 @@ function loadSubscription(id) {
 
     // fill display area
     $("#subscriptionId").html(sub.subscriptionId);
-    $("#isActive").html(sub.isActive)
+    $("#isActive").html(sub.isActive ? "yes" : "no");
     $("#groups").html(sub.groups.map(group =>
         '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.displayName + '(' + group.groupId + ')</a></li>'
     ));

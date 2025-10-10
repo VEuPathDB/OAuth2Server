@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -111,6 +113,12 @@ public class SubscriptionService {
     }
     LOG.warn("Attempt by " + userId + " to access admin endpoint denied (must be one of [ " + String.join(", ", adminUserIds) + " ].");
     throw new ForbiddenException();
+  }
+
+  @GET
+  @Path("admin")
+  public Response adminRedirect() throws URISyntaxException {
+    return Response.seeOther(new URI("assets/admin/home.html")).build();
   }
 
   @GET
