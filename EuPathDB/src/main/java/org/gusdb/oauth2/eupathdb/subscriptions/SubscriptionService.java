@@ -12,6 +12,7 @@ import javax.json.Json;
 import javax.json.JsonValue;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.ForbiddenException;
@@ -163,10 +164,15 @@ public class SubscriptionService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response addSubscription(String body) {
     assertAdmin();
-    Subscription sub = new Subscription(getAccountDb(), new JSONObject(body));
-    getSubscriptionManager().addSubscription(sub);
-    JsonCache.expireSubscriptionsJson();
-    return Response.ok(sub.toJson().toString()).build();
+    try {
+      Subscription sub = new Subscription(getAccountDb(), new JSONObject(body));
+      getSubscriptionManager().addSubscription(sub);
+      JsonCache.expireSubscriptionsJson();
+      return Response.ok(sub.toJson().toString()).build();
+    }
+    catch (RuntimeException e) {
+      throw translateRuntimeException(e);
+    }
   }
 
   @GET
@@ -187,10 +193,15 @@ public class SubscriptionService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response updateSubscription(@PathParam("id") String subscriptionId, String body) {
     assertAdmin();
-    getSubscriptionManager().updateSubscription(
-        new Subscription(subscriptionId, new JSONObject(body)));
-    JsonCache.expireSubscriptionsJson();
-    return Response.noContent().build();
+    try {
+      getSubscriptionManager().updateSubscription(
+          new Subscription(subscriptionId, new JSONObject(body)));
+      JsonCache.expireSubscriptionsJson();
+      return Response.noContent().build();
+    }
+    catch (RuntimeException e) {
+      throw translateRuntimeException(e);
+    }
   }
 
   @GET
@@ -210,11 +221,16 @@ public class SubscriptionService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response addGroup(String body) {
     assertAdmin();
-    Group group = new Group(getAccountDb(), new JSONObject(body));
-    getSubscriptionManager().addGroup(group,
-        SubscriptionTokenGenerator.getNewToken());
-    JsonCache.expireGroupsJson();
-    return Response.ok(group.toJson().toString()).build();
+    try {
+      Group group = new Group(getAccountDb(), new JSONObject(body));
+      getSubscriptionManager().addGroup(group,
+          SubscriptionTokenGenerator.getNewToken());
+      JsonCache.expireGroupsJson();
+      return Response.ok(group.toJson().toString()).build();
+    }
+    catch (RuntimeException e) {
+      throw translateRuntimeException(e);
+    }
   }
 
   @GET
@@ -235,10 +251,15 @@ public class SubscriptionService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response updateGroup(@PathParam("id") String groupId, String body) {
     assertAdmin();
-    getSubscriptionManager().updateGroup(
-        new Group(groupId, new JSONObject(body)));
-    JsonCache.expireGroupsJson();
-    return Response.noContent().build();
+    try {
+      getSubscriptionManager().updateGroup(
+          new Group(groupId, new JSONObject(body)));
+      JsonCache.expireGroupsJson();
+      return Response.noContent().build();
+    }
+    catch (RuntimeException e) {
+      throw translateRuntimeException(e);
+    }
   }
 
   @GET
@@ -254,4 +275,10 @@ public class SubscriptionService {
     return Response.ok(queryResult.toString()).build();
   }
 
+  private RuntimeException translateRuntimeException(RuntimeException e) {
+    if (e.getCause() != null && e.getCause().getMessage().contains("ORA-00001: unique constraint")) {
+      throw new BadRequestException("Name already in use");
+    }
+    throw e;
+  }
 }
