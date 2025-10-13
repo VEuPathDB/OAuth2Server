@@ -181,7 +181,7 @@ function saveGroup() {
   var data = {
     "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
     "displayName": $("#displayNameInput").val(),
-    "groupLeadIds": getCleanLeadIdsAsArray().join()
+    "groupLeadIds": getCleanLeadIdsAsArray()
   };
   if (isNew) {
     doPost("/oauth/groups", data, response => {
