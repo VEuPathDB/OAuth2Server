@@ -301,4 +301,25 @@ public class SubscriptionManager {
     }
   }
 
+  public void assignUsersToGroup(long groupId, List<Long> userIds) {
+    for (long userId : userIds) {
+      try {
+        String insertSql = "insert into " + _schema + "account_properties (user_id, key, value) " +
+            "values (" + userId + ", 'subscription_token', (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + "))";
+        int insertCount = new SQLRunner(_ds, insertSql).executeUpdate();
+        if (insertCount != 1) throw new RuntimeException("insert subscription token statement executed successfully but inserted " + insertCount + " rows");
+      }
+      catch (Exception e) {
+        if (e.getMessage().contains("unique constraint")) {
+          // user is already a member of a group; overwrite
+          String updateSql = "update " + _schema + "account_properties " +
+              "set value = (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + ") " +
+              "where user_id = " + userId + " and key = 'subscription_token'";
+          int updateCount = new SQLRunner(_ds, updateSql).executeUpdate();
+          if (updateCount != 1) throw new RuntimeException("update subscription token statement executed successfully but updated " + updateCount + " rows");
+        }
+      }
+    }
+  }
+
 }

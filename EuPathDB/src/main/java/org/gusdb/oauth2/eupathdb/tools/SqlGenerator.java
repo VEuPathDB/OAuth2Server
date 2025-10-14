@@ -1,10 +1,8 @@
-package org.gusdb.oauth2.eupathdb.subscriptions;
+package org.gusdb.oauth2.eupathdb.tools;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
-
-import org.gusdb.oauth2.eupathdb.tools.SubscriptionTokenGenerator;
 
 public class SqlGenerator {
 

@@ -56,6 +56,7 @@ public class Group {
   private long _subscriptionId;
   private String _displayName;
   private List<Long> _groupLeadIds;
+  private boolean _makeLeadsMembers = false;
 
   public Group(long groupId, long subscriptionId, String displayName, List<Long> groupLeadIds) {
     _groupId = groupId;
@@ -82,6 +83,7 @@ public class Group {
     for (int i = 0; i < leadsJson.length(); i++) {
       _groupLeadIds.add(leadsJson.getLong(i));
     }
+    _makeLeadsMembers = group.optBoolean("makeLeadsMembers", false);
   }
 
   public long getGroupId() {
@@ -98,6 +100,11 @@ public class Group {
 
   public List<Long> getGroupLeadIds() {
     return _groupLeadIds;
+  }
+
+  // this represents an extra optional action; on incoming groups only
+  public boolean makeLeadsMembers() {
+    return _makeLeadsMembers;
   }
 
   public JSONObject toJson() {

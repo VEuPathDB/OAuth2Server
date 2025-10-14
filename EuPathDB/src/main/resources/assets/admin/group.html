@@ -32,6 +32,10 @@
         Group name: <input id="displayNameInput" type="text"/> <input type="button" value="Mirror subscription name" onClick="fillGroupNameWithSubscriptionName()"/><br/>
         Group lead user IDs (comma delimited): <input id="groupLeadIds" type="text"/> <input type="button" value="Check IDs" onClick="checkLeadIds()"/><br/>
         <ul id="resultOfLeadIdCheck"></ul>
+        Make lead users members of this group? <select id="makeLeadsMembers">
+          <option value="yes" selected="selected">Yes</option>
+          <option value="no">No</option>
+        </select><br/>
         <input type="button" value="Save" onclick="saveGroup()"/>
         <input style="display: none" type="button" value="Cancel" onClick="useDisplayPanel()"/>
       </form>

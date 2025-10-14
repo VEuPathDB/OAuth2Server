@@ -33,6 +33,9 @@ $(function() {
             loadGroupPicker();
             loadSubscriptionPicker();
             break;
+          case "new-combo.html":
+            //nothing to do
+            break;
           case "subscription.html":
             if (id)
               loadSubscription(id);
@@ -181,7 +184,8 @@ function saveGroup() {
   var data = {
     "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
     "displayName": $("#displayNameInput").val(),
-    "groupLeadIds": getCleanLeadIdsAsArray()
+    "groupLeadIds": getCleanLeadIdsAsArray(),
+    "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
   };
   if (isNew) {
     doPost("/oauth/groups", data, response => {
@@ -198,6 +202,27 @@ function saveGroup() {
 
 function fillGroupNameWithSubscriptionName() {
   $("#displayNameInput").val($("#subscriptionPicker option:selected").text());
+}
+
+function saveCombo() {
+  // first, save subscription
+  var data = {
+    "displayName": $("#subscriptionNameInput").val(),
+    "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
+  };
+  doPost("/oauth/subscriptions", data, response => {
+    // successfully created; save off subscription ID
+    var subscriptionId = response.subscriptionId;
+    var data = {
+      "subscriptionId": subscriptionId,
+      "displayName": $("#groupNameInput").val(),
+      "groupLeadIds": getCleanLeadIdsAsArray(),
+      "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
+    };
+    doPost("/oauth/groups", data, response => {
+      visitGroup(response.groupId);
+    });
+  });
 }
 
 function getCleanLeadIdsAsArray(str) {

@@ -225,6 +225,9 @@ public class SubscriptionService {
       Group group = new Group(getAccountDb(), new JSONObject(body));
       getSubscriptionManager().addGroup(group,
           SubscriptionTokenGenerator.getNewToken());
+      if (group.makeLeadsMembers()) {
+        getSubscriptionManager().assignUsersToGroup(group.getGroupId(), group.getGroupLeadIds());
+      }
       JsonCache.expireGroupsJson();
       return Response.ok(group.toJson().toString()).build();
     }
@@ -252,8 +255,11 @@ public class SubscriptionService {
   public Response updateGroup(@PathParam("id") String groupId, String body) {
     assertAdmin();
     try {
-      getSubscriptionManager().updateGroup(
-          new Group(groupId, new JSONObject(body)));
+      Group group = new Group(groupId, new JSONObject(body));
+      getSubscriptionManager().updateGroup(group);
+      if (group.makeLeadsMembers()) {
+        getSubscriptionManager().assignUsersToGroup(group.getGroupId(), group.getGroupLeadIds());
+      }
       JsonCache.expireGroupsJson();
       return Response.noContent().build();
     }

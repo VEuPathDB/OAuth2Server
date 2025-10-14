@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>VEuPathDB Subscription Group</title>
+    <script type="application/javascript" src="../js/lib/jquery-3.7.1.min.js"></script>
+    <script type="application/javascript" src="admin-ui.js"></script>
+  </head>
+  <body style="line-height: 1.5">
+    <h1>VEuPathDB Subscription Administration Console</h1>
+    <hr/>
+    <div id="loading" style="display: none"><h3><img height="16" src="/oauth/assets/images/spinner.gif"/> Loading...</h3></div>
+    <div><a href="/oauth/assets/admin/home.html">Home</a></div>
+    <h2 id="title">Add a New Single-Group Subscription</h2>
+
+    <div>
+      <form>
+        Subscription name: <input id="subscriptionNameInput" type="text"/> <input type="button" value="Use same name for group" onClick="$('#groupNameInput').val($('#subscriptionNameInput').val())"/><br/>
+        Is Active? <select id="isActiveInput">
+          <option value="yes" selected="selected">Yes</option>
+          <option value="no">No</option>
+        </select><br/>
+        Group name: <input id="groupNameInput" type="text"/><br/>
+        Group lead user IDs (comma delimited): <input id="groupLeadIds" type="text"/> <input type="button" value="Check IDs" onClick="checkLeadIds()"/><br/>
+        <ul id="resultOfLeadIdCheck"></ul>
+        Make lead users members of this group? <select id="makeLeadsMembers">
+          <option value="yes" selected="selected">Yes</option>
+          <option value="no">No</option>
+        </select><br/>
+        <input type="button" value="Save" onclick="saveCombo()"/>
+      </form>
+    </div>
+
+  </body>
+</html>
