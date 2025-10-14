@@ -83,7 +83,7 @@ public class Group {
     for (int i = 0; i < leadsJson.length(); i++) {
       _groupLeadIds.add(leadsJson.getLong(i));
     }
-    _makeLeadsMembers = group.optBoolean("makeLeadsMembers", false);
+    _makeLeadsMembers = group.getBoolean("makeLeadsMembers");
   }
 
   public long getGroupId() {

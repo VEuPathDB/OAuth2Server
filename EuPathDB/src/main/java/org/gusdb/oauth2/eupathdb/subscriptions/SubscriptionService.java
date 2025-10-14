@@ -225,6 +225,7 @@ public class SubscriptionService {
       Group group = new Group(getAccountDb(), new JSONObject(body));
       getSubscriptionManager().addGroup(group,
           SubscriptionTokenGenerator.getNewToken());
+      LOG.info("Creating new group. makeLeadsMembers = " + group.makeLeadsMembers());
       if (group.makeLeadsMembers()) {
         getSubscriptionManager().assignUsersToGroup(group.getGroupId(), group.getGroupLeadIds());
       }
@@ -257,6 +258,7 @@ public class SubscriptionService {
     try {
       Group group = new Group(groupId, new JSONObject(body));
       getSubscriptionManager().updateGroup(group);
+      LOG.info("Updating group. makeLeadsMembers = " + group.makeLeadsMembers());
       if (group.makeLeadsMembers()) {
         getSubscriptionManager().assignUsersToGroup(group.getGroupId(), group.getGroupLeadIds());
       }
