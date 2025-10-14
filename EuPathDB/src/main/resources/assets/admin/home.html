@@ -13,25 +13,35 @@
     <h2>What would you like to do?</h2>
     <ul>
       <li>
-        <a href="/oauth/users">Download an AccountDB snapshot (tab-separated-values)</a>
+        <h3>Download</h3>
+        <ul>
+          <li><a href="/oauth/users">AccountDB snapshot (tab-separated-values)</a></li>
+        </ul>
       </li>
       <li>
-        <a href="/oauth/assets/admin/subscription.html">Create a new subscription</a>
+        <h3>Create</h3>
+        <ul>
+          <li><a href="/oauth/assets/admin/new-combo.html">New Single-Group Subscription With Group</a></li>
+          <li><a href="/oauth/assets/admin/subscription.html">New Subscription</a></li>
+          <li><a href="/oauth/assets/admin/group.html">New group</a></li>
+        </ul>
       </li>
       <li>
-        View/Edit a subscription by name<br/>
-        <select id="subscriptionPicker"></select><br/>
-        <input id="inactiveSubscriptions" type="checkbox" onClick="refreshSubscriptionSelect()"/> Include inactive subscriptions<br/>
-        <input type="button" value="Go" onClick="visitSubscription()"/>
-      </li>
-      <li>
-        <a href="/oauth/assets/admin/group.html">Create a new group</a>
-      </li>
-      <li>
-        View/Edit a group by name<br/>
-        <select id="groupPicker"></select><br/>
-        <input id="inactiveGroups" type="checkbox" onClick="refreshGroupSelect()"/> Include inactive groups<br/>
-        <input type="button" value="Go" onClick="visitGroup()"/>
+        <h3>View/Edit</h3>
+        <ul>
+          <li>
+            <h4>Existing Subscription By Name</h4>
+            <select id="subscriptionPicker"></select><br/>
+            <input id="inactiveSubscriptions" type="checkbox" onClick="refreshSubscriptionSelect()"/> Include inactive subscriptions<br/>
+            <input type="button" value="Go" onClick="visitSubscription()"/>
+          </li>
+          <li>
+            <h4>Existing Group By Name</h4>
+            <select id="groupPicker"></select><br/>
+            <input id="inactiveGroups" type="checkbox" onClick="refreshGroupSelect()"/> Include inactive groups<br/>
+            <input type="button" value="Go" onClick="visitGroup()"/>
+          </li>
+        </ul>
       </li>
     </ul>
   </body>
