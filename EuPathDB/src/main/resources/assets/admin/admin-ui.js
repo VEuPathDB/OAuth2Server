@@ -52,7 +52,7 @@ $(function() {
               initloadNewGroupForm(id);
             break;
           case "user-assignment.html":
-            loadUserAssignment();
+            loadUserAssignment(id);
             break;
           default:
             console.error("Unknown page: " + page);
