@@ -196,7 +196,7 @@ function loadGroup(id) {
     $("#mode").val("edit");
     $("#cancelButton").show();
     $("#displayNameInput").val(group.displayName);
-    $("#groupLeadIds").val(group.groupLeadIds.join());
+    $("#userIds").val(group.groupLeadIds.join());
   });
 }
 
