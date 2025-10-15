@@ -24,7 +24,7 @@ $(function() {
         let host = window.location.hostname;
         window.location.href = "https://" + host + "/oauth/authorize?" +
             "response_type=code&scope=openid email&state=12345&client_id=apiComponentSite&" +
-            "redirect_uri=https://" + host + "/oauth/assets/admin/home.html";
+            "redirect_uri=" + encodeURIComponent(window.location.href);
       }
       else {
         // show the page body (hidden until admin check)
