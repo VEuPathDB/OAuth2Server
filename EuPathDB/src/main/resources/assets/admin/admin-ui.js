@@ -276,7 +276,7 @@ function assignUsersToGroup() {
  *******************************************/
 
 function ajaxErrorHandler(response, status, error) {
-  let message = "Error occurred:\nError: " + error + "\nMessage: " + response;
+  let message = "Error occurred:\nError: " + error + "\nMessage: " + response.responseText;
   console.log(message);
   alert(message);
 }
