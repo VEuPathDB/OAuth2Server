@@ -139,8 +139,10 @@ function loadSubscription(id) {
     $("#mode").val("edit");
     $("#cancelButton").show();
     $("#displayNameInput").val(sub.displayName);
-    let activeValue = isActive ? "yes" : "no";
-    $('#isActiveInput option[value="' + activeValue + '"]').prop('selected', true);
+    let selectedValue = isActive ? "yes" : "no";
+    let unselectedValue = isActive ? "no" : "yes";
+    $('#isActiveInput option[value="' + selectedValue + '"]').prop('selected', true);
+    $('#isActiveInput option[value="' + unselectedValue + '"]').prop('selected', false);
   });
 }
 
