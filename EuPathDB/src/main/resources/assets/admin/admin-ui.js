@@ -27,6 +27,9 @@ $(function() {
             "redirect_uri=https://" + host + "/oauth/assets/admin/home.html";
       }
       else {
+        // show the page body (hidden until admin check)
+        $("body").show();
+
         // set up the dynamic parts of each page
         switch(page) {
           case "home.html":
