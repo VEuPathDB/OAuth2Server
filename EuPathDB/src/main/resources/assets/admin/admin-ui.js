@@ -120,7 +120,6 @@ function loadUserAssignment(groupId) {
 function initNewSubscriptionForm() {
   $("#title").html("Add New Subscription");
   $("#mode").val("new");
-  $('#isActiveInput option[value="yes"]').prop('selected', true);
   useEditPanel();
 }
 
@@ -140,7 +139,7 @@ function loadSubscription(id) {
     $("#mode").val("edit");
     $("#cancelButton").show();
     $("#displayNameInput").val(sub.displayName);
-    let selectedValue = isActive ? "yes" : "no";
+    let selectedValue = sub.isActive ? "yes" : "no";
     $('#isActiveInput option[value="' + selectedValue + '"]').prop('selected', true);
     
   });
