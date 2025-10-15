@@ -262,8 +262,10 @@ public class SubscriptionManager {
     );
 
     // 2. Look up users associated with the group
-    String leadIdsStr = group.getFirst().getGroupLeadIds().stream()
-        .map(l -> String.valueOf(l)).collect(Collectors.joining(", "));
+    List<Long> leadIds = group.getFirst().getGroupLeadIds();
+    String leadIdsStr = leadIds.isEmpty() ? "-1" // need to put an integer here or in clause will fail
+        : leadIds.stream().map(l -> String.valueOf(l)).collect(Collectors.joining(", "));
+
     String sql = GROUP_USERS_SQL
         .replace(SCHEMA_MACRO, _schema)
         .replace("$$userids$$", leadIdsStr);
