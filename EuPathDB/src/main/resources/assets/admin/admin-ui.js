@@ -120,6 +120,7 @@ function loadUserAssignment(groupId) {
 function initNewSubscriptionForm() {
   $("#title").html("Add New Subscription");
   $("#mode").val("new");
+  $('#isActiveInput option[value="yes"]').prop('selected', true);
   useEditPanel();
 }
 
@@ -140,9 +141,8 @@ function loadSubscription(id) {
     $("#cancelButton").show();
     $("#displayNameInput").val(sub.displayName);
     let selectedValue = isActive ? "yes" : "no";
-    let unselectedValue = isActive ? "no" : "yes";
     $('#isActiveInput option[value="' + selectedValue + '"]').prop('selected', true);
-    $('#isActiveInput option[value="' + unselectedValue + '"]').prop('selected', false);
+    
   });
 }
 
@@ -181,7 +181,7 @@ function loadGroup(id) {
     loadSubscriptionPicker(() => {
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + "</a> (" + (sub.isActive ? " active" : " inactive") + ")");
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + "</a> (" + (sub.isActive ? "active" : "inactive") + ")");
     });
 
     $("#title").html("Group: " + group.displayName);
@@ -249,7 +249,7 @@ function saveCombo() {
 }
 
 function getCleanUserIdsAsArray() {
-  return $("#userIds").val().split(",").map(s => s.trim());
+  return $("#userIds").val().split(",").map(s => s.trim()).filter(s => s !== "");
 }
 
 function checkUserIds() {
