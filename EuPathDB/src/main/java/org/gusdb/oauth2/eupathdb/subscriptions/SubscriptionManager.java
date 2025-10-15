@@ -1,6 +1,7 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.runner.SQLRunner;
+import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
 import org.gusdb.oauth2.eupathdb.subscriptions.Group.GroupWithUsers;
 import org.gusdb.oauth2.eupathdb.subscriptions.Group.SimpleUser;
@@ -310,18 +312,21 @@ public class SubscriptionManager {
         int insertCount = new SQLRunner(_ds, insertSql).executeUpdate();
         if (insertCount != 1) throw new RuntimeException("insert subscription token statement executed successfully but inserted " + insertCount + " rows");
       }
-      catch (Exception e) {
-        LOG.warn("Failed. Will try to update row to make " + userId + " a member of " + groupId, e);
-        //if (e.getMessage().contains("unique constraint")) {
+      catch (SQLRunnerException e) {
+        LOG.warn("Failed. Will try to update row to make " + userId + " a member of " + groupId);
+        if (e.getCause() instanceof SQLIntegrityConstraintViolationException) {
           // user is already a member of a group; overwrite
           String updateSql = "update " + _schema + "account_properties " +
               "set value = (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + ") " +
               "where user_id = " + userId + " and key = 'subscription_token'";
           int updateCount = new SQLRunner(_ds, updateSql).executeUpdate();
           if (updateCount != 1) throw new RuntimeException("update subscription token statement executed successfully but updated " + updateCount + " rows");
-        //}
+        }
+        else {
+          // something else went wrong; handle error in the normal way
+          throw e;
+        }
       }
     }
   }
-
 }
