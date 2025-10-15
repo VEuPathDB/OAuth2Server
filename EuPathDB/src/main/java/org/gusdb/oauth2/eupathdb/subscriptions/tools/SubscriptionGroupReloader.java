@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.eupathdb.subscriptions;
+package org.gusdb.oauth2.eupathdb.subscriptions.tools;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
