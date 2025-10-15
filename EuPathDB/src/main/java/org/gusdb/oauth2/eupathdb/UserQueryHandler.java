@@ -51,7 +51,7 @@ public class UserQueryHandler {
       switch(ValidQueryTypePropKey.valueOf(submittedQueryType)) {
 
         case userId:
-          long requestedUserId = Long.valueOf(querySpec.getInt(ValidQueryTypePropKey.userId.name()));
+          long requestedUserId = querySpec.getJsonNumber(ValidQueryTypePropKey.userId.name()).longValue();
           return getUserJsonById(requestedUserId);
 
         case userIds:
@@ -59,7 +59,7 @@ public class UserQueryHandler {
           JsonArrayBuilder idOutputArray = Json.createArrayBuilder();
           Map<Long,JsonObject> idCache = new HashMap<>();
           for (int i = 0; i < idInputArray.size(); i++) {
-            idOutputArray.add(idCache.computeIfAbsent(Integer.valueOf(idInputArray.getInt(i)).longValue(), id -> getUserJsonById(id)));
+            idOutputArray.add(idCache.computeIfAbsent(idInputArray.getJsonNumber(i).longValue(), id -> getUserJsonById(id)));
           }
           return idOutputArray.build();
 
