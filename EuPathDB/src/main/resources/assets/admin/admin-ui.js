@@ -254,6 +254,7 @@ function getCleanUserIdsAsArray() {
 function checkUserIds() {
   var getUserDisplayValue = user => user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email;
   var enteredIds = getCleanUserIdsAsArray();
+  if (enteredIds.length == 0) return; // do nothing for empty textbox
   doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
     $("#resultOfUserIdCheck").html(enteredIds.map(id => {
       var idResult = users.filter(u => u.sub == id)[0];
