@@ -13,7 +13,8 @@
       <a href="/oauth/assets/admin/home.html">Home</a> |
       <a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a> |
       <a href="/oauth/assets/admin/subscription.html">New Subscription</a> |
-      <a href="/oauth/assets/admin/group.html">New Group</a>
+      <a href="/oauth/assets/admin/group.html">New Group</a> |
+      <a href="/oauth/assets/admin/user-assignment.html">Assign Users</a>
     </div>
     <hr/>
 
@@ -23,19 +24,31 @@
 
     <div>
       <form>
-        Subscription name: <input id="subscriptionNameInput" type="text"/> <input type="button" value="Use same name for group" onClick="$('#groupNameInput').val($('#subscriptionNameInput').val())"/><br/>
-        Is Active? <select id="isActiveInput">
-          <option value="yes" selected="selected">Yes</option>
-          <option value="no">No</option>
-        </select><br/>
-        Group name: <input id="groupNameInput" type="text"/><br/>
-        Group lead user IDs (comma delimited): <input id="groupLeadIds" type="text"/> <input type="button" value="Check IDs" onClick="checkLeadIds()"/><br/>
-        <ul id="resultOfLeadIdCheck"></ul>
-        Make lead users members of this group? <select id="makeLeadsMembers">
-          <option value="yes" selected="selected">Yes</option>
-          <option value="no">No</option>
-        </select><br/>
-        <input type="button" value="Save" onclick="saveCombo()"/>
+        <p>
+          Subscription name: <input id="subscriptionNameInput" type="text"/>
+          <input type="button" value="Use same name for group" onClick="$('#groupNameInput').val($('#subscriptionNameInput').val())"/>
+        </p>
+        <p>
+          Is Active? <select id="isActiveInput">
+            <option value="yes" selected="selected">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </p>
+        <p>Group name: <input id="groupNameInput" type="text"/></p>
+        <p>Group lead user IDs (comma delimited): <input id="userIds" type="text"/> <input type="button" value="Check IDs" onClick="checkUserIds()"/></p>
+        <ul id="resultOfUserIdCheck"></ul>
+        <p>
+          Note: Although users can be leads of more than one group, each user can only be a member of one group.
+          If a user specified above is already a member of a group, and you select 'Yes' below, that user's membership
+          will be removed and the user will be assigned to this group.
+        </p>
+        <p>
+          Make lead users members of this group? <select id="makeLeadsMembers">
+            <option value="yes" selected="selected">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </p>
+        <p><input type="button" value="Save" onclick="saveCombo()"/></p>
       </form>
     </div>
 
