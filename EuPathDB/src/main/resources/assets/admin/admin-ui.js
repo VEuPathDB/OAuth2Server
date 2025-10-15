@@ -238,7 +238,7 @@ function saveCombo() {
     var data = {
       "subscriptionId": subscriptionId,
       "displayName": $("#groupNameInput").val(),
-      "groupLeadIds": getCleanLeadIdsAsArray(),
+      "groupLeadIds": getCleanUserIdsAsArray(),
       "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
     };
     doPost("/oauth/groups", data, response => {
