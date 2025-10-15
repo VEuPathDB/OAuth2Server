@@ -205,7 +205,7 @@ function saveGroup() {
   var data = {
     "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
     "displayName": $("#displayNameInput").val(),
-    "groupLeadIds": getUserIdsAsArray(),
+    "groupLeadIds": getCleanUserIdsAsArray(),
     "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
   };
   if (isNew) {
