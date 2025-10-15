@@ -3,6 +3,7 @@ package org.gusdb.oauth2.eupathdb.subscriptions;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -194,8 +195,13 @@ public class SubscriptionService {
   public Response updateSubscription(@PathParam("id") String subscriptionId, String body) {
     assertAdmin();
     try {
+      // make sure this is a legit subscription ID
+      getSubscriptionManager().getSubscription(Long.valueOf(subscriptionId));
+
+      // update subscription
       getSubscriptionManager().updateSubscription(
           new Subscription(subscriptionId, new JSONObject(body)));
+
       JsonCache.expireSubscriptionsJson();
       return Response.noContent().build();
     }
@@ -208,7 +214,7 @@ public class SubscriptionService {
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-    return Response.ok(JsonCache.getGroupsJson(() -> 
+    return Response.ok(JsonCache.getGroupsJson(() ->
       new BulkDataDumper(getAccountDb())
         .getGroupsJson(includeUnsubscribedGroups)
         .toString()
@@ -256,13 +262,44 @@ public class SubscriptionService {
   public Response updateGroup(@PathParam("id") String groupId, String body) {
     assertAdmin();
     try {
+      // make sure this is a legit group ID
+      getSubscriptionManager().getGroup(Long.valueOf(groupId));
+
+      // update group
       Group group = new Group(groupId, new JSONObject(body));
       getSubscriptionManager().updateGroup(group);
-      LOG.info("Updating group. makeLeadsMembers = " + group.makeLeadsMembers());
       if (group.makeLeadsMembers()) {
         getSubscriptionManager().assignUsersToGroup(group.getGroupId(), group.getGroupLeadIds());
       }
+
       JsonCache.expireGroupsJson();
+      return Response.noContent().build();
+    }
+    catch (RuntimeException e) {
+      throw translateRuntimeException(e);
+    }
+  }
+
+  @POST
+  @Path("groups/{id}/add-members")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response assignUsersToGroup(@PathParam("id") String groupIdStr, String body) {
+    assertAdmin();
+    try {
+      // make sure this is a legit group ID
+      long groupId = Long.valueOf(groupIdStr);
+      getSubscriptionManager().getGroup(groupId);
+
+      // parse user IDs from request body
+      JSONArray userIdsJson = new JSONArray(body);
+      List<Long> userIds = new ArrayList<>();
+      for (int i = 0; i < userIdsJson.length(); i++) {
+        userIds.add(userIdsJson.getLong(i));
+      }
+
+      // assign all passed users to this group
+      getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+
       return Response.noContent().build();
     }
     catch (RuntimeException e) {

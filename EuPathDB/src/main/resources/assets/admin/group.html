@@ -13,7 +13,8 @@
       <a href="/oauth/assets/admin/home.html">Home</a> |
       <a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a> |
       <a href="/oauth/assets/admin/subscription.html">New Subscription</a> |
-      <a href="/oauth/assets/admin/group.html">New Group</a>
+      <a href="/oauth/assets/admin/group.html">New Group</a> |
+      <a href="/oauth/assets/admin/user-assignment.html">Assign Users</a>
     </div>
     <hr/>
 
@@ -30,6 +31,7 @@
       Leads:<br/><ul id="leads"></ul>
       Members:<br/><ul id="members"></ul>
       <input type="button" value="Edit" onClick="useEditPanel()"/>
+      <input type="button" value="Assign Users" onClick="visitAssignUsersPage($('#groupId').html())"/>
     </div>
 
     <div id="edit" style="display: none">
@@ -38,8 +40,8 @@
         Choose parent subscription: <select id="subscriptionPicker"></select><br/>
         <input id="inactiveSubscriptions" type="checkbox" onClick="refreshSubscriptionSelect()"/> Include inactive subscriptions<br/>
         Group name: <input id="displayNameInput" type="text"/> <input type="button" value="Mirror subscription name" onClick="fillGroupNameWithSubscriptionName()"/><br/>
-        Group lead user IDs (comma delimited): <input id="groupLeadIds" type="text"/> <input type="button" value="Check IDs" onClick="checkLeadIds()"/><br/>
-        <ul id="resultOfLeadIdCheck"></ul>
+        Group lead user IDs (comma delimited): <input id="userIds" type="text"/> <input type="button" value="Check IDs" onClick="checkUserIds()"/><br/>
+        <ul id="resultOfUserIdCheck"></ul>
         Make lead users members of this group? <select id="makeLeadsMembers">
           <option value="yes" selected="selected">Yes</option>
           <option value="no">No</option>

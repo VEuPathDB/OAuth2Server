@@ -18,30 +18,19 @@
     </div>
     <hr/>
 
-    <h2 id="title"></h2>
+    <h2 id="title">Assign Users' Group Membership</h2>
 
     <div id="loading" style="display: none"><h3><img height="16" src="/oauth/assets/images/spinner.gif"/> Loading...</h3></div>
 
-    <div id="display" style="display: none">
-      Subscription ID: <span id="subscriptionId"></span><br/>
-      Is Active? <span id="isActive"></span><br/>
-      Groups:<br/><ul id="groups"></ul><br/>
-      <input type="button" value="Edit" onClick="useEditPanel()"/>
-    </div>
-
-    <div id="edit" style="display: none">
-      <form>
-        <input id="mode" type="hidden"/>
-        Name: <input id="displayNameInput" type="text"/><br/>
-        Is Active?
-          <select id="isActiveInput">
-            <option value="yes" selected="selected">Yes</option>
-            <option value="no">No</option>
-          </select><br/>
-        <input type="button" value="Save" onclick="saveSubscription()"/>
-        <input style="display: none" id="cancelButton" type="button" value="Cancel" onClick="useDisplayPanel()"/>
-      </form>
-    </div>
+    <p>
+      Choose a group: <select id="groupPicker"></select><br/>
+      <input id="inactiveGroups" type="checkbox" onClick="refreshGroupSelect()"/> Include inactive groups<br/>
+    </p>
+    <p>
+      Enter user IDs (comma delimited): <input id="userIds" type="text"/> <input type="button" value="Check IDs" onClick="checkUserIds()"/>
+    </p>
+    <ul id="resultOfUserIdCheck"></ul>
+    <input type="button" value="Assign Users To Group" onClick="assignUsersToGroup()"/>
 
   </body>
 </html>

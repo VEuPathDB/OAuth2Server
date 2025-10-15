@@ -46,7 +46,10 @@ $(function() {
             if (id)
               loadGroup(id);
             else
-              initloadNewGroupForm();
+              initloadNewGroupForm(id);
+            break;
+          case "user-assignment.html":
+            loadUserAssignment();
             break;
           default:
             console.error("Unknown page: " + page);
@@ -65,10 +68,11 @@ function loadSubscriptionPicker(additionalCallback) {
   });
 }
 
-function loadGroupPicker() {
+function loadGroupPicker(additionalCallback) {
   doGet("/oauth/groups?includeUnsubscribedGroups=true", groups => {
     globalState.groupMeta = groups;
     refreshGroupSelect();
+    if (additionalCallback) additionalCallback();
   });
 }
 
@@ -94,6 +98,20 @@ function visitSubscription(subscriptionId) {
 function visitGroup(groupId) {
   if (!groupId) groupId = $("#groupPicker")[0].selectedOptions[0].value;
   window.location.href = "/oauth/assets/admin/group.html?id=" + groupId;
+}
+
+function visitAssignUsersPage(groupId) {
+  if (!groupId) groupId = $("#groupPicker")[0].selectedOptions[0].value;
+  window.location.href = "/oauth/assets/admin/user-assignment.html?id=" + groupId;
+}
+
+function loadUserAssignment(groupId) {
+  // load groups; once loaded, choose the passed group if present
+  loadGroupPicker(() => {
+    if (groupId) {
+      $('#groupPicker option[value="' + groupId + '"]').prop('selected', true);
+    }
+  });
 }
 
 function initNewSubscriptionForm() {
@@ -184,7 +202,7 @@ function saveGroup() {
   var data = {
     "subscriptionId": $("#subscriptionPicker")[0].selectedOptions[0].value,
     "displayName": $("#displayNameInput").val(),
-    "groupLeadIds": getCleanLeadIdsAsArray(),
+    "groupLeadIds": getUserIdsAsArray(),
     "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
   };
   if (isNew) {
@@ -225,19 +243,27 @@ function saveCombo() {
   });
 }
 
-function getCleanLeadIdsAsArray(str) {
-  return $("#groupLeadIds").val().split(",").map(s => s.trim());
+function getCleanUserIdsAsArray() {
+  return $("#userIds").val().split(",").map(s => s.trim());
 }
 
-function checkLeadIds() {
+function checkUserIds() {
   var getUserDisplayValue = user => user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email;
-  var enteredIds = getCleanLeadIdsAsArray();
+  var enteredIds = getCleanUserIdsAsArray();
   doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
-    $("#resultOfLeadIdCheck").html(enteredIds.map(id => {
+    $("#resultOfUserIdCheck").html(enteredIds.map(id => {
       var idResult = users.filter(u => u.sub == id)[0];
       var userStr = idResult.found ? getUserDisplayValue(idResult) : "Not Found";
       return "<li>" + id + ": " + userStr + "</li>";
     }));
+  });
+}
+
+function assignUsersToGroup() {
+  var groupId = $("#groupPicker")[0].selectedOptions[0].value;
+  var data = getCleanUserIdsAsArray();
+  doPost("/oauth/groups/" + groupId + "/add-members", data, response => {
+    visitGroup(groupId);
   });
 }
 
