@@ -136,7 +136,7 @@ function loadSubscription(id) {
     $("#subscriptionId").text(sub.subscriptionId);
     $("#isActive").text(sub.isActive ? "yes" : "no");
     $("#groups").html(sub.groups.map(group =>
-        '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + sanitizeText(group.displayName) + '(' + group.groupId + ')</a></li>'
+        '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.groupId + ': ' + sanitizeText(group.displayName) + '</a></li>'
     ));
 
     // fill form
