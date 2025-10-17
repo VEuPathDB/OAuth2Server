@@ -39,42 +39,27 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * What does Nupur have to do?
+ * Provides the following endpoints to support the subscription management:
  *
- * Main Menu / Back to Main Menu
- * What do you want to do?
- * - Add a subscriber -> empty form, redirect to View a Subscriber
- * - View/Edit a subscriber -> show subscriber name w/group links "Click to View/Edit a Group", edit button
- * -     edit button goes to form with values filled in and different action link, redirect to View
- * - Add a group -> empty form, redirect to View a Group
- * - View/Edit a group -> similar flow
+ * GET  /admin                       redirects to admin homepage
+ * GET  /subscribers                 data to fill subscribers select box
+ * POST /subscribers                 create a new subscriber
+ * GET  /subscribers/{id}            get an existing subscriber
+ * POST /subscribers/{id}            edit an existing subscriber
+ * POST /groups                      create a new group
+ * GET  /groups/{id}                 get an existing group
+ * POST /groups/{id}                 edit an existing group
+ * POST /groups/{id}/add-members     adds users to an existing group (as members, not leads)
+ * GET  /user-names?userId1,userId2  returns username details to allow admins to check IDs
  *
- * Endpoints:
- * GET  /subscribers (for select box)
- * POST /subscribers
- * GET  /subscribers/{id}
- * POST /subscribers/{id}
- * POST /groups
- * GET  /groups/{id}
- * POST /groups/{id}
- * GET  /user-names?userId1,userId2 (just for the check!)
- *
- * Add new subscriber:
+ * Mutable subscriber fields:
  * - Name
  * - IsActive (default to checked)
  *
- * Add new group:
+ * Mutable group fields:
  * - Subscriber (select from subscribers)
  * - Name (group_clean) filled in with subscriber name if empty
  * - (optional) GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
- *
- * Update subscription
- * - Name
- * - IsActive
- *
- * Update existing group:
- * - Name
- * - GroupLeadUserIDs (comma-delimited) maybe with check button to show name?
  */
 @Path("/")
 public class SubscriptionService {
