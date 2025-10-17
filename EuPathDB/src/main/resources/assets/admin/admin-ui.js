@@ -79,18 +79,22 @@ function loadGroupPicker(additionalCallback) {
   });
 }
 
+function sanitizeText(text) {
+  return $('<div>').text(text).html();
+}
+
 function refreshSubscriptionSelect() {
   let showInactiveSubs = $("#inactiveSubscriptions")[0].checked;
   $("#subscriptionPicker").html(globalState.subscriptionMeta
     .filter(sub => showInactiveSubs || sub.isActive)
-    .map(sub => '<option value="' + sub.subscriptionId + '">' + sub.displayName + '</option>'));
+    .map(sub => '<option value="' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + '</option>'));
 }
 
 function refreshGroupSelect() {
   let showInactiveGroups = $("#inactiveGroups")[0].checked;
   $("#groupPicker").html(globalState.groupMeta
     .filter(group => showInactiveGroups || group.isActive)
-    .map(group => '<option value="' + group.groupId + '">' + group.groupName + '</option>'));
+    .map(group => '<option value="' + group.groupId + '">' + sanitizeText(group.groupName) + '</option>'));
 }
 
 function visitSubscription(subscriptionId) {
@@ -118,21 +122,21 @@ function loadUserAssignment(groupId) {
 }
 
 function initNewSubscriptionForm() {
-  $("#title").html("Add New Subscription");
+  $("#title").text("Add New Subscription");
   $("#mode").val("new");
   useEditPanel();
 }
 
 function loadSubscription(id) {
   doGet("/oauth/subscriptions/" + id, sub => {
-    $("#title").html("Subscription: " + sub.displayName);
+    $("#title").text("Subscription: " + sub.displayName);
     useDisplayPanel();
 
     // fill display area
-    $("#subscriptionId").html(sub.subscriptionId);
-    $("#isActive").html(sub.isActive ? "yes" : "no");
+    $("#subscriptionId").text(sub.subscriptionId);
+    $("#isActive").text(sub.isActive ? "yes" : "no");
     $("#groups").html(sub.groups.map(group =>
-        '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.displayName + '(' + group.groupId + ')</a></li>'
+        '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + sanitizeText(group.displayName) + '(' + group.groupId + ')</a></li>'
     ));
 
     // fill form
@@ -166,29 +170,29 @@ function saveSubscription() {
 }
 
 function initloadNewGroupForm() {
-  $("#title").html("Add New Group");
+  $("#title").text("Add New Group");
   $("#mode").val("new");
   useEditPanel();
   loadSubscriptionPicker();
 }
 
 function loadGroup(id) {
-  const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + user.name + " (" + user.organization + ")</li>");
+  const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")</li>");
   doGet("/oauth/groups/" + id, group => {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sub.displayName + "</a> (" + (sub.isActive ? "active" : "inactive") + ")");
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (" + (sub.isActive ? "active" : "inactive") + ")");
     });
 
-    $("#title").html("Group: " + group.displayName);
+    $("#title").text("Group: " + group.displayName);
     useDisplayPanel();
 
     // fill display area
-    $("#groupId").html(group.groupId);
-    $("#subscriptionToken").html(group.subscriptionToken);
+    $("#groupId").text(group.groupId);
+    $("#subscriptionToken").text(group.subscriptionToken);
     $("#leads").html(userArrayToHtml(group.leadUsers));
     $("#members").html(userArrayToHtml(group.members));
 
@@ -252,7 +256,7 @@ function getCleanUserIdsAsArray() {
 }
 
 function checkUserIds() {
-  var getUserDisplayValue = user => user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email;
+  var getUserDisplayValue = user => sanitizeText(user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email);
   var enteredIds = getCleanUserIdsAsArray();
   if (enteredIds.length == 0) return; // do nothing for empty textbox
   doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
