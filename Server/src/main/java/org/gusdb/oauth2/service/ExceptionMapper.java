@@ -10,6 +10,7 @@ import jakarta.ws.rs.ext.Provider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.server.ParamException.PathParamException;
+import org.json.JSONException;
 
 @Provider
 public class ExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<Exception> {
@@ -21,6 +22,14 @@ public class ExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<Except
 
     LOG.error("Error processing request", e);
     try { throw e; }
+
+    // typically parsing errors are because of bad input
+    catch (JSONException | NumberFormatException e400) {
+      return Response.status(Status.BAD_REQUEST)
+          .type(MediaType.TEXT_PLAIN)
+          .entity(e400.getMessage())
+          .build();
+    }
 
     catch (NotFoundException | PathParamException e404) {
       return Response.status(Status.NOT_FOUND)

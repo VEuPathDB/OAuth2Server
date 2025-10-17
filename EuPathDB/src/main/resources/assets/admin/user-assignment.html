@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>VEuPathDB Subscription</title>
+    <script type="application/javascript" src="../js/lib/jquery-3.7.1.min.js"></script>
+    <script type="application/javascript" src="admin-ui.js"></script>
+  </head>
+  <body style="line-height: 1.5; display: none">
+    <h1>VEuPathDB Subscription Administration Console</h1>
+    <hr/>
+    <div>
+      <a href="/oauth/assets/admin/home.html">Home</a> |
+      <a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a> |
+      <a href="/oauth/assets/admin/subscription.html">New Subscription</a> |
+      <a href="/oauth/assets/admin/group.html">New Group</a> |
+      <a href="/oauth/assets/admin/user-assignment.html">Assign Users</a> |
+      <a href="/oauth/logout">Log Out</a>
+    </div>
+    <hr/>
+
+    <h2 id="title">Assign Users' Group Membership</h2>
+
+    <div id="loading" style="display: none"><h3><img height="16" src="/oauth/assets/images/spinner.gif"/> Loading...</h3></div>
+
+    <p>
+      Choose a group: <select id="groupPicker"></select><br/>
+      <input id="inactiveGroups" type="checkbox" checked onClick="refreshGroupSelect()"/> Include inactive groups<br/>
+    </p>
+    <p>
+      Note: Each user can only be a member of one group.  If a user specified below is already a member of a group,
+      that membership will be removed and the user will be assigned the the group selected above.
+    </p>
+    <p>
+      Enter user IDs (comma delimited): <input id="userIds" type="text"/> <input type="button" value="Check IDs" onClick="checkUserIds()"/>
+    </p>
+    <ul id="resultOfUserIdCheck"></ul>
+    <p>
+      <input type="button" value="Assign Users To Group" onClick="assignUsersToGroup()"/>
+    </p>
+
+  </body>
+</html>

@@ -1,4 +1,4 @@
-package org.gusdb.oauth2.eupathdb.subscriptions;
+package org.gusdb.oauth2.eupathdb.subscriptions.tools;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -36,6 +36,7 @@ import org.gusdb.fgputil.iterator.IteratorUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+@Deprecated
 public class SubscriptionGroupReloader {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionGroupReloader.class);

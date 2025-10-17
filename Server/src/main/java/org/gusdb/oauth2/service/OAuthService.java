@@ -118,6 +118,16 @@ public class OAuthService {
         .orElse(Response.status(Status.NOT_FOUND).build());
   }
 
+  @GET
+  @Path(Endpoints.CHECK_ADMIN)
+  @Produces(MediaType.TEXT_PLAIN)
+  public Response checkAdmin() {
+    Session session = new Session(_request.getSession());
+    String userId = session.getUserId();
+    String responseText = userId == null || !OAuthServlet.getAuthenticator(_context).getAdminUserIds().contains(userId) ? "no" : "yes";
+    return Response.ok(responseText).build();
+  }
+
   @POST
   @Path(Endpoints.LOGIN)
   @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -530,9 +540,10 @@ public class OAuthService {
         return Response.status(Status.FORBIDDEN).build();
       }
 
-      // non guest user with proper credentials from an allowed client; delete this user
-      LOG.info("Deleting user with ID " + requestingUser.getUserId());
-      authenticator.deleteUser(requestingUser.getUserId());
+      // non guest user with proper credentials from an allowed client; delete specified user
+      LOG.info("Deleting user with ID " + userToBeDeleted);
+      authenticator.deleteUser(userToBeDeleted);
+      LOG.info("User deleted with ID" + userToBeDeleted);
 
       return Response.noContent().build();
     }

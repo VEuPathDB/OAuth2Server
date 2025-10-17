@@ -8,6 +8,7 @@ import jakarta.ws.rs.core.Application;
 import org.gusdb.oauth2.service.ExceptionMapper;
 import org.gusdb.oauth2.service.IFrameAllowanceFilter;
 import org.gusdb.oauth2.service.OAuthService;
+import org.gusdb.oauth2.service.RequestLoggingFilter;
 
 public class ServiceApplication extends Application {
 
@@ -15,6 +16,7 @@ public class ServiceApplication extends Application {
   public Set<Class<?>> getClasses() {
     Set<Class<?>> classes = new HashSet<>();
     classes.add(ExceptionMapper.class);
+    classes.add(RequestLoggingFilter.class);
     classes.add(OAuthService.class);
     classes.add(IFrameAllowanceFilter.class);
     return classes;

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>VEuPathDB Subscription Administration Console</title>
+    <script type="application/javascript" src="../js/lib/jquery-3.7.1.min.js"></script>
+    <script type="application/javascript" src="admin-ui.js"></script>
+  </head>
+  <body style="line-height: 1.5; display: none">
+    <h1>VEuPathDB Subscription Administration Console</h1>
+    <hr/>
+    <div>
+      <a href="/oauth/assets/admin/home.html">Home</a> |
+      <a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a> |
+      <a href="/oauth/assets/admin/subscription.html">New Subscription</a> |
+      <a href="/oauth/assets/admin/group.html">New Group</a> |
+      <a href="/oauth/assets/admin/user-assignment.html">Assign Users</a> |
+      <a href="/oauth/logout">Log Out</a>
+    </div>
+    <hr/>
+
+    <div id="loading" style="display: none"><h3><img height="16" src="/oauth/assets/images/spinner.gif"/> Loading...</h3></div>
+
+    <h2>What would you like to do?</h2>
+    <ul>
+      <li>
+        <h3>Download</h3>
+        <ul>
+          <li><a href="/oauth/users">AccountDB snapshot (tab-separated-values)</a></li>
+        </ul>
+      </li>
+      <li>
+        <h3>Create</h3>
+        <ul>
+          <li><a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a></li>
+          <li><a href="/oauth/assets/admin/subscription.html">New Subscription</a></li>
+          <li><a href="/oauth/assets/admin/group.html">New Group</a></li>
+        </ul>
+      </li>
+      <li>
+        <h3>View/Edit</h3>
+        <ul>
+          <li>
+            <h4>Existing Subscription By Name</h4>
+            <select id="subscriptionPicker"></select><br/>
+            <input id="inactiveSubscriptions" type="checkbox" onClick="refreshSubscriptionSelect()"/> Include inactive subscriptions<br/>
+            <input type="button" value="Visit Subscription" onClick="visitSubscription()"/>
+          </li>
+          <li>
+            <h4>Existing Group By Name</h4>
+            <select id="groupPicker"></select><br/>
+            <input id="inactiveGroups" type="checkbox" onClick="refreshGroupSelect()"/> Include inactive groups<br/>
+            <input type="button" value="Visit Group" onClick="visitGroup()"/>
+            <input type="button" value="Assign Users To Group" onClick="visitAssignUsersPage()"/>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </body>
+</html>
