@@ -27,6 +27,8 @@ import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
+import org.gusdb.fgputil.db.slowquery.QueryLogConfig;
+import org.gusdb.fgputil.db.slowquery.QueryLogger;
 import org.gusdb.fgputil.functional.Functions;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.InitializationException;
@@ -62,8 +64,11 @@ public class AccountDbAuthenticator implements Authenticator {
   private String _schema;
   private List<String> _adminUserIds;
 
-  public DatabaseInstance getAccountDb() { return _accountDb; }
-  public String getUserAccountsSchema() { return _schema; }
+  public AccountDbInfo getAccountDbInfo() {
+    return new AccountDbInfo(_accountDb, _schema);
+  }
+
+  @Override
   public List<String> getAdminUserIds() { return _adminUserIds; }
 
   @Override
@@ -77,6 +82,7 @@ public class AccountDbAuthenticator implements Authenticator {
     String schema = configJson.getString(JsonKey.schema.name());
     List<String> adminUserIds = List.of(configJson.getString(JsonKey.adminUserIds.name(), "").split(","));
     initialize(dbConfig, schema, adminUserIds);
+    QueryLogger.initialize(new QueryLogConfig(){}); // use defaults
   }
 
   protected void initialize(ConnectionPoolConfig dbConfig, String schema, List<String> adminUserIds) {

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>VEuPathDB Subscription Group</title>
+    <script type="application/javascript" src="../js/lib/jquery-3.7.1.min.js"></script>
+    <script type="application/javascript" src="admin-ui.js"></script>
+  </head>
+  <body style="line-height: 1.5; display: none">
+    <h1>VEuPathDB Subscription Administration Console</h1>
+    <hr/>
+    <div>
+      <a href="/oauth/assets/admin/home.html">Home</a> |
+      <a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a> |
+      <a href="/oauth/assets/admin/subscription.html">New Subscription</a> |
+      <a href="/oauth/assets/admin/group.html">New Group</a> |
+      <a href="/oauth/assets/admin/user-assignment.html">Assign Users</a> |
+      <a href="/oauth/logout">Log Out</a>
+    </div>
+    <hr/>
+
+    <h2 id="title"></h2>
+
+    <div id="loading" style="display: none"><h3><img height="16" src="/oauth/assets/images/spinner.gif"/> Loading...</h3></div>
+
+    <div id="display" style="display: none">
+      <p>Group ID: <span id="groupId"></span></p>
+      <p>Parent Subscription: <span id="subscriptionName"></span></p>
+      <p>Group Token: <span id="subscriptionToken"></span></p>
+      Leads:<br/>
+      <ul id="leads"></ul>
+      Members:<br/>
+      <ul id="members"></ul>
+      <p>
+        <input type="button" value="Edit" onClick="useEditPanel()"/>
+        <input type="button" value="Assign Users" onClick="visitAssignUsersPage($('#groupId').html())"/>
+      </p>
+    </div>
+
+    <div id="edit" style="display: none">
+      <form>
+        <input id="mode" type="hidden"/>
+        <p>
+          Choose parent subscription: <select id="subscriptionPicker"></select><br/>
+          <input id="inactiveSubscriptions" type="checkbox" onClick="refreshSubscriptionSelect()"/> Include inactive subscriptions
+        </p>
+        <p>Group name: <input id="displayNameInput" type="text"/> <input type="button" value="Mirror subscription name" onClick="fillGroupNameWithSubscriptionName()"/></p>
+        <p>Group lead user IDs (comma delimited): <input id="userIds" type="text"/> <input type="button" value="Check IDs" onClick="checkUserIds()"/></p>
+        <ul id="resultOfUserIdCheck"></ul>
+        <p>
+          Note: Although users can be leads of more than one group, each user can only be a member of one group.
+          If a user specified above is already a member of a group, and you select 'Yes' below, that user's membership
+          will be removed and the user will be assigned to this group.
+        </p>
+        <p>
+          Make lead users members of this group? <select id="makeLeadsMembers">
+            <option value="yes" selected="selected">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </p>
+        <p>
+          <input type="button" value="Save" onclick="saveGroup()"/>
+          <input id="cancelButton" style="display: none" type="button" value="Cancel" onClick="useDisplayPanel()"/>
+        </p>
+      </form>
+    </div>
+
+  </body>
+</html>

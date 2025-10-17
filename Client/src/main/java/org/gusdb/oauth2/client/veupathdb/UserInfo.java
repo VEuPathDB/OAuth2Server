@@ -25,7 +25,7 @@ public interface UserInfo {
   static final String GROUP_NAME_HELP = "Please use the official name of your group or lab or the full name of your primary investigator.";
   static final String SUBSCRIPTION_TOKEN_HELP = "Enter your group's subscription token to become a subscribing user.";
   static final String ORGANIZATION_SUGGEST = "e.g. University of Pennsylvania";
-  static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab, Professor Jones Bioinformatics 101";
+  static final String GROUP_NAME_SUGGEST = "e.g. Jane Doe Lab OR Professor Jones Bioinformatics 101";
   static final String NO_VALUE = null;
 
   public static final String FIRST_NAME_PROP_KEY = "first_name";
@@ -34,16 +34,16 @@ public interface UserInfo {
   // define valid user properties and their attributes
   public static final List<UserProperty> USER_PROPERTY_LIST = List.of(
       new UserProperty("username", "Username", USERNAME_HELP, NO_VALUE, "username", false, false, InputType.TEXT, UserInfo::getUsername, UserInfo::setUsername),
-      new UserProperty("firstName", "First Name", NO_VALUE, NO_VALUE, FIRST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
-      new UserProperty("middleName", "Middle Name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, UserInfo::getMiddleName, UserInfo::setMiddleName),
-      new UserProperty("lastName", "Last Name", NO_VALUE, NO_VALUE, LAST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
-      new UserProperty("country", "Country", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, UserInfo::getCountry, UserInfo::setCountry),
-      new UserProperty("organization", "Organization Name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
-      new UserProperty("organizationType", "Organization Type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
-      new UserProperty("position", "Primary Position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, UserInfo::getPosition, UserInfo::setPosition),
-      new UserProperty("groupName", "Group Name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, UserInfo::getGroupName, UserInfo::setGroupName),
-      new UserProperty("groupType", "Group Type", NO_VALUE, NO_VALUE, "group_type", false, true, InputType.SELECT, UserInfo::getGroupType, UserInfo::setGroupType),
-      new UserProperty("subscriptionToken", "Subscription Token", SUBSCRIPTION_TOKEN_HELP, NO_VALUE, "subscription_token", false, false, InputType.TEXT, UserInfo::getSubscriptionToken, UserInfo::setSubscriptionToken),
+      new UserProperty("firstName", "First name", NO_VALUE, NO_VALUE, FIRST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
+      new UserProperty("middleName", "Middle name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, UserInfo::getMiddleName, UserInfo::setMiddleName),
+      new UserProperty("lastName", "Last name", NO_VALUE, NO_VALUE, LAST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
+      new UserProperty("organization", "Organization name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
+      new UserProperty("organizationType", "Organization type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
+      new UserProperty("country", "Organization location", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, UserInfo::getCountry, UserInfo::setCountry),
+      new UserProperty("position", "Primary position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, UserInfo::getPosition, UserInfo::setPosition),
+      new UserProperty("groupName", "Group name", GROUP_NAME_HELP, GROUP_NAME_SUGGEST, "group_name", true, true, InputType.TEXT, UserInfo::getGroupName, UserInfo::setGroupName),
+      new UserProperty("groupType", "Group type", NO_VALUE, NO_VALUE, "group_type", false, true, InputType.SELECT, UserInfo::getGroupType, UserInfo::setGroupType),
+      new UserProperty("subscriptionToken", "Subscription token", SUBSCRIPTION_TOKEN_HELP, NO_VALUE, "subscription_token", false, false, InputType.TEXT, UserInfo::getSubscriptionToken, UserInfo::setSubscriptionToken),
       new UserProperty("interests", "Interests", NO_VALUE, NO_VALUE, "interests", false, false, InputType.TEXTBOX, UserInfo::getInterests, UserInfo::setInterests)
   );
 

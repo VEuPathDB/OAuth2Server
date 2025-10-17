@@ -1,8 +1,9 @@
-package org.gusdb.oauth2.eupathdb.subscriptions;
+package org.gusdb.oauth2.eupathdb.subscriptions.tools;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Types;
@@ -35,6 +36,7 @@ import org.gusdb.fgputil.iterator.IteratorUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+@Deprecated
 public class SubscriptionGroupReloader {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionGroupReloader.class);
@@ -154,7 +156,7 @@ public class SubscriptionGroupReloader {
 
     // first load accounts file
     LOG.info("Opening accounts file");
-    try (BufferedReader in = new BufferedReader(new FileReader(accountsFile.toFile()))) {
+    try (BufferedReader in = new BufferedReader(new FileReader(accountsFile.toFile(), StandardCharsets.UTF_8))) {
       String[] headerTokens = in.readLine().split("\t"); // read header
 
       JSONArray discoveredColumns = new JSONArray();
