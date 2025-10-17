@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <title>VEuPathDB Subscription</title>
+    <script type="application/javascript" src="../js/lib/jquery-3.7.1.min.js"></script>
+    <script type="application/javascript" src="admin-ui.js"></script>
+  </head>
+  <body style="line-height: 1.5; display: none">
+    <h1>VEuPathDB Subscription Administration Console</h1>
+    <hr/>
+    <div>
+      <a href="/oauth/assets/admin/home.html">Home</a> |
+      <a href="/oauth/assets/admin/new-combo.html">New Subscription-Group Combo</a> |
+      <a href="/oauth/assets/admin/subscription.html">New Subscription</a> |
+      <a href="/oauth/assets/admin/group.html">New Group</a> |
+      <a href="/oauth/assets/admin/user-assignment.html">Assign Users</a> |
+      <a href="/oauth/logout">Log Out</a>
+    </div>
+    <hr/>
+
+    <h2 id="title"></h2>
+
+    <div id="loading" style="display: none"><h3><img height="16" src="/oauth/assets/images/spinner.gif"/> Loading...</h3></div>
+
+    <div id="display" style="display: none">
+      <p>Subscription ID: <span id="subscriptionId"></span></p>
+      <p>Is Active? <span id="isActive"></span></p>
+      Groups:<br/>
+      <ul id="groups"></ul>
+      <p><input type="button" value="Edit" onClick="useEditPanel()"/></p>
+    </div>
+
+    <div id="edit" style="display: none">
+      <form>
+        <input id="mode" type="hidden"/>
+        <p>Name: <input id="displayNameInput" type="text"/></p>
+        <p>
+          Is Active? <select id="isActiveInput">
+            <option value="yes" selected="selected">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </p>
+        <p>
+          <input type="button" value="Save" onclick="saveSubscription()"/>
+          <input id="cancelButton" style="display: none" type="button" value="Cancel" onClick="useDisplayPanel()"/>
+        </p>
+      </form>
+    </div>
+
+  </body>
+</html>

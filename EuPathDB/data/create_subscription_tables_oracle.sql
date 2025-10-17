@@ -5,6 +5,7 @@ CREATE TABLE USERACCOUNTS.SUBSCRIPTIONS (
   "DISPLAY_NAME"     VARCHAR2(500 BYTE),
   "ADMIN_USER_ID"    NUMBER(12,0), 
   CONSTRAINT "SUBSCRIPTIONS_PK" PRIMARY KEY ("SUBSCRIPTION_ID"),
+  CONSTRAINT "DISPLAY_NAME_UNIQ_CONSTRAINT" UNIQUE ("DISPLAY_NAME"),
   CONSTRAINT "SUBSCRIPTIONS_ADMIN_USER_ID_FKEY" FOREIGN KEY ("ADMIN_USER_ID")
      REFERENCES USERACCOUNTS.ACCOUNTS ("USER_ID")
 );
@@ -58,6 +59,13 @@ CREATE TABLE USERACCOUNTS.SUBSCRIPTION_GROUP_LEADS (
   CONSTRAINT "GROUP_LEADS_USER_ID_FKEY" FOREIGN KEY ("USER_ID")
      REFERENCES USERACCOUNTS.ACCOUNTS ("USER_ID")
 );
+
+-- Indexes
+CREATE INDEX useraccounts.subscription_groups_idx1
+ON useraccounts.subscription_groups(subscription_id);
+
+CREATE INDEX useraccounts.subscription_group_leads_idx2
+ON useraccounts.subscription_group_leads(group_id);
 
 -- SUBSCRIPTIONS_PKSEQ sequence
 -- NOTE: Care must be taken to set the sequence start value appropriately.

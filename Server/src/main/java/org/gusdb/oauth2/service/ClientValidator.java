@@ -92,6 +92,7 @@ public class ClientValidator {
     if (!_validateDomains) return true;
     try {
       String redirectUriHost = new URI(redirectUri).getHost();
+      if (redirectUriHost == null) return false;
       AllowedClient client = _clientMap.get(clientId);
       boolean valid = false;
       for (String validDomain : client.getDomains()) {
