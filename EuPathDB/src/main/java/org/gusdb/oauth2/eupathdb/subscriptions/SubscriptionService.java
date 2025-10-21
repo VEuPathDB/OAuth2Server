@@ -199,8 +199,7 @@ public class SubscriptionService {
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-    LOG.info("Getting groups, includeUnsubscribedGroups = " + includeUnsubscribedGroups);
-    return Response.ok(JsonCache.getGroupsJson(() ->
+    return Response.ok(JsonCache.getGroupsJson(includeUnsubscribedGroups, () ->
       new BulkDataDumper(getAccountDb())
         .getGroupsJson(includeUnsubscribedGroups)
         .toString()
