@@ -181,6 +181,10 @@ function loadGroup(id) {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
+      // if group is not active, populate select with both active and inactive groups so this group can be selected
+      if (!group.isActive) {
+        $('#inactiveSubscriptions')[0].checked = true;
+      }
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
       $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.lastActiveYear) + ")");
