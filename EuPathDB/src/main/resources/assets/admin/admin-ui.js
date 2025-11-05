@@ -184,6 +184,7 @@ function loadGroup(id) {
       // if group is not active, populate select with both active and inactive groups so this group can be selected
       if (!group.isActive) {
         $('#inactiveSubscriptions')[0].checked = true;
+        refreshSubscriptionSelect();
       }
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
