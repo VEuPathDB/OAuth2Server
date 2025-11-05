@@ -125,6 +125,7 @@ function initNewSubscriptionForm() {
   $("#title").text("Add New Subscription");
   $("#mode").val("new");
   useEditPanel();
+  fillDateSelect();
 }
 
 function loadSubscription(id) {
