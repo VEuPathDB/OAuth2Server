@@ -11,6 +11,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +50,7 @@ public class BulkDataDumper {
   public static final int FETCH_SIZE = 5000;
 
   private static final String ACCOUNTS_SCHEMA_MACRO = "$$accountschema$$";
-  private static final String ALLOWED_IS_ACTIVE_VALUES_MACRO = "$$allowedIsActiveValues$$";
+  private static final String MIN_LAST_ACTIVE_YEAR_MACRO = "$$min_last_active_year$$";
 
   private static final String GROUP_VOCABULARY_SQL = readResourceSql("sql/select-group-vocabulary.sql");
   private static final String ACCOUNTS_DETAILS_SQL = readResourceSql("sql/select-accounts-details.sql");
@@ -94,11 +95,15 @@ public class BulkDataDumper {
 
   public JSONArray getGroupsJson(boolean includeUnsubscribedGroups) {
 
-    String isActiveValues = includeUnsubscribedGroups ? "1, 0" : "1";
+    int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+
+    String minLastActiveYear = String.valueOf(
+        includeUnsubscribedGroups ? Subscription.NEVER_SUBSCRIBED - 1 : currentYear
+    );
 
     String sql = GROUP_VOCABULARY_SQL
         .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
-        .replace(ALLOWED_IS_ACTIVE_VALUES_MACRO, isActiveValues);
+        .replace(MIN_LAST_ACTIVE_YEAR_MACRO, minLastActiveYear);
 
     return new SQLRunner(_db.DATASOURCE, sql).executeQuery(rs -> {
 
@@ -111,7 +116,7 @@ public class BulkDataDumper {
         long groupId = rs.getLong("group_id");
         long subscriptionId = rs.getLong("subscription_id");
         String subscriptionToken = rs.getString("subscription_token");
-        boolean isActive = rs.getBoolean("is_active");
+        int lastActiveYear = rs.getInt("last_active_year");
         String groupName = rs.getString("group_name");
         String leadFirstName = rs.getString("first_name");
         String leadLastName = rs.getString("last_name");
@@ -130,7 +135,8 @@ public class BulkDataDumper {
               .put("groupId", groupId)
               .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
-              .put("isActive", isActive)
+              .put("lastActiveYear", lastActiveYear)
+              .put("isActive", lastActiveYear >= currentYear)
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)
               .put("groupLeads", new JSONArray());

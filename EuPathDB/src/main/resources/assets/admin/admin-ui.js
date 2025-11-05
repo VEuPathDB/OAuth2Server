@@ -37,7 +37,7 @@ $(function() {
             loadSubscriptionPicker();
             break;
           case "new-combo.html":
-            //nothing to do
+            fillDateSelect();
             break;
           case "subscription.html":
             if (id)
@@ -125,6 +125,7 @@ function initNewSubscriptionForm() {
   $("#title").text("Add New Subscription");
   $("#mode").val("new");
   useEditPanel();
+  fillDateSelect();
 }
 
 function loadSubscription(id) {
@@ -134,7 +135,7 @@ function loadSubscription(id) {
 
     // fill display area
     $("#subscriptionId").text(sub.subscriptionId);
-    $("#isActive").text(sub.isActive ? "yes" : "no");
+    $("#isActive").text(getIsActiveText(sub.lastActiveYear));
     $("#groups").html(sub.groups.map(group =>
         '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.groupId + ': ' + sanitizeText(group.displayName) + '</a></li>'
     ));
@@ -142,10 +143,9 @@ function loadSubscription(id) {
     // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
+    fillDateSelect();
     $("#displayNameInput").val(sub.displayName);
-    let selectedValue = sub.isActive ? "yes" : "no";
-    $('#isActiveInput option[value="' + selectedValue + '"]').prop('selected', true);
-    
+    $('#lastActiveYearInput option[value="' + sub.lastActiveYear + '"]').prop('selected', true);
   });
 }
 
@@ -154,7 +154,7 @@ function saveSubscription() {
   var isNew = $("#mode").val() == "new";
   var data = {
     "displayName": $("#displayNameInput").val(),
-    "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
+    "lastActiveYear": $("#lastActiveYearInput")[0].selectedOptions[0].value
   };
   if (isNew) {
     doPost("/oauth/subscriptions", data, response => {
@@ -182,9 +182,14 @@ function loadGroup(id) {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
+      // if group is not active, populate select with both active and inactive groups so this group can be selected
+      if (!group.isActive) {
+        $('#inactiveSubscriptions')[0].checked = true;
+        refreshSubscriptionSelect();
+      }
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (" + (sub.isActive ? "active" : "inactive") + ")");
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.lastActiveYear) + ")");
     });
 
     $("#title").text("Group: " + group.displayName);
@@ -226,6 +231,32 @@ function saveGroup() {
   }
 }
 
+const NEVER_SUBSCRIBED_VALUE = 0;
+const FIRST_YEAR = 2025;
+const CURRENT_YEAR = new Date().getFullYear();
+const LAST_YEAR = CURRENT_YEAR + 10;
+const NEVER_EXPIRES_VALUE = 9999;
+
+function fillDateSelect() {
+  $("#lastActiveYearInput").html(
+    '<option value="' + NEVER_SUBSCRIBED_VALUE + '">Never Subscribed</option>' +
+    Array.from({length: LAST_YEAR - FIRST_YEAR + 1 }, (_, i) => i + FIRST_YEAR)
+      .map(year => '<option value="' + year + '" ' + (year == CURRENT_YEAR ? 'selected' : '') + '>' + year + '</option>') +
+    '<option value="' + NEVER_EXPIRES_VALUE + '">Never Expires</option>'
+  );
+}
+
+function getIsActiveText(lastActiveYear) {
+  if (lastActiveYear == NEVER_SUBSCRIBED_VALUE)
+    return "No, never subscribed";
+  if (lastActiveYear == NEVER_EXPIRES_VALUE)
+    return "Yes, never expires";
+  if (lastActiveYear >= CURRENT_YEAR)
+    return "Yes, until the end of " + lastActiveYear;
+  else
+    return "No, expired at the end of " + lastActiveYear;
+}
+
 function fillGroupNameWithSubscriptionName() {
   $("#displayNameInput").val($("#subscriptionPicker option:selected").text());
 }
@@ -234,7 +265,7 @@ function saveCombo() {
   // first, save subscription
   var data = {
     "displayName": $("#subscriptionNameInput").val(),
-    "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
+    "lastActiveYear": $("#lastActiveYearInput")[0].selectedOptions[0].value
   };
   doPost("/oauth/subscriptions", data, response => {
     // successfully created; save off subscription ID
