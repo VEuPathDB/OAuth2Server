@@ -13,6 +13,7 @@ SELECT
   g.subscription_name,
   g.last_active_year,
   CASE
+    -- set to null if no group/subscription present
     WHEN g.last_active_year is null THEN null
     WHEN l.group_id is not null THEN 1
     WHEN l.group_id is null THEN 0

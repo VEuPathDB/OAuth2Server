@@ -29,9 +29,7 @@
           Subscription name: <input id="subscriptionNameInput" type="text"/>
           <input type="button" value="Use same name for group" onClick="$('#groupNameInput').val($('#subscriptionNameInput').val())"/>
         </p>
-        <p>
-          Last Active Year <select id="lastActiveYearInput"></select>
-        </p>
+        <p>Last Active Year: <select id="lastActiveYearInput"></select></p>
         <p>Group name: <input id="groupNameInput" type="text"/></p>
         <p>Group lead user IDs (comma delimited): <input id="userIds" type="text"/> <input type="button" value="Check IDs" onClick="checkUserIds()"/></p>
         <ul id="resultOfUserIdCheck"></ul>
