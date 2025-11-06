@@ -66,8 +66,7 @@ GRANT SELECT ON USERACCOUNTS.ACCOUNTS_PKSEQ TO USERACCTS_W;
 CREATE TABLE useraccounts.subscriptions (
   subscription_id BIGINT NOT NULL PRIMARY KEY,
   last_active_year INTEGER NOT NULL,
-  admin_user_id INTEGER,
-  display_name VARCHAR(500)
+  display_name VARCHAR(500) NOT NULL
 );
 
 -- Invoices table

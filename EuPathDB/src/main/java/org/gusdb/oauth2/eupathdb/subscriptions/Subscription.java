@@ -62,6 +62,9 @@ public class Subscription {
 
   private void parseMutableFields(JSONObject subscription) {
     _displayName = subscription.getString("displayName");
+    if (_displayName == null || _displayName.isBlank()) {
+      throw new JSONException("subscription display name cannot be empty");
+    }
     _lastActiveYear = subscription.getInt("lastActiveYear");
     if (!isValidLastActiveYear(_lastActiveYear)) {
       throw new JSONException("Invalid lastActiveYear value (" + _lastActiveYear + ")");

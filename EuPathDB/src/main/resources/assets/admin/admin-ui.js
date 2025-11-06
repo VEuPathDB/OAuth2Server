@@ -156,6 +156,10 @@ function saveSubscription() {
     "displayName": $("#displayNameInput").val(),
     "lastActiveYear": $("#lastActiveYearInput")[0].selectedOptions[0].value
   };
+  if (data.displayName == null || data.displayName.trim() == '') {
+    alert ("Subscription name cannot be empty.");
+    return;
+  }
   if (isNew) {
     doPost("/oauth/subscriptions", data, response => {
       visitSubscription(response.subscriptionId);
@@ -218,6 +222,10 @@ function saveGroup() {
     "groupLeadIds": getCleanUserIdsAsArray(),
     "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
   };
+  if (data.displayName == null || data.displayName.trim() == '') {
+    alert ("Group name cannot be empty.");
+    return;
+  }
   if (isNew) {
     doPost("/oauth/groups", data, response => {
       visitGroup(response.groupId);
@@ -267,12 +275,21 @@ function saveCombo() {
     "displayName": $("#subscriptionNameInput").val(),
     "lastActiveYear": $("#lastActiveYearInput")[0].selectedOptions[0].value
   };
+  if (data.displayName == null || data.displayName.trim() == '') {
+    alert ("Subscription name cannot be empty.");
+    return;
+  }
+  var groupName = $("#groupNameInput").val();
+  if (groupName == null || groupName.trim() == '') {
+    alert ("Group name cannot be empty.");
+    return;
+  }
   doPost("/oauth/subscriptions", data, response => {
     // successfully created; save off subscription ID
     var subscriptionId = response.subscriptionId;
     var data = {
       "subscriptionId": subscriptionId,
-      "displayName": $("#groupNameInput").val(),
+      "displayName": groupName,
       "groupLeadIds": getCleanUserIdsAsArray(),
       "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
     };

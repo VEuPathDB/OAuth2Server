@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Group {
@@ -78,6 +79,9 @@ public class Group {
   private void parseMutableFields(JSONObject group) {
     _subscriptionId = group.getLong("subscriptionId");
     _displayName = group.getString("displayName");
+    if (_displayName == null || _displayName.isBlank()) {
+      throw new JSONException("group name cannot be empty");
+    }
     _groupLeadIds = new ArrayList<>();
     JSONArray leadsJson = group.getJSONArray("groupLeadIds");
     for (int i = 0; i < leadsJson.length(); i++) {
