@@ -331,4 +331,15 @@ public class SubscriptionManager {
       }
     }
   }
+
+  public List<GroupWithUsers> getGroupsByLead(long userId) {
+    String sql = "select group_id from " + _schema + "subscription_group_leads where user_id = " + userId;
+    return new SQLRunner(_ds, sql).executeQuery(rs -> {
+      List<GroupWithUsers> groups = new ArrayList<>();
+      while (rs.next()) {
+        groups.add(getGroup(rs.getLong("group_id")));
+      }
+      return groups;
+    });
+  }
 }

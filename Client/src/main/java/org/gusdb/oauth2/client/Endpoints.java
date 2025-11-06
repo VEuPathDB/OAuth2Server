@@ -20,6 +20,7 @@ public class Endpoints {
   public static final String /* GET  */ USER_INFO       = "/user";           // requires bearer token or client secret
   public static final String /* PUT  */ USER_EDIT       = "/user";           // requires bearer token
   public static final String /* DELETE */ USER_DELETE   = "/user-delete";    // requires bearer token
+  public static final String /* GET */ MY_MANAGED_GROUPS = "/my-managed-groups"; // requires bearer token
 
   // static class
   private Endpoints() {}

@@ -24,16 +24,22 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.oauth2.Authenticator.RequestingUser;
+import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.eupathdb.AccountDbAuthenticator;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
+import org.gusdb.oauth2.eupathdb.subscriptions.Group.GroupWithUsers;
 import org.gusdb.oauth2.eupathdb.tools.SubscriptionTokenGenerator;
 import org.gusdb.oauth2.server.OAuthServlet;
+import org.gusdb.oauth2.service.OAuthService;
 import org.gusdb.oauth2.service.Session;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -310,5 +316,32 @@ public class SubscriptionService {
       throw new BadRequestException("Name already in use");
     }
     throw e;
+  }
+
+  @GET
+  @Path("my-managed-groups")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getMyManagedGroups() {
+
+    // this endpoint is only accessed directly using a bearer token
+    String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+    if (authHeader == null) return Response.status(Status.UNAUTHORIZED).build();
+
+    // validate token and parse user
+    String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+    RequestingUser user = OAuthService.parseRequestingUser(token, _context);
+
+    // only allow registered users
+    if (user.isGuest()) return Response.status(Status.UNAUTHORIZED).build();
+
+    // fetch details of each group this user leads and format as JSON array of group objects
+    String groupsArrayJson = getSubscriptionManager()
+        .getGroupsByLead(Long.valueOf(user.getUserId()))
+        .stream()
+        .map(GroupWithUsers::toJson)
+        .map(JSONObject::toString)
+        .collect(Collectors.joining(",","[","]"));
+
+    return Response.ok(groupsArrayJson).build();
   }
 }

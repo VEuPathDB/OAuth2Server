@@ -439,6 +439,32 @@ public class OAuthClient {
     }
   }
 
+  public JSONArray getGroupsByLead(String oauthBaseUrl, ValidatedToken token) {
+    String url = oauthBaseUrl + Endpoints.MY_MANAGED_GROUPS;
+    // build request and get JSON response
+    try (Response response = ClientBuilder.newBuilder()
+          .withConfig(new ClientConfig())
+          .sslContext(createSslContext(_trustManager))
+          .build()
+          .target(url)
+          .request(MediaType.APPLICATION_JSON)
+          .header(HttpHeaders.AUTHORIZATION, getAuthorizationHeaderValue(token))
+          .get()) {
+
+      String responseBody = readResponseBody(response);
+
+      if (response.getStatus() == 200) {
+        return new JSONArray(responseBody);
+      }
+      else {
+        throw new RuntimeException("Managed groups request to OAuth server did not return 200 [status=" + response.getStatus() + "]: " + responseBody);
+      }
+    }
+    catch (Exception e) {
+      throw new RuntimeException("Unable to fetch managed groups response from OAuth Server", e);
+    }
+  }
+
   public JSONObject createNewUser(OAuthConfig oauthConfig, Map<String,String> userProperties) throws InvalidPropertiesException, ConflictException {
     return new JSONObject(performCredentialsBasedRequest(
         Endpoints.USER_CREATE,
