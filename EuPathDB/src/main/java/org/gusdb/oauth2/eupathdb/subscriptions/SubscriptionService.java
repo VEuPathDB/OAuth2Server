@@ -55,8 +55,9 @@ import org.json.JSONObject;
  * POST /groups                      create a new group
  * GET  /groups/{id}                 get an existing group
  * POST /groups/{id}                 edit an existing group
- * POST /groups/{id}/add-members     adds users to an existing group (as members, not leads)
+ * POST /groups/{id}/membership      adds or removes users from an existing group (as members, not leads)
  * GET  /user-names?userId1,userId2  returns username details to allow admins to check IDs
+ * GET  /my-managed-groups           returns array of details for groups the calling user manages
  *
  * Mutable subscriber fields:
  * - Name
@@ -272,7 +273,7 @@ public class SubscriptionService {
   }
 
   @POST
-  @Path("groups/{id}/add-members")
+  @Path("groups/{id}/membership")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response assignUsersToGroup(@PathParam("id") String groupIdStr, String body) {
     assertAdmin();
@@ -281,15 +282,28 @@ public class SubscriptionService {
       long groupId = Long.valueOf(groupIdStr);
       getSubscriptionManager().getGroup(groupId);
 
-      // parse user IDs from request body
-      JSONArray userIdsJson = new JSONArray(body);
+      // parse user IDs and operation from request body
+      JSONObject bodyJson = new JSONObject(body);
+      String operation = bodyJson.getString("operation");
+      JSONArray userIdsJson = bodyJson.getJSONArray("userIds");
+
+      // validate/convert IDs
       List<Long> userIds = new ArrayList<>();
       for (int i = 0; i < userIdsJson.length(); i++) {
         userIds.add(userIdsJson.getLong(i));
       }
 
-      // assign all passed users to this group
-      getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+      // execute proper operation
+      switch(operation) {
+        case "add":
+          getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+          break;
+        case "remove":
+          getSubscriptionManager().removeUsersFromGroup(groupId, userIds);
+          break;
+        default:
+          throw new IllegalArgumentException("operation property must have value 'add' or 'remove'");
+      }
 
       return Response.noContent().build();
     }

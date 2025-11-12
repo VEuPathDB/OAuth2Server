@@ -24,7 +24,7 @@ public class ExceptionMapper implements javax.ws.rs.ext.ExceptionMapper<Exceptio
     try { throw e; }
 
     // typically parsing errors are because of bad input
-    catch (JSONException | NumberFormatException e400) {
+    catch (JSONException | IllegalArgumentException e400) {
       return Response.status(Status.BAD_REQUEST)
           .type(MediaType.TEXT_PLAIN)
           .entity(e400.getMessage())

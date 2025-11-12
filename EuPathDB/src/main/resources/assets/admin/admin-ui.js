@@ -180,8 +180,19 @@ function initloadNewGroupForm() {
   loadSubscriptionPicker();
 }
 
+function userArrayToHtml(groupId, users, appendDeleteButton) {
+  return users.map(user => {
+    var item = "<li>" + user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")";
+    if (appendDeleteButton) {
+      label += ' <input type="button" value="Remove From Group" onClick="removeUserFromGroup(' + groupId + ',' + userId + ')"/>';
+    }
+    label += "</li>";
+    return label;
+  });
+}
+
 function loadGroup(id) {
-  const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")</li>");
+
   doGet("/oauth/groups/" + id, group => {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
@@ -203,13 +214,14 @@ function loadGroup(id) {
     $("#groupId").text(group.groupId);
     $("#subscriptionToken").text(group.subscriptionToken);
     $("#leads").html(userArrayToHtml(group.leadUsers));
-    $("#members").html(userArrayToHtml(group.members));
+    $("#members").html(userArrayToHtml(group.groupId, group.members, false));
 
       // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
     $("#displayNameInput").val(group.displayName);
     $("#userIds").val(group.groupLeadIds.join());
+    $("#membersForDelete").html(userArrayToHtml(group.groupId, group.members, true));
   });
 }
 
@@ -318,8 +330,23 @@ function checkUserIds() {
 
 function assignUsersToGroup() {
   var groupId = $("#groupPicker")[0].selectedOptions[0].value;
-  var data = getCleanUserIdsAsArray();
-  doPost("/oauth/groups/" + groupId + "/add-members", data, response => {
+  var data = {
+    operation: "add",
+    userIds: getCleanUserIdsAsArray()
+  }
+  editGroupMembership(groupId, data);
+}
+
+function removeUserFromGroup(groupId, userId) {
+  var data = {
+    operation: "remove",
+    userIds: [ userId ]
+  }
+  editGroupMembership(groupId, data);
+}
+
+function editGroupMembership(groupId, data) {
+  doPost("/oauth/groups/" + groupId + "/membership", data, response => {
     visitGroup(groupId);
   });
 }
