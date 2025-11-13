@@ -352,7 +352,7 @@ public class SubscriptionService {
     String groupsArrayJson = getSubscriptionManager()
         .getGroupsByLead(Long.valueOf(user.getUserId()))
         .stream()
-        .map(GroupWithUsers::toJson)
+        .map(GroupWithUsers::toBulkGroupJson)
         .map(JSONObject::toString)
         .collect(Collectors.joining(",","[","]"));
 
