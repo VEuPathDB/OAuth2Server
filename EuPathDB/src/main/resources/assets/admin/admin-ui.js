@@ -336,11 +336,13 @@ function assignUsersToGroup() {
 }
 
 function removeUserFromGroup(groupId, userId) {
-  var data = {
-    operation: "remove",
-    userIds: [ userId ]
+  if (confirm("Are you sure you want to remove this user?")) {
+    var data = {
+      operation: "remove",
+      userIds: [ userId ]
+    }
+    editGroupMembership(groupId, data);
   }
-  editGroupMembership(groupId, data);
 }
 
 function editGroupMembership(groupId, data) {
