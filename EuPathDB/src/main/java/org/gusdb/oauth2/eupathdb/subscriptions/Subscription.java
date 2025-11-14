@@ -14,7 +14,7 @@ public class Subscription {
   // special values for last_active_year
   public static final int NEVER_SUBSCRIBED = 0;
   public static final int NEVER_EXPIRES = 9999;
-  private static final int EARLIEST_SUBSCRIPTION_YEAR = 2025;
+  public static final int EARLIEST_SUBSCRIPTION_YEAR = 2025;
 
   public static class SubscriptionWithGroups {
 

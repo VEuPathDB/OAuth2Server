@@ -11,7 +11,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,17 +92,11 @@ public class BulkDataDumper {
     }, FETCH_SIZE);
   }
 
-  public JSONArray getGroupsJson(boolean includeUnsubscribedGroups) {
-
-    int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-
-    String minLastActiveYear = String.valueOf(
-        includeUnsubscribedGroups ? Subscription.NEVER_SUBSCRIBED - 1 : currentYear
-    );
+  public JSONArray getGroupsJson(GroupFilter filter) {
 
     String sql = GROUP_VOCABULARY_SQL
         .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
-        .replace(MIN_LAST_ACTIVE_YEAR_MACRO, minLastActiveYear);
+        .replace(MIN_LAST_ACTIVE_YEAR_MACRO, String.valueOf(filter.getMinLastActiveYear()));
 
     return new SQLRunner(_db.DATASOURCE, sql).executeQuery(rs -> {
 
@@ -136,7 +129,8 @@ public class BulkDataDumper {
               .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
               .put("lastActiveYear", lastActiveYear)
-              .put("isActive", lastActiveYear >= currentYear)
+              .put("isActive", ActiveStatus.isActive(lastActiveYear))
+              .put("inGracePeriod", ActiveStatus.isInGracePeriod(lastActiveYear))
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)
               .put("groupLeads", new JSONArray());

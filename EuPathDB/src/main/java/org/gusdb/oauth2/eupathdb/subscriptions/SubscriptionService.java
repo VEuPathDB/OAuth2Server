@@ -205,10 +205,11 @@ public class SubscriptionService {
   @GET
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-    return Response.ok(JsonCache.getGroupsJson(includeUnsubscribedGroups, () ->
+  public Response getGroups(@QueryParam("filter") @DefaultValue("active_only") String filterStr) {
+    GroupFilter groupFilter = GroupFilter.valueOf(filterStr.toUpperCase());
+    return Response.ok(JsonCache.getGroupsJson(groupFilter, () ->
       new BulkDataDumper(getAccountDb())
-        .getGroupsJson(includeUnsubscribedGroups)
+        .getGroupsJson(groupFilter)
         .toString()
     )).build();
   }

@@ -72,7 +72,7 @@ function loadSubscriptionPicker(additionalCallback) {
 }
 
 function loadGroupPicker(additionalCallback) {
-  doGet("/oauth/groups?includeUnsubscribedGroups=true", groups => {
+  doGet("/oauth/groups?filter=all_groups", groups => {
     globalState.groupMeta = groups;
     refreshGroupSelect();
     if (additionalCallback) additionalCallback();
