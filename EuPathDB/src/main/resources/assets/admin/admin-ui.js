@@ -181,14 +181,12 @@ function initloadNewGroupForm() {
 }
 
 function userArrayToHtml(groupId, users, appendDeleteButton) {
-  return users.map(user => {
-    var item = "<li>" + user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")";
-    if (appendDeleteButton) {
-      label += ' <input type="button" value="Remove From Group" onClick="removeUserFromGroup(' + groupId + ',' + userId + ')"/>';
-    }
-    label += "</li>";
-    return label;
-  });
+  return users.map(user =>
+    "<li>" +
+      user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")" +
+      (appendDeleteButton ? ' <input type="button" value="Remove From Group" onClick="removeUserFromGroup(' + groupId + ',' + user.userId + ')"/>' : '') +
+    "</li>"
+  );
 }
 
 function loadGroup(id) {
