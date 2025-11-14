@@ -213,7 +213,7 @@ function loadGroup(id) {
     // fill display area
     $("#groupId").text(group.groupId);
     $("#subscriptionToken").text(group.subscriptionToken);
-    $("#leads").html(userArrayToHtml(group.leadUsers));
+    $("#leads").html(userArrayToHtml(group.groupId, group.leadUsers, false));
     $("#members").html(userArrayToHtml(group.groupId, group.members, false));
 
       // fill form
