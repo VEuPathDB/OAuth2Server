@@ -124,13 +124,14 @@ public class BulkDataDumper {
         // see if group already exists and create new one if not
         JSONObject group = groups.get(subscriptionToken);
         if (group == null) {
+          ActiveStatus activeStatus = ActiveStatus.getActiveStatus(lastActiveYear);
           group = new JSONObject()
               .put("groupId", groupId)
               .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
               .put("lastActiveYear", lastActiveYear)
-              .put("isActive", ActiveStatus.isActive(lastActiveYear))
-              .put("inGracePeriod", ActiveStatus.isInGracePeriod(lastActiveYear))
+              .put("isActive", activeStatus == ActiveStatus.ACTIVE)
+              .put("activeStatus", ActiveStatus.getActiveStatus(lastActiveYear).name().toLowerCase())
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)
               .put("groupLeads", new JSONArray());
