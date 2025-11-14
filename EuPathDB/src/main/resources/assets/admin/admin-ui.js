@@ -86,14 +86,14 @@ function sanitizeText(text) {
 function refreshSubscriptionSelect() {
   let showInactiveSubs = $("#inactiveSubscriptions")[0].checked;
   $("#subscriptionPicker").html(globalState.subscriptionMeta
-    .filter(sub => showInactiveSubs || sub.isActive)
+    .filter(sub => showInactiveSubs || sub.activeStatus == 'active')
     .map(sub => '<option value="' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + '</option>'));
 }
 
 function refreshGroupSelect() {
   let showInactiveGroups = $("#inactiveGroups")[0].checked;
   $("#groupPicker").html(globalState.groupMeta
-    .filter(group => showInactiveGroups || group.isActive)
+    .filter(group => showInactiveGroups || group.activeStatus == 'active')
     .map(group => '<option value="' + group.groupId + '">' + sanitizeText(group.groupName) + '</option>'));
 }
 
@@ -196,7 +196,7 @@ function loadGroup(id) {
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
       // if group is not active, populate select with both active and inactive groups so this group can be selected
-      if (!group.isActive) {
+      if (group.activeStatus != 'active') {
         $('#inactiveSubscriptions')[0].checked = true;
         refreshSubscriptionSelect();
       }

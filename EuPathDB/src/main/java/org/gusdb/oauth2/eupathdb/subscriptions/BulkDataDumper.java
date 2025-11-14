@@ -130,8 +130,7 @@ public class BulkDataDumper {
               .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
               .put("lastActiveYear", lastActiveYear)
-              .put("isActive", activeStatus == ActiveStatus.ACTIVE)
-              .put("activeStatus", ActiveStatus.getActiveStatus(lastActiveYear).name().toLowerCase())
+              .put("activeStatus", activeStatus.name().toLowerCase())
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)
               .put("groupLeads", new JSONArray());
