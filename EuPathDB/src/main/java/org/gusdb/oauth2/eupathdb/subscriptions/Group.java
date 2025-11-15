@@ -48,8 +48,23 @@ public class Group {
     public JSONObject toJson() {
       return _group.toJson()
           .put("subscriptionToken", _subscriptionToken)
-          .put("leadUsers", new JSONArray(_leads.stream().map(SimpleUser::toJson).collect(Collectors.toList())))
-          .put("members", new JSONArray(_members.stream().map(SimpleUser::toJson).collect(Collectors.toList())));
+          .put("leadUsers", toUserArrayJson(_leads))
+          .put("members", toUserArrayJson(_members));
+    }
+
+    // FIXME: reconcile these three formats
+    //   This is actually only a subset of the bulk group JSON, which is different
+    //   yet again from the JSON above which serves the admin panel
+    public JSONObject toBulkGroupJson() {
+      return new JSONObject()
+          .put("groupName", _group.getDisplayName())
+          .put("subscriptionToken", _subscriptionToken)
+          .put("groupLeads", toUserArrayJson(_leads))
+          .put("members", toUserArrayJson(_members));
+    }
+
+    private static JSONArray toUserArrayJson(List<SimpleUser> users) {
+      return new JSONArray(users.stream().map(SimpleUser::toJson).collect(Collectors.toList()));
     }
   }
 
@@ -118,5 +133,4 @@ public class Group {
         .put("displayName", _displayName)
         .put("groupLeadIds", new JSONArray(_groupLeadIds));
   }
-
 }

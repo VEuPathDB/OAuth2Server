@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 public class JsonCache {
@@ -8,31 +10,30 @@ public class JsonCache {
 
   /************ Subscriptions JSON Cache ************/
 
-  private static volatile JsonCache SUBSCRIPTIONS_ENTRY = new JsonCache();
+  private static volatile JsonCache SUBSCRIPTIONS_JSON = new JsonCache();
   
   public static String getSubscriptionJson(Supplier<String> fetcher) {
-    return SUBSCRIPTIONS_ENTRY.getData(fetcher);
+    return SUBSCRIPTIONS_JSON.getData(fetcher);
   }
 
   public static void expireSubscriptionsJson() {
-    SUBSCRIPTIONS_ENTRY.expire();
+    SUBSCRIPTIONS_JSON.expire();
   }
 
   /*************** Groups JSON Caches ***************/
 
-  private static volatile JsonCache GROUPS_WITH_INACTIVE_ENTRY = new JsonCache();
-  private static volatile JsonCache GROUPS_WITHOUT_INACTIVE_ENTRY = new JsonCache();
+  private static ConcurrentMap<GroupFilter,JsonCache> GROUPS_JSON_MAP = new ConcurrentHashMap<>() {{
+    for (GroupFilter filter : GroupFilter.values()) {
+      put(filter, new JsonCache());
+    }
+  }};
 
-  public static String getGroupsJson(boolean includingInactiveGroups, Supplier<String> fetcher) {
-    return (includingInactiveGroups
-        ? GROUPS_WITH_INACTIVE_ENTRY
-        : GROUPS_WITHOUT_INACTIVE_ENTRY
-    ).getData(fetcher);
+  public static String getGroupsJson(GroupFilter groupFilter, Supplier<String> fetcher) {
+    return GROUPS_JSON_MAP.get(groupFilter).getData(fetcher);
   }
 
   public static void expireGroupsJson() {
-    GROUPS_WITH_INACTIVE_ENTRY.expire();
-    GROUPS_WITHOUT_INACTIVE_ENTRY.expire();
+    GROUPS_JSON_MAP.values().stream().forEach(JsonCache::expire);
   }
 
   /*************** Cache object data/methods ***************/

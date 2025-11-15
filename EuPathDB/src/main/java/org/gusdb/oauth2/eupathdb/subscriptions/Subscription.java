@@ -1,6 +1,5 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
-import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,7 +13,7 @@ public class Subscription {
   // special values for last_active_year
   public static final int NEVER_SUBSCRIBED = 0;
   public static final int NEVER_EXPIRES = 9999;
-  private static final int EARLIEST_SUBSCRIPTION_YEAR = 2025;
+  public static final int EARLIEST_SUBSCRIPTION_YEAR = 2025;
 
   public static class SubscriptionWithGroups {
 
@@ -36,13 +35,11 @@ public class Subscription {
   private long _subscriptionId;
   private String _displayName;
   private int _lastActiveYear;
-  private boolean _isActive;
 
   public Subscription(long subscriptionId, String displayName, int lastActiveYear) {
     _subscriptionId = subscriptionId;
     _displayName = displayName;
     _lastActiveYear = lastActiveYear;
-    _isActive = isActive(_lastActiveYear);
   }
 
   public Subscription(AccountDbInfo accountDb, JSONObject subscription) {
@@ -69,12 +66,6 @@ public class Subscription {
     if (!isValidLastActiveYear(_lastActiveYear)) {
       throw new JSONException("Invalid lastActiveYear value (" + _lastActiveYear + ")");
     }
-    _isActive = isActive(_lastActiveYear);
-  }
-
-  private boolean isActive(int lastActiveYear) {
-    int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-    return lastActiveYear >= currentYear; 
   }
 
   public long getSubscriptionId() {
@@ -92,7 +83,7 @@ public class Subscription {
   public JSONObject toJson() {
     return new JSONObject()
         .put("subscriptionId", _subscriptionId)
-        .put("isActive", _isActive)
+        .put("activeStatus", ActiveStatus.getActiveStatus(_lastActiveYear).name().toLowerCase())
         .put("lastActiveYear", _lastActiveYear)
         .put("displayName", _displayName);
   }
