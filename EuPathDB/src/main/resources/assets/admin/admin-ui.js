@@ -72,7 +72,7 @@ function loadSubscriptionPicker(additionalCallback) {
 }
 
 function loadGroupPicker(additionalCallback) {
-  doGet("/oauth/groups?includeUnsubscribedGroups=true", groups => {
+  doGet("/oauth/groups?filter=all_groups", groups => {
     globalState.groupMeta = groups;
     refreshGroupSelect();
     if (additionalCallback) additionalCallback();
@@ -86,14 +86,14 @@ function sanitizeText(text) {
 function refreshSubscriptionSelect() {
   let showInactiveSubs = $("#inactiveSubscriptions")[0].checked;
   $("#subscriptionPicker").html(globalState.subscriptionMeta
-    .filter(sub => showInactiveSubs || sub.isActive)
+    .filter(sub => showInactiveSubs || sub.activeStatus == 'active')
     .map(sub => '<option value="' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + '</option>'));
 }
 
 function refreshGroupSelect() {
   let showInactiveGroups = $("#inactiveGroups")[0].checked;
   $("#groupPicker").html(globalState.groupMeta
-    .filter(group => showInactiveGroups || group.isActive)
+    .filter(group => showInactiveGroups || group.activeStatus == 'active')
     .map(group => '<option value="' + group.groupId + '">' + sanitizeText(group.groupName) + '</option>'));
 }
 
@@ -180,14 +180,23 @@ function initloadNewGroupForm() {
   loadSubscriptionPicker();
 }
 
+function userArrayToHtml(groupId, users, appendDeleteButton) {
+  return users.map(user =>
+    "<li>" +
+      user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")" +
+      (appendDeleteButton ? ' <input type="button" value="Remove From Group" onClick="removeUserFromGroup(' + groupId + ',' + user.userId + ')"/>' : '') +
+    "</li>"
+  );
+}
+
 function loadGroup(id) {
-  const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")</li>");
+
   doGet("/oauth/groups/" + id, group => {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
       // if group is not active, populate select with both active and inactive groups so this group can be selected
-      if (!group.isActive) {
+      if (group.activeStatus != 'active') {
         $('#inactiveSubscriptions')[0].checked = true;
         refreshSubscriptionSelect();
       }
@@ -202,14 +211,15 @@ function loadGroup(id) {
     // fill display area
     $("#groupId").text(group.groupId);
     $("#subscriptionToken").text(group.subscriptionToken);
-    $("#leads").html(userArrayToHtml(group.leadUsers));
-    $("#members").html(userArrayToHtml(group.members));
+    $("#leads").html(userArrayToHtml(group.groupId, group.leadUsers, false));
+    $("#members").html(userArrayToHtml(group.groupId, group.members, false));
 
       // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
     $("#displayNameInput").val(group.displayName);
     $("#userIds").val(group.groupLeadIds.join());
+    $("#membersForDelete").html(userArrayToHtml(group.groupId, group.members, true));
   });
 }
 
@@ -318,8 +328,25 @@ function checkUserIds() {
 
 function assignUsersToGroup() {
   var groupId = $("#groupPicker")[0].selectedOptions[0].value;
-  var data = getCleanUserIdsAsArray();
-  doPost("/oauth/groups/" + groupId + "/add-members", data, response => {
+  var data = {
+    operation: "add",
+    userIds: getCleanUserIdsAsArray()
+  }
+  editGroupMembership(groupId, data);
+}
+
+function removeUserFromGroup(groupId, userId) {
+  if (confirm("Are you sure you want to remove this user?")) {
+    var data = {
+      operation: "remove",
+      userIds: [ userId ]
+    }
+    editGroupMembership(groupId, data);
+  }
+}
+
+function editGroupMembership(groupId, data) {
+  doPost("/oauth/groups/" + groupId + "/membership", data, response => {
     visitGroup(groupId);
   });
 }

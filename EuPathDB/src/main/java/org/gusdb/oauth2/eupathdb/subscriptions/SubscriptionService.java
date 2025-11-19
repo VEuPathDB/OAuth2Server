@@ -24,16 +24,22 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.oauth2.Authenticator.RequestingUser;
+import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.eupathdb.AccountDbAuthenticator;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
+import org.gusdb.oauth2.eupathdb.subscriptions.Group.GroupWithUsers;
 import org.gusdb.oauth2.eupathdb.tools.SubscriptionTokenGenerator;
 import org.gusdb.oauth2.server.OAuthServlet;
+import org.gusdb.oauth2.service.OAuthService;
 import org.gusdb.oauth2.service.Session;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -49,8 +55,9 @@ import org.json.JSONObject;
  * POST /groups                      create a new group
  * GET  /groups/{id}                 get an existing group
  * POST /groups/{id}                 edit an existing group
- * POST /groups/{id}/add-members     adds users to an existing group (as members, not leads)
+ * POST /groups/{id}/membership      adds or removes users from an existing group (as members, not leads)
  * GET  /user-names?userId1,userId2  returns username details to allow admins to check IDs
+ * GET  /my-managed-groups           returns array of details for groups the calling user manages
  *
  * Mutable subscriber fields:
  * - Name
@@ -198,10 +205,11 @@ public class SubscriptionService {
   @GET
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-    return Response.ok(JsonCache.getGroupsJson(includeUnsubscribedGroups, () ->
+  public Response getGroups(@QueryParam("filter") @DefaultValue("active_only") String filterStr) {
+    GroupFilter groupFilter = GroupFilter.valueOf(filterStr.toUpperCase());
+    return Response.ok(JsonCache.getGroupsJson(groupFilter, () ->
       new BulkDataDumper(getAccountDb())
-        .getGroupsJson(includeUnsubscribedGroups)
+        .getGroupsJson(groupFilter)
         .toString()
     )).build();
   }
@@ -266,7 +274,7 @@ public class SubscriptionService {
   }
 
   @POST
-  @Path("groups/{id}/add-members")
+  @Path("groups/{id}/membership")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response assignUsersToGroup(@PathParam("id") String groupIdStr, String body) {
     assertAdmin();
@@ -275,15 +283,28 @@ public class SubscriptionService {
       long groupId = Long.valueOf(groupIdStr);
       getSubscriptionManager().getGroup(groupId);
 
-      // parse user IDs from request body
-      JSONArray userIdsJson = new JSONArray(body);
+      // parse user IDs and operation from request body
+      JSONObject bodyJson = new JSONObject(body);
+      String operation = bodyJson.getString("operation");
+      JSONArray userIdsJson = bodyJson.getJSONArray("userIds");
+
+      // validate/convert IDs
       List<Long> userIds = new ArrayList<>();
       for (int i = 0; i < userIdsJson.length(); i++) {
         userIds.add(userIdsJson.getLong(i));
       }
 
-      // assign all passed users to this group
-      getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+      // execute proper operation
+      switch(operation) {
+        case "add":
+          getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+          break;
+        case "remove":
+          getSubscriptionManager().removeUsersFromGroup(groupId, userIds);
+          break;
+        default:
+          throw new IllegalArgumentException("operation property must have value 'add' or 'remove'");
+      }
 
       return Response.noContent().build();
     }
@@ -310,5 +331,32 @@ public class SubscriptionService {
       throw new BadRequestException("Name already in use");
     }
     throw e;
+  }
+
+  @GET
+  @Path("my-managed-groups")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getMyManagedGroups() {
+
+    // this endpoint is only accessed directly using a bearer token
+    String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+    if (authHeader == null) return Response.status(Status.UNAUTHORIZED).build();
+
+    // validate token and parse user
+    String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+    RequestingUser user = OAuthService.parseRequestingUser(token, _context);
+
+    // only allow registered users
+    if (user.isGuest()) return Response.status(Status.UNAUTHORIZED).build();
+
+    // fetch details of each group this user leads and format as JSON array of group objects
+    String groupsArrayJson = getSubscriptionManager()
+        .getGroupsByLead(Long.valueOf(user.getUserId()))
+        .stream()
+        .map(GroupWithUsers::toBulkGroupJson)
+        .map(JSONObject::toString)
+        .collect(Collectors.joining(",","[","]"));
+
+    return Response.ok(groupsArrayJson).build();
   }
 }

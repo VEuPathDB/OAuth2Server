@@ -331,4 +331,27 @@ public class SubscriptionManager {
       }
     }
   }
+
+  public void removeUsersFromGroup(long groupId, List<Long> userIds) {
+    for (long userId : userIds) {
+      String deleteSql =
+          "delete from " + _schema + "account_properties" +
+          " where user_id = " + userId +
+          " and key = 'subscription_token'" +
+          " and value = (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + ")";
+      boolean removed = new SQLRunner(_ds, deleteSql).executeUpdate() == 1;
+      LOG.info("Removal of user " + userId + " from group " + groupId + (removed ? " succeeded" : " failed"));
+    }
+  }
+
+  public List<GroupWithUsers> getGroupsByLead(long userId) {
+    String sql = "select group_id from " + _schema + "subscription_group_leads where user_id = " + userId;
+    return new SQLRunner(_ds, sql).executeQuery(rs -> {
+      List<GroupWithUsers> groups = new ArrayList<>();
+      while (rs.next()) {
+        groups.add(getGroup(rs.getLong("group_id")));
+      }
+      return groups;
+    });
+  }
 }
