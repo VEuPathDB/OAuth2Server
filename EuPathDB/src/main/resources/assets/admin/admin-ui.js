@@ -135,7 +135,7 @@ function loadSubscription(id) {
 
     // fill display area
     $("#subscriptionId").text(sub.subscriptionId);
-    $("#isActive").text(getIsActiveText(sub.lastActiveYear));
+    $("#isActive").text(getIsActiveText(sub.activeStatus, sub.lastActiveYear));
     $("#groups").html(sub.groups.map(group =>
         '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.groupId + ': ' + sanitizeText(group.displayName) + '</a></li>'
     ));
@@ -202,7 +202,7 @@ function loadGroup(id) {
       }
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.lastActiveYear) + ")");
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.activeStatus, sub.lastActiveYear) + ")");
     });
 
     $("#title").text("Group: " + group.displayName);
@@ -264,14 +264,17 @@ function fillDateSelect() {
   );
 }
 
-function getIsActiveText(lastActiveYear) {
-  if (lastActiveYear == NEVER_SUBSCRIBED_VALUE)
+function getIsActiveText(activeStatus, lastActiveYear) {
+  if (activeStatus == "never_subscribed")
     return "No, never subscribed";
-  if (lastActiveYear == NEVER_EXPIRES_VALUE)
-    return "Yes, never expires";
-  if (lastActiveYear >= CURRENT_YEAR)
-    return "Yes, until the end of " + lastActiveYear;
+  if (activeStatus == "active")
+    return (lastActiveYear == NEVER_EXPIRES_VALUE)
+      ? "Yes, never expires"
+      : "Yes, until the end of " + lastActiveYear;
+  if (activeStatus == "grace_period")
+    return "Yes, expired at the end of " + lastActiveYear + " but is still in the grace period";
   else
+    // activeStatus == "expired"
     return "No, expired at the end of " + lastActiveYear;
 }
 
