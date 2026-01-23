@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>oauth2</artifactId>
-    <version>4.2.0-j21tc9</version>
+    <version>4.2.1-j21tc9-SNAPSHOT</version>
   </parent>
 
   <dependencies>
