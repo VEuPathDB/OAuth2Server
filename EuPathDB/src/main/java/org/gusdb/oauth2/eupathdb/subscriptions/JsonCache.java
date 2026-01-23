@@ -1,5 +1,7 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 public class JsonCache {
@@ -7,36 +9,49 @@ public class JsonCache {
   private static final long CACHE_DURATION_MS = 5 /* minutes */ * 60 * 1000;
 
   /************ Subscriptions JSON Cache ************/
+
+  private static volatile JsonCache SUBSCRIPTIONS_JSON = new JsonCache();
   
-  private static volatile long LAST_SUBSCRIPTIONS_WRITE_TIME;
-  private static volatile String CACHED_SUBSCRIPTIONS_STRING;
-  
-  public static synchronized String getSubscriptionJson(Supplier<String> fetcher) {
-    if (CACHED_SUBSCRIPTIONS_STRING == null || LAST_SUBSCRIPTIONS_WRITE_TIME < System.currentTimeMillis() - CACHE_DURATION_MS) {
-      CACHED_SUBSCRIPTIONS_STRING = fetcher.get();
-      LAST_SUBSCRIPTIONS_WRITE_TIME = System.currentTimeMillis();
+  public static String getSubscriptionJson(Supplier<String> fetcher) {
+    return SUBSCRIPTIONS_JSON.getData(fetcher);
+  }
+
+  public static void expireSubscriptionsJson() {
+    SUBSCRIPTIONS_JSON.expire();
+  }
+
+  /*************** Groups JSON Caches ***************/
+
+  private static ConcurrentMap<GroupFilter,JsonCache> GROUPS_JSON_MAP = new ConcurrentHashMap<>() {{
+    for (GroupFilter filter : GroupFilter.values()) {
+      put(filter, new JsonCache());
     }
-    return CACHED_SUBSCRIPTIONS_STRING;
+  }};
+
+  public static String getGroupsJson(GroupFilter groupFilter, Supplier<String> fetcher) {
+    return GROUPS_JSON_MAP.get(groupFilter).getData(fetcher);
   }
 
-  public static synchronized void expireSubscriptionsJson() {
-    CACHED_SUBSCRIPTIONS_STRING = null;
+  public static void expireGroupsJson() {
+    GROUPS_JSON_MAP.values().stream().forEach(JsonCache::expire);
   }
 
-  /*************** Groups JSON Cache ***************/
+  /*************** Cache object data/methods ***************/
 
-  private static volatile long LAST_GROUPS_WRITE_TIME;
-  private static volatile String CACHED_GROUPS_STRING;
+  private volatile Long _lastWriteTime;
+  private volatile String _cachedString;
 
-  public static synchronized String getGroupsJson(Supplier<String> fetcher) {
-    if (CACHED_GROUPS_STRING == null || LAST_GROUPS_WRITE_TIME < System.currentTimeMillis() - CACHE_DURATION_MS) {
-      CACHED_GROUPS_STRING = fetcher.get();
-      LAST_GROUPS_WRITE_TIME = System.currentTimeMillis();
+  private synchronized String getData(Supplier<String> fetcher) {
+    // check if empty or expired
+    if (_cachedString == null || _lastWriteTime < System.currentTimeMillis() - CACHE_DURATION_MS) {
+      // fill cache and set fill timestamp
+      _cachedString = fetcher.get();
+      _lastWriteTime = System.currentTimeMillis();
     }
-    return CACHED_GROUPS_STRING;
+    return _cachedString;
   }
 
-  public static synchronized void expireGroupsJson() {
-    CACHED_GROUPS_STRING = null;
+  private synchronized void expire() {
+    _cachedString = null;
   }
 }

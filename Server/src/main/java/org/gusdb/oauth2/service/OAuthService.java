@@ -396,7 +396,7 @@ public class OAuthService {
     try {
       // option 1
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser user = parseRequestingUser(token);
+      RequestingUser user = parseRequestingUser(token, _context);
       return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(), user.isGuest());
     }
     catch (IllegalArgumentException badTokenException) {
@@ -416,9 +416,9 @@ public class OAuthService {
     }
   }
 
-  private RequestingUser parseRequestingUser(String bearerToken) {
+  public static RequestingUser parseRequestingUser(String bearerToken, ServletContext servletContext) {
     try {
-      Key publicKey = OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic();
+      Key publicKey = OAuthServlet.getApplicationConfig(servletContext).getAsyncKeys().getPublic();
       // verify signature and create claims object
       Claims claims = Jwts.parserBuilder()
           .setSigningKey(publicKey)
@@ -480,7 +480,7 @@ public class OAuthService {
         return Response.status(Status.UNAUTHORIZED).build();
       }
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser user = parseRequestingUser(token);
+      RequestingUser user = parseRequestingUser(token, _context);
       if (user.isGuest()) {
         return Response.status(Status.FORBIDDEN).build();
       }
@@ -526,7 +526,7 @@ public class OAuthService {
         return Response.status(Status.UNAUTHORIZED).build();
       }
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser requestingUser = parseRequestingUser(token);
+      RequestingUser requestingUser = parseRequestingUser(token, _context);
       if (requestingUser.isGuest()) {
         LOG.warn("Denying deletion request for guest user: " + requestingUser.getUserId());
         return Response.status(Status.FORBIDDEN).build();

@@ -50,7 +50,7 @@ public class BulkDataDumper {
   public static final int FETCH_SIZE = 5000;
 
   private static final String ACCOUNTS_SCHEMA_MACRO = "$$accountschema$$";
-  private static final String ALLOWED_IS_ACTIVE_VALUES_MACRO = "$$allowedIsActiveValues$$";
+  private static final String MIN_LAST_ACTIVE_YEAR_MACRO = "$$min_last_active_year$$";
 
   private static final String GROUP_VOCABULARY_SQL = readResourceSql("sql/select-group-vocabulary.sql");
   private static final String ACCOUNTS_DETAILS_SQL = readResourceSql("sql/select-accounts-details.sql");
@@ -95,13 +95,11 @@ public class BulkDataDumper {
     });
   }
 
-  public JSONArray getGroupsJson(boolean includeUnsubscribedGroups) {
-
-    String isActiveValues = includeUnsubscribedGroups ? "1, 0" : "1";
+  public JSONArray getGroupsJson(GroupFilter filter) {
 
     String sql = GROUP_VOCABULARY_SQL
         .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
-        .replace(ALLOWED_IS_ACTIVE_VALUES_MACRO, isActiveValues);
+        .replace(MIN_LAST_ACTIVE_YEAR_MACRO, String.valueOf(filter.getMinLastActiveYear()));
 
     return new SQLRunner(_db.DATASOURCE, sql).executeQuery(
         new QueryFlags().setFetchSize(FETCH_SIZE),
@@ -116,7 +114,7 @@ public class BulkDataDumper {
         long groupId = rs.getLong("group_id");
         long subscriptionId = rs.getLong("subscription_id");
         String subscriptionToken = rs.getString("subscription_token");
-        boolean isActive = rs.getBoolean("is_active");
+        int lastActiveYear = rs.getInt("last_active_year");
         String groupName = rs.getString("group_name");
         String leadFirstName = rs.getString("first_name");
         String leadLastName = rs.getString("last_name");
@@ -131,11 +129,13 @@ public class BulkDataDumper {
         // see if group already exists and create new one if not
         JSONObject group = groups.get(subscriptionToken);
         if (group == null) {
+          ActiveStatus activeStatus = ActiveStatus.getActiveStatus(lastActiveYear);
           group = new JSONObject()
               .put("groupId", groupId)
               .put("subscriptionId", subscriptionId)
               .put("subscriptionToken", subscriptionToken)
-              .put("isActive", isActive)
+              .put("lastActiveYear", lastActiveYear)
+              .put("activeStatus", activeStatus.name().toLowerCase())
               .put("groupName", groupName)
               .put("subscriberName", subscriberName)
               .put("groupLeads", new JSONArray());
