@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.DBPlatform;
+import org.gusdb.fgputil.db.runner.QueryFlags;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
@@ -46,7 +47,9 @@ public class SubscriptionManager {
         "from " + SCHEMA_MACRO + "subscriptions s " +
         "order by display_name"
     ).replace(SCHEMA_MACRO, _schema);
-    return new SQLRunner(_ds, sql).executeQuery(rs -> {
+    return new SQLRunner(_ds, sql).executeQuery(
+        new QueryFlags().setFetchSize(BulkDataDumper.FETCH_SIZE),
+        rs -> {
       List<Subscription> subs = new ArrayList<>();
       while (rs.next()) {
         subs.add(new Subscription(
@@ -55,7 +58,7 @@ public class SubscriptionManager {
             rs.getString("display_name")));
       }
       return subs;
-    }, BulkDataDumper.FETCH_SIZE);
+    });
   }
 
   public void addSubscription(Subscription subscription) {

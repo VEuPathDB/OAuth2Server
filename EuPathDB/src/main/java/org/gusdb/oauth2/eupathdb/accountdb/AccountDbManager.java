@@ -28,7 +28,7 @@ import org.gusdb.fgputil.db.DBStateException;
 import org.gusdb.fgputil.db.SqlUtils;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.runner.SQLRunner;
-import org.gusdb.fgputil.db.runner.SQLRunner.ArgumentBatch;
+import org.gusdb.fgputil.db.runner.ArgumentBatch;
 import org.gusdb.fgputil.iterator.IteratorUtil;
 import org.gusdb.oauth2.client.veupathdb.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.UserProperty;

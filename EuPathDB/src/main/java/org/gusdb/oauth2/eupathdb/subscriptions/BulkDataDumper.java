@@ -20,6 +20,7 @@ import org.gusdb.fgputil.IoUtil;
 import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
+import org.gusdb.fgputil.db.runner.QueryFlags;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
 import org.json.JSONArray;
@@ -66,7 +67,9 @@ public class BulkDataDumper {
     BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outStream, StandardCharsets.UTF_8));
     List<String> buffer = new ArrayList<>();
 
-    new SQLRunner(_db.DATASOURCE, sql).executeQuery(rs -> {
+    new SQLRunner(_db.DATASOURCE, sql).executeQuery(
+        new QueryFlags().setFetchSize(FETCH_SIZE),
+        rs -> {
       try {
         int numCols = rs.getMetaData().getColumnCount();
         for (int i = 1; i <= numCols; i++) {
@@ -89,7 +92,7 @@ public class BulkDataDumper {
       catch (IOException e) {
         throw new RuntimeException("Could not write to output file", e);
       }
-    }, FETCH_SIZE);
+    });
   }
 
   public JSONArray getGroupsJson(boolean includeUnsubscribedGroups) {
@@ -100,7 +103,9 @@ public class BulkDataDumper {
         .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
         .replace(ALLOWED_IS_ACTIVE_VALUES_MACRO, isActiveValues);
 
-    return new SQLRunner(_db.DATASOURCE, sql).executeQuery(rs -> {
+    return new SQLRunner(_db.DATASOURCE, sql).executeQuery(
+        new QueryFlags().setFetchSize(FETCH_SIZE),
+        rs -> {
 
       Map<String, JSONObject> groups = new LinkedHashMap<>(); // keyed on subscription token
 
@@ -147,7 +152,7 @@ public class BulkDataDumper {
 
       return new JSONArray(groups.values());
 
-    }, FETCH_SIZE);
+    });
   }
 
   public static String readResourceSql(String resourceName) {
