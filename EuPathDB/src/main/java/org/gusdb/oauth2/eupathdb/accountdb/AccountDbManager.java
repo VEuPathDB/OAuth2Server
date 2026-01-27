@@ -472,10 +472,11 @@ public class AccountDbManager {
     new SQLRunner(_accountDb.getDataSource(), sql, "delete-user-props")
       .executeStatement(new Object[] { userId }, new Integer[] { Types.BIGINT });
 
-    // put back first_name and last_name with stub values
+    // put back first_name, last_name, organization with stub values
     for (Entry<String,String> propUpdate : List.of(
         new TwoTuple<>(UserInfo.FIRST_NAME_PROP_KEY, "deleted-user"),
-        new TwoTuple<>(UserInfo.LAST_NAME_PROP_KEY, userId.toString())
+        new TwoTuple<>(UserInfo.LAST_NAME_PROP_KEY, userId.toString()),
+        new TwoTuple<>(UserInfo.ORGANIZATION_PROP_KEY, "deleted-user")
     )) {
       sql = INSERT_PROPERTY_SQL
           .replace(ACCOUNT_SCHEMA_MACRO, _accountSchema);

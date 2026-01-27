@@ -30,6 +30,7 @@ public interface UserInfo {
 
   public static final String FIRST_NAME_PROP_KEY = "first_name";
   public static final String LAST_NAME_PROP_KEY = "last_name";
+  public static final String ORGANIZATION_PROP_KEY = "organization";
 
   // define valid user properties and their attributes
   public static final List<UserProperty> USER_PROPERTY_LIST = List.of(
@@ -37,7 +38,7 @@ public interface UserInfo {
       new UserProperty("firstName", "First name", NO_VALUE, NO_VALUE, FIRST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getFirstName, UserInfo::setFirstName),
       new UserProperty("middleName", "Middle name", NO_VALUE, NO_VALUE, "middle_name", false, true, InputType.TEXT, UserInfo::getMiddleName, UserInfo::setMiddleName),
       new UserProperty("lastName", "Last name", NO_VALUE, NO_VALUE, LAST_NAME_PROP_KEY, true, true, InputType.TEXT, UserInfo::getLastName, UserInfo::setLastName),
-      new UserProperty("organization", "Organization name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, "organization", true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
+      new UserProperty("organization", "Organization name", ORGANIZATION_HELP, ORGANIZATION_SUGGEST, ORGANIZATION_PROP_KEY, true, true, InputType.TEXT, UserInfo::getOrganization, UserInfo::setOrganization),
       new UserProperty("organizationType", "Organization type", NO_VALUE, NO_VALUE, "organization_type", true, true, InputType.SELECT, UserInfo::getOrganizationType, UserInfo::setOrganizationType),
       new UserProperty("country", "Organization location", NO_VALUE, NO_VALUE, "country", true, true, InputType.SELECT, UserInfo::getCountry, UserInfo::setCountry),
       new UserProperty("position", "Primary position", NO_VALUE, NO_VALUE, "position", true, true, InputType.SELECT, UserInfo::getPosition, UserInfo::setPosition),
