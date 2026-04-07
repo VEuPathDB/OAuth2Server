@@ -1,4 +1,4 @@
-select g.group_id, g.subscription_token, g.group_name, p.first_name, p.last_name, p.organization, g.display_name as subscriber_name, g.subscription_id, g.last_active_year
+select g.group_id, g.subscription_token, g.group_name, p.user_id, p.first_name, p.last_name, p.organization, g.display_name as subscriber_name, g.subscription_id, g.last_active_year
 from (
     select l.user_id, s.*
     from (

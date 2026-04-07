@@ -116,6 +116,7 @@ public class BulkDataDumper {
         String subscriptionToken = rs.getString("subscription_token");
         int lastActiveYear = rs.getInt("last_active_year");
         String groupName = rs.getString("group_name");
+        long leadUserId = rs.getLong("user_id");
         String leadFirstName = rs.getString("first_name");
         String leadLastName = rs.getString("last_name");
         String leadOrganization = rs.getString("organization");
@@ -145,7 +146,8 @@ public class BulkDataDumper {
         // add lead to this group if lead is present
         if (leadFirstName != null) {
           group.getJSONArray("groupLeads").put(new JSONObject()
-              .put("name",leadFirstName + " " + leadLastName)
+              .put("userId", leadUserId)
+              .put("name", leadFirstName + " " + leadLastName)
               .put("organization", leadOrganization));
         }
       }
