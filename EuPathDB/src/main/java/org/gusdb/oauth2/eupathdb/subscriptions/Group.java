@@ -45,6 +45,14 @@ public class Group {
       _members = members;
     }
 
+    public boolean hasLead(long userId) {
+      return _leads.stream().filter(u -> u._userId == userId).findFirst().isPresent();
+    }
+
+    public boolean hasMember(long userId) {
+      return _members.stream().filter(u -> u._userId == userId).findFirst().isPresent();
+    }
+
     public JSONObject toJson() {
       return _group.toJson()
           .put("subscriptionToken", _subscriptionToken)
@@ -57,6 +65,7 @@ public class Group {
     //   yet again from the JSON above which serves the admin panel
     public JSONObject toBulkGroupJson() {
       return new JSONObject()
+          .put("groupId", _group.getGroupId())
           .put("groupName", _group.getDisplayName())
           .put("subscriptionToken", _subscriptionToken)
           .put("groupLeads", toUserArrayJson(_leads))
