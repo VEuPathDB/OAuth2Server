@@ -18,6 +18,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -42,6 +43,7 @@ import org.gusdb.oauth2.server.OAuthServlet;
 import org.gusdb.oauth2.service.OAuthService;
 import org.gusdb.oauth2.service.Session;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -58,6 +60,7 @@ import org.json.JSONObject;
  * POST /groups/{id}/membership      adds or removes users from an existing group (as members, not leads)
  * GET  /user-names?userId1,userId2  returns username details to allow admins to check IDs
  * GET  /my-managed-groups           returns array of details for groups the calling user manages
+ * POST /remove-group-members        removes from a group any with ids in the passed list who are members (passed token must be the owner)
  *
  * Mutable subscriber fields:
  * - Name
@@ -333,30 +336,75 @@ public class SubscriptionService {
     throw e;
   }
 
-  @GET
-  @Path("my-managed-groups")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getMyManagedGroups() {
+  private Long getRequestingUserId() {
 
     // this endpoint is only accessed directly using a bearer token
     String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
-    if (authHeader == null) return Response.status(Status.UNAUTHORIZED).build();
+    if (authHeader == null) throw new NotAuthorizedException(Response.status(Status.UNAUTHORIZED).build());
 
     // validate token and parse user
     String token = OAuthClient.getTokenFromAuthHeader(authHeader);
     RequestingUser user = OAuthService.parseRequestingUser(token, _context);
 
     // only allow registered users
-    if (user.isGuest()) return Response.status(Status.UNAUTHORIZED).build();
+    if (user.isGuest()) throw new NotAuthorizedException(Response.status(Status.UNAUTHORIZED).build());
+
+    return Long.valueOf(user.getUserId());
+  }
+
+  @GET
+  @Path("my-managed-groups")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getMyManagedGroups() {
+
+    long requestingUserId = getRequestingUserId();
 
     // fetch details of each group this user leads and format as JSON array of group objects
     String groupsArrayJson = getSubscriptionManager()
-        .getGroupsByLead(Long.valueOf(user.getUserId()))
+        .getGroupsByLead(requestingUserId)
         .stream()
         .map(GroupWithUsers::toBulkGroupJson)
         .map(JSONObject::toString)
         .collect(Collectors.joining(",","[","]"));
 
     return Response.ok(groupsArrayJson).build();
+  }
+
+  @POST
+  @Path("remove-group-members")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response removeGroupMembers(String body) {
+    try {
+      // read authorization header for this request and convert to user id
+      long requestingUserId = getRequestingUserId();
+
+      // parse request body
+      JSONObject json = new JSONObject(body);
+      long groupId = json.getLong("groupId");
+      JSONArray userIds = json.getJSONArray("idsToRemove");
+      List<Long> idsToRemove = new ArrayList<>();
+      for (int i = 0; i < userIds.length(); i++) {
+        idsToRemove.add(userIds.getLong(i));
+      }
+
+      // look up group and check leadership
+      //   requesting user MUST be a lead; admins can manage users through the admin UI
+      SubscriptionManager mgr = getSubscriptionManager();
+      GroupWithUsers group = mgr.getGroup(groupId);
+      if (!group.hasLead(requestingUserId)) {
+        throw new ForbiddenException();
+      }
+
+      // trim deletion list to those in the group, then remove if any are left
+      idsToRemove = idsToRemove.stream().filter(id -> group.hasMember(id)).collect(Collectors.toList());
+      if (!idsToRemove.isEmpty()) {
+        mgr.removeUsersFromGroup(groupId, idsToRemove);
+      }
+
+      return Response.noContent().build();
+    }
+    catch (JSONException e) {
+      throw new BadRequestException(e.getMessage());
+    }
   }
 }
