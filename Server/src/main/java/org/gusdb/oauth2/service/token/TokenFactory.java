@@ -98,8 +98,8 @@ public class TokenFactory {
       .add(IdTokenFields.azp.name(), params.getClientId())
       .add(IdTokenFields.jti.name(), tokenId)
       .add(IdTokenFields.auth_time.name(), params.getCreationTime())
-      .add(IdTokenFields.iat.name(), timestamps.getCreationTimeMillis())
-      .add(IdTokenFields.exp.name(), timestamps.getExpirationTimeMillis());
+      .add(IdTokenFields.iat.name(), timestamps.getCreationTimeSecs())
+      .add(IdTokenFields.exp.name(), timestamps.getExpirationTimeSecs());
 
     // add nonce if client sent as part of original authentication request
     String nonce = params.getNonce();

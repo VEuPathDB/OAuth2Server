@@ -30,7 +30,7 @@ import org.gusdb.oauth2.tools.KeyPairReader;
   "issuer":"https://integrate.eupathdb.org/oauth",
   "validateDomains": true,
   "tokenExpirationSecs": 3600,
-  "guestTokenExpirationSecs": 604800,
+  "guestTokenExpirationSecs": 432000,
   "bearerTokenExpirationSecs": 94608000,
   "oauthSessionExpirationSecs": 2592000,
   "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
@@ -80,7 +80,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private static final String DEFAULT_LOGIN_SUCCESS_PAGE = "success.html";
 
   public static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300; // 5 minutes
-  public static final int DEFAULT_GUEST_TOKEN_EXPIRATION_SECS = 604800; // 1 week
+  public static final int DEFAULT_GUEST_TOKEN_EXPIRATION_SECS = 432000; // 5 days
   public static final int DEFAULT_BEARER_TOKEN_EXPIRATION_SECS = 5184000; // 60 days
   public static final int DEFAULT_OAUTH_SESSION_EXPIRATION_SECS = 31536000; // 365 days
 
