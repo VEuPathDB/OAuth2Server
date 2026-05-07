@@ -67,9 +67,7 @@ public class BulkDataDumper {
     BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outStream, StandardCharsets.UTF_8));
     List<String> buffer = new ArrayList<>();
 
-    new SQLRunner(_db.DATASOURCE, sql).executeQuery(
-        new QueryFlags().setFetchSize(FETCH_SIZE),
-        rs -> {
+    new SQLRunner(_db.DATASOURCE, sql).executeQuery(new QueryFlags().setFetchSize(FETCH_SIZE), rs -> {
       try {
         int numCols = rs.getMetaData().getColumnCount();
         for (int i = 1; i <= numCols; i++) {
@@ -101,9 +99,7 @@ public class BulkDataDumper {
         .replace(ACCOUNTS_SCHEMA_MACRO, _db.SCHEMA)
         .replace(MIN_LAST_ACTIVE_YEAR_MACRO, String.valueOf(filter.getMinLastActiveYear()));
 
-    return new SQLRunner(_db.DATASOURCE, sql).executeQuery(
-        new QueryFlags().setFetchSize(FETCH_SIZE),
-        rs -> {
+    return new SQLRunner(_db.DATASOURCE, sql).executeQuery(new QueryFlags().setFetchSize(FETCH_SIZE), rs -> {
 
       Map<String, JSONObject> groups = new LinkedHashMap<>(); // keyed on subscription token
 

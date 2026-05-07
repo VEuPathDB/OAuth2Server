@@ -16,6 +16,8 @@ import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.gusdb.oauth2.Authenticator;
 import org.gusdb.oauth2.Authenticator.DataScope;
+import org.gusdb.oauth2.Authenticator.GuestIds;
+import org.gusdb.oauth2.Authenticator.TokenTimestamps;
 import org.gusdb.oauth2.UserAccountInfo;
 import org.gusdb.oauth2.service.token.TokenStore.IdTokenParams;
 import org.gusdb.oauth2.shared.IdTokenFields;
@@ -29,12 +31,16 @@ public class TokenFactory {
           throws OAuthSystemException {
     assert(scope != DataScope.PROFILE);
 
+    // assign timestamps
+    TokenTimestamps timestamps = new TokenTimestamps(expirationSecs);
+
     // get values from authenticator and use to populate fields
     UserAccountInfo user = getUserInfoForToken(authenticator, userId, scope);
+    String tokenId = authenticator.generateBearerTokenId(user, timestamps);
 
     // get base object (common to ID and guest tokens, and user profiles)
     JsonObjectBuilder json = getBaseJson(user);
-    appendOidcFields(json, tokenParams, issuer, expirationSecs);
+    appendOidcFields(json, tokenParams, issuer, tokenId, timestamps);
     appendProfileFields(json, user, scope);
     return json.build();
   }
@@ -83,16 +89,17 @@ public class TokenFactory {
     return jsonBuilder;
   }
 
-  private static JsonObjectBuilder appendOidcFields(JsonObjectBuilder jsonBuilder, IdTokenParams params, String issuer, int expirationSecs) {
+  private static JsonObjectBuilder appendOidcFields(JsonObjectBuilder jsonBuilder,
+      IdTokenParams params, String issuer, String tokenId, TokenTimestamps timestamps) {
     // OpenID Connect claims that we support
-    long now = System.currentTimeMillis() / 1000;
     jsonBuilder
       .add(IdTokenFields.iss.name(), issuer)
       .add(IdTokenFields.aud.name(), params.getClientId())
       .add(IdTokenFields.azp.name(), params.getClientId())
+      .add(IdTokenFields.jti.name(), tokenId)
       .add(IdTokenFields.auth_time.name(), params.getCreationTime())
-      .add(IdTokenFields.iat.name(), now)
-      .add(IdTokenFields.exp.name(), now + expirationSecs);
+      .add(IdTokenFields.iat.name(), timestamps.getCreationTimeMillis())
+      .add(IdTokenFields.exp.name(), timestamps.getExpirationTimeMillis());
 
     // add nonce if client sent as part of original authentication request
     String nonce = params.getNonce();
@@ -115,11 +122,16 @@ public class TokenFactory {
       throw OAuthProblemException.error("This token service does not support guest tokens.");
     }
 
-    // get base object (common to ID and guest tokens, and user profiles)
-    String guestUserId = authenticator.getNextGuestId();
-    UserAccountInfo guestUser = authenticator.getGuestProfileInfo(guestUserId).orElseThrow(); // just inserted on the last line
+    // establish creation and expiration timestamps
+    TokenTimestamps tokenTimestamps = new TokenTimestamps(expirationSecs);
+
+    // get IDs for the guest (tuple of [user_id, token_id], and user object
+    GuestIds guestIds = authenticator.getNextGuestIds(tokenTimestamps);
+    UserAccountInfo guestUser = authenticator.getGuestProfileInfo(guestIds.getUserId()).orElseThrow(); // just inserted on the last line
+
+    // build and return token JSON
     JsonObjectBuilder json = getBaseJson(guestUser);
-    appendOidcFields(json, new IdTokenParams(clientId, null), issuer, expirationSecs);
+    appendOidcFields(json, new IdTokenParams(clientId, null), issuer, guestIds.getTokenId(), tokenTimestamps);
     return json.build();
   }
 

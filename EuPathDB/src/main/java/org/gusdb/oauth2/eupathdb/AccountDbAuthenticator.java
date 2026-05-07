@@ -5,7 +5,6 @@ import static org.gusdb.oauth2.client.veupathdb.UserInfo.USER_PROPERTY_LIST;
 
 import java.net.URI;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -25,8 +24,8 @@ import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.ConnectionPoolConfig;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
-import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
+//import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.fgputil.db.slowquery.QueryLogConfig;
 import org.gusdb.fgputil.db.slowquery.QueryLogger;
 import org.gusdb.fgputil.functional.Functions;
@@ -45,6 +44,8 @@ import org.gusdb.oauth2.service.UserPropertiesRequest;
 public class AccountDbAuthenticator implements Authenticator {
 
   private static final Logger LOG = Logger.getLogger(AccountDbAuthenticator.class);
+
+  private static final int BEARER_TOKEN_ID_LENGTH = 20;
 
   // create specially scoped Logger to write the login recording log
   private static class LoginLogger {}
@@ -214,25 +215,29 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   /**
-   * @return a new guest ID
+   * @return tuple of [user_id, token_id]
    */
   @Override
-  public String getNextGuestId() {
+  public GuestIds getNextGuestIds(TokenTimestamps timestamps) {
     try {
-      String id = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).createGuestAccount("guest_").getUserId().toString();
-      // FIXME: since this code directly accesses the DB, it should live in AccountManager;
-      //   however that complicates FgpUtil releases prior to move to bearer tokens, so adding it here.
-      String sql = "insert into useraccounts.guest_ids (user_id, creation_time) values (?, current_date)";
-      int inserted = new SQLRunner(_accountDb.getDataSource(), sql, "insert-guest-id")
-          .executeUpdate(new Object[]{ Long.valueOf(id) }, new Integer[]{ Types.BIGINT });
-      if (inserted != 1) throw new IllegalStateException("Tried to insert duplicate guest ID " + id + ". Check ID sequence to make sure it is big enough.");
-      return id;
+      AccountDbManager acctMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
+
+      // get user ID for the guest
+      String userId = acctMgr.createGuestAccount("guest_").getUserId().toString();
+
+      // get token ID for this specific token
+      String tokenId = generateRandomChars(BEARER_TOKEN_ID_LENGTH);
+
+      // insert row
+      acctMgr.insertGuestIds(userId, tokenId, timestamps);
+
+      return new GuestIds() {
+        @Override public String getUserId() { return userId; }
+        @Override public String getTokenId() { return tokenId; }
+      };
     }
     catch (SQLException e) {
       throw new RuntimeException("Unable to generate next guest ID", e);
-    }
-    catch (SQLRunnerException e) {
-      throw new RuntimeException("Could not insert row to guest_ids", e.getCause());
     }
   }
 
@@ -377,16 +382,13 @@ public class AccountDbAuthenticator implements Authenticator {
   }
 
   @Override
-  public Optional<UserAccountInfo> getGuestProfileInfo(String userId) {
+  public Optional<UserAccountInfo> getGuestProfileInfo(String userIdStr) {
     try {
-      // FIXME: since this code directly accesses the DB, it should live in AccountManager;
-      //   however that complicates FgpUtil releases prior to move to bearer tokens, so adding it here.
-      String sql = "select creation_time from useraccounts.guest_ids where user_id = ?";
-      Optional<Date> creationDate = new SQLRunner(_accountDb.getDataSource(), sql, "select-guest")
-          .executeQuery(new Object[] { Long.valueOf(userId) }, new Integer[] { Types.BIGINT }, rs ->
-              rs.next() ? Optional.of(rs.getDate("creation_time")) : Optional.empty());
+      long userId = Long.valueOf(userIdStr);
+      AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
+      Optional<Date> creationDate = accountMgr.findGuestCreationDate(userId);
       return creationDate.map(date -> {
-        UserProfile guest = AccountDbManager.createGuestProfile("guest", Long.valueOf(userId), date);
+        UserProfile guest = AccountDbManager.createGuestProfile("guest", userId, date);
         return createUserInfoObject(guest, false, DataScope.PROFILE);
       });
     }
@@ -399,6 +401,26 @@ public class AccountDbAuthenticator implements Authenticator {
   public void updateLastLoginTimestamp(String userId) {
     AccountDbManager accountMgr = new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST);
     accountMgr.updateLastLogin(Long.valueOf(userId));
+  }
+
+  @Override
+  public String generateBearerTokenId(UserAccountInfo userInfo, TokenTimestamps timestamps) {
+
+    // generate token ID
+    String tokenId = generateRandomChars(BEARER_TOKEN_ID_LENGTH);
+
+    // if non-guest, persist token ID with user ID and other info which may be used later for revocation/metrics
+    if (userInfo.isGuest()) {
+      throw new RuntimeException("This method should not be used to generate token IDs for guest users.");
+    }
+
+    new AccountDbManager(_accountDb, _schema, USER_PROPERTY_LIST).writeBearerTokenRecord(
+        Long.valueOf(userInfo.getUserId()),
+        tokenId,
+        timestamps.getCreationDate(),
+        timestamps.getExpirationDate());
+
+    return tokenId;
   }
 
 }

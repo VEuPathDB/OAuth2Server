@@ -50,15 +50,16 @@ public class SubscriptionManager {
     return new SQLRunner(_ds, sql).executeQuery(
         new QueryFlags().setFetchSize(BulkDataDumper.FETCH_SIZE),
         rs -> {
-      List<Subscription> subs = new ArrayList<>();
-      while (rs.next()) {
-        subs.add(new Subscription(
-            rs.getLong("subscription_id"),
-            rs.getString("display_name"),
-            rs.getInt("last_active_year")));
-      }
-      return subs;
-    });
+          List<Subscription> subs = new ArrayList<>();
+          while (rs.next()) {
+            subs.add(new Subscription(
+                rs.getLong("subscription_id"),
+                rs.getString("display_name"),
+                rs.getInt("last_active_year")));
+          }
+          return subs;
+        }
+    );
   }
 
   public void addSubscription(Subscription subscription) {

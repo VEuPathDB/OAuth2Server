@@ -8,6 +8,7 @@ public enum IdTokenFields {
     sub, // subject (unique user ID)
     aud, // audience (client ID of consumer)
     azp, // authorized party (same as aud in our case)
+    jti, // token's unique identifier
     auth_time, // time of authentication (Unix integer seconds)
     iat, // time of issuance (Unix integer seconds)
     exp, // time of expiration (Unix integer seconds)

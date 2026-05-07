@@ -427,7 +427,10 @@ public class OAuthService {
           .getBody();
       String userId = claims.getSubject();
       boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
-      return new RequestingUser(userId, isGuest);
+      return new RequestingUser() {
+        @Override public String getUserId() { return userId; }
+        @Override public boolean isGuest() { return isGuest; }
+      };
     }
     catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException e) {
       throw new IllegalArgumentException(e.getClass().getSimpleName() + ", Could not parse JWT; " + e.getMessage());
