@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,9 +28,12 @@ import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.DBStateException;
 import org.gusdb.fgputil.db.SqlUtils;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
+import org.gusdb.fgputil.db.runner.ArgumentBatch;
+import org.gusdb.fgputil.db.runner.ParamBuilder;
 import org.gusdb.fgputil.db.runner.SQLRunner;
-import org.gusdb.fgputil.db.runner.SQLRunner.ArgumentBatch;
+import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.fgputil.iterator.IteratorUtil;
+import org.gusdb.oauth2.Authenticator.TokenTimestamps;
 import org.gusdb.oauth2.client.veupathdb.UserInfo;
 import org.gusdb.oauth2.client.veupathdb.UserProperty;
 
@@ -501,5 +505,44 @@ public class AccountDbManager {
       new SQLRunner(_accountDb.getDataSource(), sql, "modify-col-for-deletion")
           .executeStatement(new Object[] { columnUpdate.getValue(), userId }, new Integer[] { Types.VARCHAR, Types.BIGINT });
     }
+  }
+
+  public Optional<Date> findGuestCreationDate(long userId) {
+
+    String sql = "select creation_time from " + _accountSchema + "guest_ids where user_id = ?";
+
+    return new SQLRunner(_accountDb.getDataSource(), sql, "select-guest").executeQuery(
+        new ParamBuilder().addLong(userId),
+        rs -> rs.next() ? Optional.of(rs.getDate("creation_time")) : Optional.empty());
+  }
+
+  public void insertGuestIds(String userId, String tokenId, TokenTimestamps timestamps) {
+    try {
+      String sql = "insert into " + _accountSchema + "guest_ids (user_id, token_id, creation_time) values (?, ?, ?)";
+
+      int inserted = new SQLRunner(_accountDb.getDataSource(), sql, "insert-guest-id").executeUpdate(
+          new ParamBuilder().addLong(Long.valueOf(userId)).addString(tokenId).addDate(timestamps.getCreationDate()));
+
+      if (inserted != 1)
+        throw new IllegalStateException("Tried to insert duplicate guest ID " + userId + ". Check ID sequence to make sure it is big enough.");
+    }
+    catch (SQLRunnerException e) {
+      throw new RuntimeException("Could not insert row to guest_ids", e.getCause());
+    }
+  }
+
+  public void writeBearerTokenRecord(long userId, String tokenId, Date creationDate, Date expirationDate) {
+
+    String sql = "insert into useraccounts.token_ids (token_id, user_id, creation_time, expiration_time, is_revoked) values (?, ?, ?, ?, ?)";
+
+    new SQLRunner(_accountDb.getDataSource(), sql, "insert-bearer-token").executeUpdate(new ParamBuilder()
+        .addString(tokenId)        // token_id
+        .addLong(userId)           // user_id
+        .addDate(creationDate)     // creation_time
+        .addDate(expirationDate)   // expiration_time
+
+        // FIXME: this will need to be changed if we move to postgres
+        .addInteger((Integer)_accountDb.getPlatform().convertBoolean(false)) // is_revoked
+    );
   }
 }
