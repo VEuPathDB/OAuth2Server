@@ -540,7 +540,9 @@ public class AccountDbManager {
         .addLong(userId)           // user_id
         .addDate(creationDate)     // creation_time
         .addDate(expirationDate)   // expiration_time
-        .addBoolean(false)         // is_revoked
+
+        // FIXME: this will need to be changed if we move to postgres
+        .addInteger((Integer)_accountDb.getPlatform().convertBoolean(false)) // is_revoked
     );
   }
 }
