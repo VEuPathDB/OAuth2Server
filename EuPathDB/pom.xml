@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.gusdb</groupId>
     <artifactId>oauth2</artifactId>
-    <version>4.2.1-SNAPSHOT</version>
+    <version>4.2.1-j21tc9-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -16,7 +16,8 @@
     <!-- Expect this property to be passed in -->
     <oauthConfigFile>WEB-INF/OAuthSampleConfig.json</oauthConfigFile>
 
-    <fgputil.version>2.16.4</fgputil.version>
+    <fgputil.version>3.2.5</fgputil.version>
+
   </properties>
 
   <dependencies>
@@ -55,7 +56,7 @@
 
     <dependency>
       <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <artifactId>javax.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -84,7 +85,6 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
     </dependency>
-
   </dependencies>
 
   <build>
