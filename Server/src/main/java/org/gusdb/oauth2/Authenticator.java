@@ -73,11 +73,9 @@ public interface Authenticator extends AutoCloseable {
       _expirationTimeMillis = _currentTimeMillis + (expirationSecs * 1000);
     }
 
-    public long getCreationTimeMillis() { return _currentTimeMillis; }
     public long getCreationTimeSecs() { return _currentTimeMillis / 1000; }
     public Date getCreationDate() { return new Date(_currentTimeMillis); }
 
-    public long getExpirationTimeMillis() { return _expirationTimeMillis; }
     public long getExpirationTimeSecs() { return _expirationTimeMillis / 1000; }
     public Date getExpirationDate() { return new Date(_expirationTimeMillis); }
   }
