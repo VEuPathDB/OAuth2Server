@@ -28,7 +28,7 @@ import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.platform.SupportedPlatform;
 import org.gusdb.fgputil.db.pool.DatabaseInstance;
 import org.gusdb.fgputil.db.pool.SimpleDbConfig;
-import org.gusdb.fgputil.db.runner.BasicArgumentBatch;
+import org.gusdb.fgputil.db.runner.ListArgumentBatch;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.functional.FunctionalInterfaces.Reducer;
 import org.gusdb.fgputil.functional.Functions;
@@ -267,7 +267,7 @@ public class SubscriptionGroupReloader {
           group -> new Object[] { group.subscriptionId, group.hasInvoice });
       LOG.info("Inserting " + groups.size() + " rows into subscriptions table");
       tableCounts.getJSONObject("subscriptions").put("after", groups.size());
-      new SQLRunner(_acctDbDs, subscriptionInsertSql).executeStatementBatch(new BasicArgumentBatch() {
+      new SQLRunner(_acctDbDs, subscriptionInsertSql).executeStatementBatch(new ListArgumentBatch() {
         @Override public Iterator<Object[]> iterator() { return subIter; }
       }
       .setBatchSize(groups.size())
@@ -279,7 +279,7 @@ public class SubscriptionGroupReloader {
           group -> new Object[] { group.groupId, group.subscriptionId, group.name, group.subscriptionToken });
       LOG.info("Inserting " + groups.size() + " rows into subscription_groups table");
       tableCounts.getJSONObject("subscription_groups").put("after", groups.size());
-      new SQLRunner(_acctDbDs, groupInsertSql).executeStatementBatch(new BasicArgumentBatch() {
+      new SQLRunner(_acctDbDs, groupInsertSql).executeStatementBatch(new ListArgumentBatch() {
         @Override public Iterator<Object[]> iterator() { return groupIter; }
       }
       .setBatchSize(groups.size())
@@ -292,7 +292,7 @@ public class SubscriptionGroupReloader {
       List<Object[]> leadMapping = Functions.reduce(groups.values(), leadReducer, new ArrayList<>());
       LOG.info("Inserting " + leadMapping.size() + " rows into subscription_group_leads table");
       tableCounts.getJSONObject("subscription_group_leads").put("after", leadMapping.size());
-      new SQLRunner(_acctDbDs, groupLeadInsertSql).executeStatementBatch(new BasicArgumentBatch() {
+      new SQLRunner(_acctDbDs, groupLeadInsertSql).executeStatementBatch(new ListArgumentBatch() {
         @Override public Iterator<Object[]> iterator() { return leadMapping.iterator(); }
       }
       .setBatchSize(leadMapping.size())
@@ -305,7 +305,7 @@ public class SubscriptionGroupReloader {
       List<Object[]> memberMapping = Functions.reduce(groups.values(), memberReducer, new ArrayList<>());
       LOG.info("Inserting " + memberMapping.size() + " rows into account_properties table");
       tableCounts.getJSONObject("account_properties").put("after", memberMapping.size());
-      new SQLRunner(_acctDbDs, subscriptionTokenInsertSql).executeStatementBatch(new BasicArgumentBatch() {
+      new SQLRunner(_acctDbDs, subscriptionTokenInsertSql).executeStatementBatch(new ListArgumentBatch() {
         @Override public Iterator<Object[]> iterator() { return memberMapping.iterator(); }
       }
       .setBatchSize(memberMapping.size())

@@ -1,6 +1,6 @@
 package org.gusdb.oauth2;
 
-import java.util.AbstractMap;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,10 +53,31 @@ public interface Authenticator extends AutoCloseable {
     PROFILE;
   }
 
-  public static class RequestingUser extends AbstractMap.SimpleImmutableEntry<String, Boolean> {
-    public RequestingUser(String userId, boolean isGuest) { super(userId, isGuest); }
-    public String getUserId() { return getKey(); }
-    public boolean isGuest() { return getValue(); }
+  public interface RequestingUser {
+    String getUserId();
+    boolean isGuest();
+  }
+
+  public interface GuestIds {
+    String getUserId();
+    String getTokenId();
+  }
+
+  public static class TokenTimestamps {
+
+    private final long _currentTimeMillis;
+    private final long _expirationTimeMillis;
+
+    public TokenTimestamps(int expirationSecs) {
+      _currentTimeMillis = System.currentTimeMillis();
+      _expirationTimeMillis = _currentTimeMillis + (expirationSecs * 1000);
+    }
+
+    public long getCreationTimeSecs() { return _currentTimeMillis / 1000; }
+    public Date getCreationDate() { return new Date(_currentTimeMillis); }
+
+    public long getExpirationTimeSecs() { return _expirationTimeMillis / 1000; }
+    public Date getExpirationDate() { return new Date(_expirationTimeMillis); }
   }
 
   /**
@@ -155,7 +176,7 @@ public interface Authenticator extends AutoCloseable {
   public void logSuccessfulLogin(String loginName, String userId, String clientId, String redirectUri, String requestingIpAddress);
 
   /**
-   * Returns true if getNextGuestId() is implemented to produce guest IDs.  If this method
+   * Returns true if getNextGuestIds() is implemented to produce guest IDs.  If this method
    * returns false, the guest token endpoint of this OIDC server will throw an error
    */
   public default boolean supportsGuests() {
@@ -163,9 +184,9 @@ public interface Authenticator extends AutoCloseable {
   }
 
   /**
-   * @return a new guest ID
+   * @return a new set of guest IDs [user_id, token_id]
    */
-  public default String getNextGuestId() {
+  public default GuestIds getNextGuestIds(TokenTimestamps timestamps) {
     throw new UnsupportedOperationException("This authenticator does not support guests.");
   }
 
@@ -230,5 +251,14 @@ public interface Authenticator extends AutoCloseable {
    * @return list of admin user IDs
    */
   public List<String> getAdminUserIds();
+
+  /**
+   * Generate a token ID for the next bearer token issued for the passed user
+   *
+   * @param userInfo information about the user to be issued a token
+   * @param timestamps token timestamps which can be used during token ID persistence if desired
+   * @return ID of the new token
+   */
+  public String generateBearerTokenId(UserAccountInfo userInfo, TokenTimestamps timestamps);
 
 }

@@ -30,6 +30,7 @@ import org.gusdb.oauth2.tools.KeyPairReader;
   "issuer":"https://integrate.eupathdb.org/oauth",
   "validateDomains": true,
   "tokenExpirationSecs": 3600,
+  "guestTokenExpirationSecs": 432000,
   "bearerTokenExpirationSecs": 94608000,
   "oauthSessionExpirationSecs": 2592000,
   "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",
@@ -79,6 +80,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private static final String DEFAULT_LOGIN_SUCCESS_PAGE = "success.html";
 
   public static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300; // 5 minutes
+  public static final int DEFAULT_GUEST_TOKEN_EXPIRATION_SECS = 432000; // 5 days
   public static final int DEFAULT_BEARER_TOKEN_EXPIRATION_SECS = 5184000; // 60 days
   public static final int DEFAULT_OAUTH_SESSION_EXPIRATION_SECS = 31536000; // 365 days
 
@@ -89,6 +91,7 @@ public class ApplicationConfig extends SigningKeyStore {
     loginFormPage,
     loginSuccessPage,
     tokenExpirationSecs,
+    guestTokenExpirationSecs,
     bearerTokenExpirationSecs,
     oauthSessionExpirationSecs,
     allowAnonymousLogin,
@@ -113,6 +116,7 @@ public class ApplicationConfig extends SigningKeyStore {
       String loginFormPage = json.getString(JsonKey.loginFormPage.name(), DEFAULT_LOGIN_FORM_PAGE);
       String loginSuccessPage = json.getString(JsonKey.loginSuccessPage.name(), DEFAULT_LOGIN_SUCCESS_PAGE);
       int tokenExpirationSecs = json.getInt(JsonKey.tokenExpirationSecs.name(), DEFAULT_TOKEN_EXPIRATION_SECS);
+      int guestTokenExpirationSecs = json.getInt(JsonKey.guestTokenExpirationSecs.name(), DEFAULT_GUEST_TOKEN_EXPIRATION_SECS);
       int bearerTokenExpirationSecs = json.getInt(JsonKey.bearerTokenExpirationSecs.name(), DEFAULT_BEARER_TOKEN_EXPIRATION_SECS);
       int oauthSessionExpirationSecs = json.getInt(JsonKey.oauthSessionExpirationSecs.name(), DEFAULT_OAUTH_SESSION_EXPIRATION_SECS);
       validateResource(loginFormPage);
@@ -133,7 +137,7 @@ public class ApplicationConfig extends SigningKeyStore {
       String keyStoreFile = json.getString(JsonKey.keyStoreFile.name());
       String keyStorePassPhrase = json.getString(JsonKey.keyStorePassPhrase.name());
       return new ApplicationConfig(issuer, authClassName, authClassConfig, loginFormPage,
-          loginSuccessPage, tokenExpirationSecs, bearerTokenExpirationSecs, oauthSessionExpirationSecs,
+          loginSuccessPage, tokenExpirationSecs, guestTokenExpirationSecs, bearerTokenExpirationSecs, oauthSessionExpirationSecs,
           allowAnonymousLogin, validateDomains, allowedClients, keyStoreFile, keyStorePassPhrase);
     }
     catch (ClassCastException | NullPointerException | IllegalArgumentException e) {
@@ -160,6 +164,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private final String _loginFormPage;
   private final String _loginSuccessPage;
   private final int _tokenExpirationSecs;
+  private final int _guestTokenExpirationSecs;
   private final int _bearerTokenExpirationSecs;
   private final int _oauthSessionExpirationSecs;
   private final boolean _anonymousLoginsAllowed;
@@ -170,7 +175,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private final Set<String> _iframeAllowedSites;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
-      String loginSuccessPage, int tokenExpirationSecs, int bearerTokenExpirationSecs, int oauthSessionExpirationSecs, boolean anonymousLoginsAllowed,
+      String loginSuccessPage, int tokenExpirationSecs, int guestTokenExpirationSecs, int bearerTokenExpirationSecs, int oauthSessionExpirationSecs, boolean anonymousLoginsAllowed,
       boolean validateDomains, List<AllowedClient> allowedClients, String keyStoreFile, String keyStorePassPhrase) throws CryptoException, IOException {
     super(new KeyPairReader().readKeyPair(Paths.get(keyStoreFile), keyStorePassPhrase));
     _issuer = issuer;
@@ -179,6 +184,7 @@ public class ApplicationConfig extends SigningKeyStore {
     _loginFormPage = loginFormPage;
     _loginSuccessPage = loginSuccessPage;
     _tokenExpirationSecs = tokenExpirationSecs;
+    _guestTokenExpirationSecs = guestTokenExpirationSecs;
     _bearerTokenExpirationSecs = bearerTokenExpirationSecs;
     _oauthSessionExpirationSecs = oauthSessionExpirationSecs;
     _anonymousLoginsAllowed = anonymousLoginsAllowed;
@@ -228,6 +234,10 @@ public class ApplicationConfig extends SigningKeyStore {
 
   public int getTokenExpirationSecs() {
     return _tokenExpirationSecs;
+  }
+
+  public int getGuestTokenExpirationSecs() {
+    return _guestTokenExpirationSecs;
   }
 
   public int getBearerTokenExpirationSecs() {
