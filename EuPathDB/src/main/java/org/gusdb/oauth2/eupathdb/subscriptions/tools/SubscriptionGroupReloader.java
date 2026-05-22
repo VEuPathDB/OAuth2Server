@@ -41,6 +41,7 @@ public class SubscriptionGroupReloader {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionGroupReloader.class);
 
+  @Deprecated
   public static void main(String[] args) throws Exception {
 
     // configuration for command line tool
@@ -129,12 +130,14 @@ public class SubscriptionGroupReloader {
   private final DBPlatform _acctDbPlatform;
   private final String _accountsSchema;
 
+  @Deprecated
   public SubscriptionGroupReloader(DataSource acctDbDs, DBPlatform acctDbPlatform, String accountsSchema) {
     _acctDbDs = acctDbDs;
     _acctDbPlatform = acctDbPlatform;
     _accountsSchema = accountsSchema;
   }
 
+  @Deprecated
   public JSONObject loadSubscriptions(Path accountsFile, boolean returnGroupDetails, boolean writeToDb) throws IOException {
 
     // JSON Object will hold both observations and warnings
