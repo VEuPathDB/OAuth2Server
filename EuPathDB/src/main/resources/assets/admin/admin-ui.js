@@ -22,7 +22,7 @@ $(function() {
   globalState.webappPrefix = pathArray.length > 0 && pathArray[0] == "oauth" ? "/oauth" : "";
 
   // check for admin access and redirect to login page if not admin
-  $.ajax("/oauth/check-admin", {
+  $.ajax(prependWebapp("/check-admin"), {
     success: (body) => {
       if (body == "no") {
         let host = window.location.hostname;
