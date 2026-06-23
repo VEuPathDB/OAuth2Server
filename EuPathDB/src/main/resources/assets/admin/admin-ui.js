@@ -19,7 +19,7 @@ $(function() {
   let id = params.get("id") || undefined;
 
   // set webapp to prefix in URL if found
-  globalState.webappPrefix = pathArray.length > 0 && pathArray[0] == "oauth" ? "/oauth" : "";
+  globalState.webappPrefix = pathArray.length > 1 && pathArray[1] == "oauth" ? "/oauth" : "";
 
   // check for admin access and redirect to login page if not admin
   $.ajax(prependWebapp("/check-admin"), {
