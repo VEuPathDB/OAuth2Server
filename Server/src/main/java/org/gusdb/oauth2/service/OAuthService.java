@@ -205,7 +205,7 @@ public class OAuthService {
     // determine whether this request came from a valid page
     try {
       @SuppressWarnings("unused")
-      URL url = new URL(redirectUri);
+      URL url = new URI(redirectUri).toURL();
       //String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
       //String originVal = url.getProtocol() + "://" + url.getHost() + passedPort;
       //ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);

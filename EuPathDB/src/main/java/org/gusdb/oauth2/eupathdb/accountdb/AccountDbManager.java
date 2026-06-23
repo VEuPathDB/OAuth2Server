@@ -322,7 +322,7 @@ public class AccountDbManager {
 
   private ArgumentBatch getUserPropertyBatch(final long userId, Map<String, String> profileProperties) {
     // deal with null property map; this can sometimes be passed
-    if (profileProperties == null) profileProperties = Collections.EMPTY_MAP;
+    if (profileProperties == null) profileProperties = Collections.emptyMap();
     // first trim props to those allowed by the configuration of this account manager
     final Set<String> propKeys = _propertyNames.keySet();
     final Map<String,String> trimmedProps = pickKeys(profileProperties, propKey -> propKeys.contains(propKey));
@@ -384,7 +384,7 @@ public class AccountDbManager {
     profile.setSignature(encryptPassword(stableId));
     profile.setRegisterTime(timestamp);
     profile.setLastLoginTime(timestamp);
-    profile.setProperties(Collections.EMPTY_MAP);
+    profile.setProperties(Collections.emptyMap());
     return profile;
   }
 

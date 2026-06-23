@@ -93,7 +93,7 @@ public class BearerTokenGenerator extends ToolBase {
       IdTokenParams params = new IdTokenParams("apiComponentSite", null);
 
       JsonObject tokenJson = TokenFactory.createTokenJson(authenticator, userId, params,
-          "https://eupathdb.org/oauth", ApplicationConfig.DEFAULT_BEARER_TOKEN_EXPIRATION_SECS, DataScope.BEARER_TOKEN);
+          "https://auth.veupathdb.org", ApplicationConfig.DEFAULT_BEARER_TOKEN_EXPIRATION_SECS, DataScope.BEARER_TOKEN);
 
       return Signatures.ASYMMETRIC_KEY_SIGNER.getSignedEncodedToken(tokenJson, keyStore, params.getClientId(), null);
     }
