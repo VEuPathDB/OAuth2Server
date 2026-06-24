@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -199,6 +200,7 @@ public class OAuthService {
   @GET
   @Path(Endpoints.LOGOUT)
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) {
+    Supplier<Response> logoutStatusResponse = () -> Response.ok("Logged out at " + new Date()).build();
     // FIXME: cannot get CORS requests to work so logout can be async from a different domain
     // determine whether this request came from a valid page
     try {
@@ -219,14 +221,16 @@ public class OAuthService {
       new Session(_request.getSession()).invalidate();
 
       // attempt to construct redirect response; if unable, just return 200
-      return Response
-          .seeOther(new URI(redirectUri))
-          //.header("Access-Control-Allow-Origin", originVal)
-          .build();
+      return redirectUri == null
+          ? logoutStatusResponse.get()
+          : Response
+              .seeOther(new URI(redirectUri))
+              //.header("Access-Control-Allow-Origin", originVal)
+              .build();
     }
     catch (URISyntaxException e) {
       //return new OAuthResponseFactory().buildBadRedirectUrlResponse();
-      return Response.ok("Logged out at " + new Date()).build();
+      return logoutStatusResponse.get();
     }
   }
 
