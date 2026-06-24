@@ -4,10 +4,8 @@ import static org.gusdb.oauth2.assets.StaticResource.RESOURCE_PREFIX;
 
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.security.Key;
 import java.util.AbstractMap.SimpleEntry;
@@ -204,8 +202,8 @@ public class OAuthService {
     // FIXME: cannot get CORS requests to work so logout can be async from a different domain
     // determine whether this request came from a valid page
     try {
-      @SuppressWarnings("unused")
-      URL url = new URI(redirectUri).toURL();
+      //@SuppressWarnings("unused")
+      //URL url = new URI(redirectUri).toURL();
       //String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
       //String originVal = url.getProtocol() + "://" + url.getHost() + passedPort;
       //ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
@@ -226,7 +224,7 @@ public class OAuthService {
           //.header("Access-Control-Allow-Origin", originVal)
           .build();
     }
-    catch (MalformedURLException | URISyntaxException e) {
+    catch (URISyntaxException e) {
       //return new OAuthResponseFactory().buildBadRedirectUrlResponse();
       return Response.ok("Logged out at " + new Date()).build();
     }
