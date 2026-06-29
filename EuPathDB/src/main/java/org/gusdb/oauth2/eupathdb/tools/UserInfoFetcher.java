@@ -30,7 +30,7 @@ public class UserInfoFetcher extends ToolBase {
     String tokenValue = findProp(PROP_TEST_BEARER_TOKEN);
 
     OAuthConfig oauthConfig = OAuthConfig.build(
-        "https://eupathdb.org/oauth",
+        "https://auth.veupathdb.org",
         "apiComponentSite",
         apiComponentSiteSecret
     );

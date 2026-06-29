@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
@@ -44,7 +45,7 @@ public class StateParamHttpRequest implements HttpServletRequest {
   }
 
   @Override
-  public Enumeration<?> getAttributeNames() {
+  public Enumeration<String> getAttributeNames() {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
@@ -75,7 +76,7 @@ public class StateParamHttpRequest implements HttpServletRequest {
   }
 
   @Override
-  public Enumeration<?> getParameterNames() {
+  public Enumeration<String> getParameterNames() {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
@@ -85,7 +86,7 @@ public class StateParamHttpRequest implements HttpServletRequest {
   }
 
   @Override
-  public Map<?, ?> getParameterMap() {
+  public Map<String, String[]> getParameterMap() {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
@@ -142,7 +143,7 @@ public class StateParamHttpRequest implements HttpServletRequest {
   }
 
   @Override
-  public Enumeration<?> getLocales() {
+  public Enumeration<Locale> getLocales() {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
@@ -202,12 +203,12 @@ public class StateParamHttpRequest implements HttpServletRequest {
   }
 
   @Override
-  public Enumeration<?> getHeaders(String name) {
+  public Enumeration<String> getHeaders(String name) {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
   @Override
-  public Enumeration<?> getHeaderNames() {
+  public Enumeration<String> getHeaderNames() {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
@@ -303,6 +304,83 @@ public class StateParamHttpRequest implements HttpServletRequest {
 
   @Override
   public boolean isRequestedSessionIdFromUrl() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public long getContentLengthLong() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public ServletContext getServletContext() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public AsyncContext startAsync() throws IllegalStateException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
+      throws IllegalStateException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public boolean isAsyncStarted() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public boolean isAsyncSupported() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public AsyncContext getAsyncContext() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public DispatcherType getDispatcherType() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public String changeSessionId() {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public void login(String username, String password) throws ServletException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public void logout() throws ServletException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public Collection<Part> getParts() throws IOException, ServletException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public Part getPart(String name) throws IOException, ServletException {
+    throw new UnsupportedOperationException(MESSAGE);
+  }
+
+  @Override
+  public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
+      throws IOException, ServletException {
     throw new UnsupportedOperationException(MESSAGE);
   }
 
