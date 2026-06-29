@@ -27,7 +27,7 @@ import org.gusdb.oauth2.tools.KeyPairReader;
 
 /** Example config JSON **
 {
-  "issuer":"https://integrate.eupathdb.org/oauth",
+  "issuer":"https://integrate.auth.veupathdb.org",
   "validateDomains": true,
   "tokenExpirationSecs": 3600,
   "guestTokenExpirationSecs": 432000,

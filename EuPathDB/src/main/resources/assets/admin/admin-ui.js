@@ -6,7 +6,8 @@
 var globalState = {
   loadingRequests: 0,
   subscriptionMeta: null,
-  groupMeta: null
+  groupMeta: null,
+  webappPrefix: ""
 };
 
 $(function() {
@@ -17,12 +18,15 @@ $(function() {
   let params = new URLSearchParams(window.location.search);
   let id = params.get("id") || undefined;
 
+  // set webapp to prefix in URL if found
+  globalState.webappPrefix = pathArray.length > 1 && pathArray[1] == "oauth" ? "/oauth" : "";
+
   // check for admin access and redirect to login page if not admin
-  $.ajax("/oauth/check-admin", {
+  $.ajax(prependWebapp("/check-admin"), {
     success: (body) => {
       if (body == "no") {
         let host = window.location.hostname;
-        window.location.href = "https://" + host + "/oauth/authorize?" +
+        window.location.href = "https://" + host + prependWebapp("/authorize?") +
             "response_type=code&scope=openid email&state=12345&client_id=apiComponentSite&" +
             "redirect_uri=" + encodeURIComponent(window.location.href);
       }
@@ -63,8 +67,12 @@ $(function() {
   });
 });
 
+function prependWebapp(url) {
+  return globalState.webappPrefix + url;
+}
+
 function loadSubscriptionPicker(additionalCallback) {
-  doGet("/oauth/subscriptions", subs => {
+  doGet(prependWebapp("/subscriptions"), subs => {
     globalState.subscriptionMeta = subs;
     refreshSubscriptionSelect();
     if (additionalCallback) additionalCallback();
@@ -72,7 +80,7 @@ function loadSubscriptionPicker(additionalCallback) {
 }
 
 function loadGroupPicker(additionalCallback) {
-  doGet("/oauth/groups?filter=all_groups", groups => {
+  doGet(prependWebapp("/groups?filter=all_groups"), groups => {
     globalState.groupMeta = groups;
     refreshGroupSelect();
     if (additionalCallback) additionalCallback();
@@ -99,17 +107,17 @@ function refreshGroupSelect() {
 
 function visitSubscription(subscriptionId) {
   if (!subscriptionId) subscriptionId = $("#subscriptionPicker")[0].selectedOptions[0].value;
-  window.location.href = "/oauth/assets/admin/subscription.html?id=" + subscriptionId;
+  window.location.href = prependWebapp("/assets/admin/subscription.html?id=" + subscriptionId);
 }
 
 function visitGroup(groupId) {
   if (!groupId) groupId = $("#groupPicker")[0].selectedOptions[0].value;
-  window.location.href = "/oauth/assets/admin/group.html?id=" + groupId;
+  window.location.href = prependWebapp("/assets/admin/group.html?id=" + groupId);
 }
 
 function visitAssignUsersPage(groupId) {
   if (!groupId) groupId = $("#groupPicker")[0].selectedOptions[0].value;
-  window.location.href = "/oauth/assets/admin/user-assignment.html?id=" + groupId;
+  window.location.href = prependWebapp("/assets/admin/user-assignment.html?id=" + groupId);
 }
 
 function loadUserAssignment(groupId) {
@@ -129,7 +137,7 @@ function initNewSubscriptionForm() {
 }
 
 function loadSubscription(id) {
-  doGet("/oauth/subscriptions/" + id, sub => {
+  doGet(prependWebapp("/subscriptions/" + id), sub => {
     $("#title").text("Subscription: " + sub.displayName);
     useDisplayPanel();
 
@@ -137,7 +145,7 @@ function loadSubscription(id) {
     $("#subscriptionId").text(sub.subscriptionId);
     $("#isActive").text(getIsActiveText(sub.activeStatus, sub.lastActiveYear));
     $("#groups").html(sub.groups.map(group =>
-        '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.groupId + ': ' + sanitizeText(group.displayName) + '</a></li>'
+        '<li><a href="' + prependWebapp("/assets/admin/group.html") + '?id=' + group.groupId + '">' + group.groupId + ': ' + sanitizeText(group.displayName) + '</a></li>'
     ));
 
     // fill form
@@ -161,13 +169,13 @@ function saveSubscription() {
     return;
   }
   if (isNew) {
-    doPost("/oauth/subscriptions", data, response => {
+    doPost(prependWebapp("/subscriptions"), data, response => {
       visitSubscription(response.subscriptionId);
     });
   }
   else {
     var subscriptionId = $("#subscriptionId").html();
-    doPost("/oauth/subscriptions/" + subscriptionId, data, () => {
+    doPost(prependWebapp("/subscriptions/" + subscriptionId), data, () => {
       visitSubscription(subscriptionId);
     });
   }
@@ -191,7 +199,7 @@ function userArrayToHtml(groupId, users, appendDeleteButton) {
 
 function loadGroup(id) {
 
-  doGet("/oauth/groups/" + id, group => {
+  doGet(prependWebapp("/groups/" + id), group => {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
@@ -202,7 +210,7 @@ function loadGroup(id) {
       }
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.activeStatus, sub.lastActiveYear) + ")");
+      $("#subscriptionName").html('<a href="' + prependWebapp("/assets/admin/subscription.html") + '?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.activeStatus, sub.lastActiveYear) + ")");
     });
 
     $("#title").text("Group: " + group.displayName);
@@ -237,13 +245,13 @@ function saveGroup() {
     return;
   }
   if (isNew) {
-    doPost("/oauth/groups", data, response => {
+    doPost(prependWebapp("/groups"), data, response => {
       visitGroup(response.groupId);
     });
   }
   else {
     var groupId = $("#groupId").html();
-    doPost("/oauth/groups/" + groupId, data, () => {
+    doPost(prependWebapp("/groups/" + groupId), data, () => {
       visitGroup(groupId);
     });
   }
@@ -297,7 +305,7 @@ function saveCombo() {
     alert ("Group name cannot be empty.");
     return;
   }
-  doPost("/oauth/subscriptions", data, response => {
+  doPost(prependWebapp("/subscriptions"), data, response => {
     // successfully created; save off subscription ID
     var subscriptionId = response.subscriptionId;
     var data = {
@@ -306,7 +314,7 @@ function saveCombo() {
       "groupLeadIds": getCleanUserIdsAsArray(),
       "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
     };
-    doPost("/oauth/groups", data, response => {
+    doPost(prependWebapp("/groups"), data, response => {
       visitGroup(response.groupId);
     });
   });
@@ -320,7 +328,7 @@ function checkUserIds() {
   var getUserDisplayValue = user => sanitizeText(user.firstName + " " + user.lastName + " (" + user.organization + "), " + user.email);
   var enteredIds = getCleanUserIdsAsArray();
   if (enteredIds.length == 0) return; // do nothing for empty textbox
-  doGet("/oauth/user-names?userIds=" + enteredIds.join(), users => {
+  doGet(prependWebapp("/user-names?userIds=" + enteredIds.join()), users => {
     $("#resultOfUserIdCheck").html(enteredIds.map(id => {
       var idResult = users.filter(u => u.sub == id)[0];
       var userStr = idResult.found ? getUserDisplayValue(idResult) : "Not Found";
@@ -349,7 +357,7 @@ function removeUserFromGroup(groupId, userId) {
 }
 
 function editGroupMembership(groupId, data) {
-  doPost("/oauth/groups/" + groupId + "/membership", data, response => {
+  doPost(prependWebapp("/groups/" + groupId + "/membership"), data, response => {
     visitGroup(groupId);
   });
 }

@@ -4,10 +4,8 @@ import static org.gusdb.oauth2.assets.StaticResource.RESOURCE_PREFIX;
 
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.security.Key;
 import java.util.AbstractMap.SimpleEntry;
@@ -19,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -46,6 +45,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Variant;
 
 import org.apache.logging.log4j.LogManager;
@@ -99,6 +99,9 @@ public class OAuthService {
 
   @Context
   private HttpHeaders _headers;
+
+  @Context
+  private UriInfo _uriInfo;
 
   @GET
   @Path(Endpoints.ASSETS + "{name:.+}")
@@ -157,8 +160,8 @@ public class OAuthService {
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
         if (originalRequest == null) {
           // formId doesn't exist on this session; give user generic success page
-          return Response.seeOther(new URI(RESOURCE_PREFIX +
-              config.getLoginSuccessPage())).build();
+          String baseUri = _uriInfo.getBaseUri().toString().replace("http://", "https://");
+          return Response.seeOther(new URI(baseUri + RESOURCE_PREFIX + config.getLoginSuccessPage())).build();
         }
         authenticator.logSuccessfulLogin(loginName, validUserId.get(), originalRequest.getClientId(), originalRequest.getRedirectUri(), _request.getRemoteAddr());
         return OAuthRequestHandler.handleAuthorizationRequest(originalRequest, validUserId.get(), config.getTokenExpirationSecs());
@@ -197,11 +200,12 @@ public class OAuthService {
   @GET
   @Path(Endpoints.LOGOUT)
   public Response logOut(@QueryParam("redirect_uri") String redirectUri) {
+    Supplier<Response> logoutStatusResponse = () -> Response.ok("Logged out at " + new Date()).build();
     // FIXME: cannot get CORS requests to work so logout can be async from a different domain
     // determine whether this request came from a valid page
     try {
-      @SuppressWarnings("unused")
-      URL url = new URL(redirectUri);
+      //@SuppressWarnings("unused")
+      //URL url = new URI(redirectUri).toURL();
       //String passedPort = (url.getPort() == -1 ? "" : ":" + url.getPort());
       //String originVal = url.getProtocol() + "://" + url.getHost() + passedPort;
       //ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
@@ -217,14 +221,16 @@ public class OAuthService {
       new Session(_request.getSession()).invalidate();
 
       // attempt to construct redirect response; if unable, just return 200
-      return Response
-          .seeOther(new URI(redirectUri))
-          //.header("Access-Control-Allow-Origin", originVal)
-          .build();
+      return redirectUri == null
+          ? logoutStatusResponse.get()
+          : Response
+              .seeOther(new URI(redirectUri))
+              //.header("Access-Control-Allow-Origin", originVal)
+              .build();
     }
-    catch (MalformedURLException | URISyntaxException e) {
+    catch (URISyntaxException e) {
       //return new OAuthResponseFactory().buildBadRedirectUrlResponse();
-      return Response.ok("Logged out at " + new Date()).build();
+      return logoutStatusResponse.get();
     }
   }
 
@@ -272,7 +278,8 @@ public class OAuthService {
     if (status != null) {
       queryString += (queryString.isEmpty() ? "" : "&") + "status=" + status.name();
     }
-    return new URI(RESOURCE_PREFIX + OAuthServlet.getApplicationConfig(_context).getLoginFormPage() +
+    String baseUri = _uriInfo.getBaseUri().toString().replace("http://", "https://");
+    return new URI(baseUri + RESOURCE_PREFIX + OAuthServlet.getApplicationConfig(_context).getLoginFormPage() +
         (queryString.isEmpty() ? "" : "?" + queryString));
   }
 
