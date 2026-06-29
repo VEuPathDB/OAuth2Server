@@ -1,6 +1,7 @@
 {
   "issuer": "https://eupathdb.org/oauth",
   "tokenExpirationSecs": 3600,
+  "guestTokenExpirationSecs": 432000,
   "bearerTokenExpirationSecs": 94608000,
   "loginFormPage": "eupathdb-login.html",
   "keyStoreFile": "/home/rdoherty/oauth-keys.pkcs12",

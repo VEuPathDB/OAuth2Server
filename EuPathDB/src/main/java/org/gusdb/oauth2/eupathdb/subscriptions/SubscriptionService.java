@@ -18,24 +18,32 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.gusdb.oauth2.Authenticator.RequestingUser;
+import org.gusdb.oauth2.client.OAuthClient;
 import org.gusdb.oauth2.eupathdb.AccountDbAuthenticator;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
+import org.gusdb.oauth2.eupathdb.subscriptions.Group.GroupWithUsers;
 import org.gusdb.oauth2.eupathdb.tools.SubscriptionTokenGenerator;
 import org.gusdb.oauth2.server.OAuthServlet;
+import org.gusdb.oauth2.service.OAuthService;
 import org.gusdb.oauth2.service.Session;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -49,8 +57,10 @@ import org.json.JSONObject;
  * POST /groups                      create a new group
  * GET  /groups/{id}                 get an existing group
  * POST /groups/{id}                 edit an existing group
- * POST /groups/{id}/add-members     adds users to an existing group (as members, not leads)
+ * POST /groups/{id}/membership      adds or removes users from an existing group (as members, not leads)
  * GET  /user-names?userId1,userId2  returns username details to allow admins to check IDs
+ * GET  /my-managed-groups           returns array of details for groups the calling user manages
+ * POST /remove-group-members        removes from a group any with ids in the passed list who are members (passed token must be the owner)
  *
  * Mutable subscriber fields:
  * - Name
@@ -198,10 +208,11 @@ public class SubscriptionService {
   @GET
   @Path("groups")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getGroups(@QueryParam("includeUnsubscribedGroups") @DefaultValue("false") boolean includeUnsubscribedGroups) {
-    return Response.ok(JsonCache.getGroupsJson(() ->
+  public Response getGroups(@QueryParam("filter") @DefaultValue("active_only") String filterStr) {
+    GroupFilter groupFilter = GroupFilter.valueOf(filterStr.toUpperCase());
+    return Response.ok(JsonCache.getGroupsJson(groupFilter, () ->
       new BulkDataDumper(getAccountDb())
-        .getGroupsJson(includeUnsubscribedGroups)
+        .getGroupsJson(groupFilter)
         .toString()
     )).build();
   }
@@ -266,7 +277,7 @@ public class SubscriptionService {
   }
 
   @POST
-  @Path("groups/{id}/add-members")
+  @Path("groups/{id}/membership")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response assignUsersToGroup(@PathParam("id") String groupIdStr, String body) {
     assertAdmin();
@@ -275,15 +286,28 @@ public class SubscriptionService {
       long groupId = Long.valueOf(groupIdStr);
       getSubscriptionManager().getGroup(groupId);
 
-      // parse user IDs from request body
-      JSONArray userIdsJson = new JSONArray(body);
+      // parse user IDs and operation from request body
+      JSONObject bodyJson = new JSONObject(body);
+      String operation = bodyJson.getString("operation");
+      JSONArray userIdsJson = bodyJson.getJSONArray("userIds");
+
+      // validate/convert IDs
       List<Long> userIds = new ArrayList<>();
       for (int i = 0; i < userIdsJson.length(); i++) {
         userIds.add(userIdsJson.getLong(i));
       }
 
-      // assign all passed users to this group
-      getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+      // execute proper operation
+      switch(operation) {
+        case "add":
+          getSubscriptionManager().assignUsersToGroup(groupId, userIds);
+          break;
+        case "remove":
+          getSubscriptionManager().removeUsersFromGroup(groupId, userIds);
+          break;
+        default:
+          throw new IllegalArgumentException("operation property must have value 'add' or 'remove'");
+      }
 
       return Response.noContent().build();
     }
@@ -310,5 +334,77 @@ public class SubscriptionService {
       throw new BadRequestException("Name already in use");
     }
     throw e;
+  }
+
+  private Long getRequestingUserId() {
+
+    // this endpoint is only accessed directly using a bearer token
+    String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
+    if (authHeader == null) throw new NotAuthorizedException(Response.status(Status.UNAUTHORIZED).build());
+
+    // validate token and parse user
+    String token = OAuthClient.getTokenFromAuthHeader(authHeader);
+    RequestingUser user = OAuthService.parseRequestingUser(token, _context);
+
+    // only allow registered users
+    if (user.isGuest()) throw new NotAuthorizedException(Response.status(Status.UNAUTHORIZED).build());
+
+    return Long.valueOf(user.getUserId());
+  }
+
+  @GET
+  @Path("my-managed-groups")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getMyManagedGroups() {
+
+    long requestingUserId = getRequestingUserId();
+
+    // fetch details of each group this user leads and format as JSON array of group objects
+    String groupsArrayJson = getSubscriptionManager()
+        .getGroupsByLead(requestingUserId)
+        .stream()
+        .map(GroupWithUsers::toBulkGroupJson)
+        .map(JSONObject::toString)
+        .collect(Collectors.joining(",","[","]"));
+
+    return Response.ok(groupsArrayJson).build();
+  }
+
+  @POST
+  @Path("remove-group-members")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response removeGroupMembers(String body) {
+    try {
+      // read authorization header for this request and convert to user id
+      long requestingUserId = getRequestingUserId();
+
+      // parse request body
+      JSONObject json = new JSONObject(body);
+      long groupId = json.getLong("groupId");
+      JSONArray userIds = json.getJSONArray("idsToRemove");
+      List<Long> idsToRemove = new ArrayList<>();
+      for (int i = 0; i < userIds.length(); i++) {
+        idsToRemove.add(userIds.getLong(i));
+      }
+
+      // look up group and check leadership
+      //   requesting user MUST be a lead; admins can manage users through the admin UI
+      SubscriptionManager mgr = getSubscriptionManager();
+      GroupWithUsers group = mgr.getGroup(groupId);
+      if (!group.hasLead(requestingUserId)) {
+        throw new ForbiddenException();
+      }
+
+      // trim deletion list to those in the group, then remove if any are left
+      idsToRemove = idsToRemove.stream().filter(id -> group.hasMember(id)).collect(Collectors.toList());
+      if (!idsToRemove.isEmpty()) {
+        mgr.removeUsersFromGroup(groupId, idsToRemove);
+      }
+
+      return Response.noContent().build();
+    }
+    catch (JSONException e) {
+      throw new BadRequestException(e.getMessage());
+    }
   }
 }

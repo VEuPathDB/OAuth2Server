@@ -11,9 +11,10 @@ SELECT
   entered_group_type,
   g.group_name,
   g.subscription_name,
-  g.is_active,
+  g.last_active_year,
   CASE
-    WHEN g.is_active is null THEN null
+    -- set to null if no group/subscription present
+    WHEN g.last_active_year is null THEN null
     WHEN l.group_id is not null THEN 1
     WHEN l.group_id is null THEN 0
   END as is_lead
@@ -61,7 +62,7 @@ LEFT JOIN (
     g1.group_name,
     g1.subscription_token,
     s.display_name as subscription_name,
-    s.is_active
+    s.last_active_year
   FROM $$accountschema$$subscription_groups g1, $$accountschema$$subscriptions s
   WHERE g1.subscription_id = s.subscription_id
   AND (g1.group_id is not null or g1.group_id != 133570) -- VEuPathDB staff

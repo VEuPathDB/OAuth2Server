@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.Tuples.TwoTuple;
 import org.gusdb.fgputil.db.platform.DBPlatform;
+import org.gusdb.fgputil.db.runner.QueryFlags;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
@@ -42,45 +43,48 @@ public class SubscriptionManager {
 
   public List<Subscription> getSubscriptions() {
     String sql = (
-        "select subscription_id, is_active, display_name " +
+        "select subscription_id, display_name, last_active_year " +
         "from " + SCHEMA_MACRO + "subscriptions s " +
         "order by display_name"
     ).replace(SCHEMA_MACRO, _schema);
-    return new SQLRunner(_ds, sql).executeQuery(rs -> {
-      List<Subscription> subs = new ArrayList<>();
-      while (rs.next()) {
-        subs.add(new Subscription(
-            rs.getLong("subscription_id"),
-            rs.getBoolean("is_active"),
-            rs.getString("display_name")));
-      }
-      return subs;
-    }, BulkDataDumper.FETCH_SIZE);
+    return new SQLRunner(_ds, sql).executeQuery(
+        new QueryFlags().setFetchSize(BulkDataDumper.FETCH_SIZE),
+        rs -> {
+          List<Subscription> subs = new ArrayList<>();
+          while (rs.next()) {
+            subs.add(new Subscription(
+                rs.getLong("subscription_id"),
+                rs.getString("display_name"),
+                rs.getInt("last_active_year")));
+          }
+          return subs;
+        }
+    );
   }
 
   public void addSubscription(Subscription subscription) {
     LOG.info("Inserting new subscription: " + subscription.toJson().toString());
     String sql = (
         "insert into " + SCHEMA_MACRO + "subscriptions " +
-        "(subscription_id, is_active, display_name) values (?, ?, ?)"
+        "(subscription_id, display_name, last_active_year) values (?, ?, ?)"
     ).replace(SCHEMA_MACRO, _schema);
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             subscription.getSubscriptionId(),
-            _platform.convertBoolean(subscription.isActive()),
-            subscription.getDisplayName()
+            subscription.getDisplayName(),
+            subscription.getLastActiveYear()
         },
         new Integer[] {
             Types.BIGINT,
-            _platform.getBooleanType(),
-            Types.VARCHAR
+            Types.VARCHAR,
+            Types.INTEGER
         }
     );
   }
 
   public SubscriptionWithGroups getSubscription(long subscriptionId) {
     String sql = (
-        "select s.subscription_id, s.is_active, s.display_name, g.group_id, g.group_name, l.user_id " +
+        "select s.subscription_id, s.display_name, s.last_active_year, g.group_id, g.group_name, l.user_id " +
         "from " + SCHEMA_MACRO +"subscriptions s " +
         "left join " + SCHEMA_MACRO + "subscription_groups g " +
         "on s.subscription_id = g.subscription_id " +
@@ -98,8 +102,8 @@ public class SubscriptionManager {
           }
           Subscription sub = new Subscription(
               rs.getLong("subscription_id"),
-              rs.getBoolean("is_active"),
-              rs.getString("display_name"));
+              rs.getString("display_name"),
+              rs.getInt("last_active_year"));
           List<Group> groups = new ArrayList<>();
 
           // allow subscriptions with no assigned groups; if group_id in the first row is null, no groups
@@ -135,17 +139,17 @@ public class SubscriptionManager {
   public void updateSubscription(Subscription subscription) {
     LOG.info("Updating subscription: " + subscription.toJson().toString());
     String sql = (
-        "update " + SCHEMA_MACRO + "subscriptions set is_active = ?, display_name = ? where subscription_id = ?"
+        "update " + SCHEMA_MACRO + "subscriptions set display_name = ?, last_active_year = ? where subscription_id = ?"
     ).replace(SCHEMA_MACRO, _schema);
     boolean updated = 0 < new SQLRunner(_ds, sql).executeUpdate(
         new Object[] {
-            _platform.convertBoolean(subscription.isActive()),
             subscription.getDisplayName(),
+            subscription.getLastActiveYear(),
             subscription.getSubscriptionId()
         },
         new Integer[] {
-            _platform.getBooleanType(),
             Types.VARCHAR,
+            Types.INTEGER,
             Types.BIGINT
         }
     );
@@ -231,7 +235,7 @@ public class SubscriptionManager {
 
     // 1. Fill in group
     String groupSql = (
-        "select s.subscription_id, s.is_active, s.display_name, g.group_id, g.group_name, g.subscription_token, l.user_id " +
+        "select s.subscription_id, s.display_name, s.last_active_year, g.group_id, g.group_name, g.subscription_token, l.user_id " +
         "from " + SCHEMA_MACRO + "subscriptions s, " + SCHEMA_MACRO + "subscription_groups g " +
         "left join " + SCHEMA_MACRO + "subscription_group_leads l " +
         "on l.group_id = g.group_id " +
@@ -330,5 +334,28 @@ public class SubscriptionManager {
         }
       }
     }
+  }
+
+  public void removeUsersFromGroup(long groupId, List<Long> userIds) {
+    for (long userId : userIds) {
+      String deleteSql =
+          "delete from " + _schema + "account_properties" +
+          " where user_id = " + userId +
+          " and key = 'subscription_token'" +
+          " and value = (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + ")";
+      boolean removed = new SQLRunner(_ds, deleteSql).executeUpdate() == 1;
+      LOG.info("Removal of user " + userId + " from group " + groupId + (removed ? " succeeded" : " failed"));
+    }
+  }
+
+  public List<GroupWithUsers> getGroupsByLead(long userId) {
+    String sql = "select group_id from " + _schema + "subscription_group_leads where user_id = " + userId;
+    return new SQLRunner(_ds, sql).executeQuery(rs -> {
+      List<GroupWithUsers> groups = new ArrayList<>();
+      while (rs.next()) {
+        groups.add(getGroup(rs.getLong("group_id")));
+      }
+      return groups;
+    });
   }
 }

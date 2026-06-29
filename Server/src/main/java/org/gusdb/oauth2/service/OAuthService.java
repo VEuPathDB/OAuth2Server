@@ -360,7 +360,8 @@ public class OAuthService {
   }
 
   private static String paramsToString(HttpServletRequest request) {
-    Map<String, String[]> params = request.getParameterMap();
+    @SuppressWarnings("unchecked")
+    Map<String, String[]> params = (Map<String, String[]>)request.getParameterMap();
     StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
     for (String key : params.keySet()) {
       String[] values = (key.equals("client_secret") ? new String[]{ "<blocked>" } : params.get(key));
@@ -390,7 +391,7 @@ public class OAuthService {
     try {
       // option 1
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser user = parseRequestingUser(token);
+      RequestingUser user = parseRequestingUser(token, _context);
       return OAuthRequestHandler.handleUserInfoRequest(authenticator, user.getUserId(), user.isGuest());
     }
     catch (IllegalArgumentException badTokenException) {
@@ -410,9 +411,9 @@ public class OAuthService {
     }
   }
 
-  private RequestingUser parseRequestingUser(String bearerToken) {
+  public static RequestingUser parseRequestingUser(String bearerToken, ServletContext servletContext) {
     try {
-      Key publicKey = OAuthServlet.getApplicationConfig(_context).getAsyncKeys().getPublic();
+      Key publicKey = OAuthServlet.getApplicationConfig(servletContext).getAsyncKeys().getPublic();
       // verify signature and create claims object
       Claims claims = Jwts.parserBuilder()
           .setSigningKey(publicKey)
@@ -421,7 +422,10 @@ public class OAuthService {
           .getBody();
       String userId = claims.getSubject();
       boolean isGuest = claims.get(IdTokenFields.is_guest.name(), Boolean.class);
-      return new RequestingUser(userId, isGuest);
+      return new RequestingUser() {
+        @Override public String getUserId() { return userId; }
+        @Override public boolean isGuest() { return isGuest; }
+      };
     }
     catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException e) {
       throw new IllegalArgumentException(e.getClass().getSimpleName() + ", Could not parse JWT; " + e.getMessage());
@@ -474,7 +478,7 @@ public class OAuthService {
         return Response.status(Status.UNAUTHORIZED).build();
       }
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser user = parseRequestingUser(token);
+      RequestingUser user = parseRequestingUser(token, _context);
       if (user.isGuest()) {
         return Response.status(Status.FORBIDDEN).build();
       }
@@ -520,7 +524,7 @@ public class OAuthService {
         return Response.status(Status.UNAUTHORIZED).build();
       }
       String token = OAuthClient.getTokenFromAuthHeader(authHeader);
-      RequestingUser requestingUser = parseRequestingUser(token);
+      RequestingUser requestingUser = parseRequestingUser(token, _context);
       if (requestingUser.isGuest()) {
         LOG.warn("Denying deletion request for guest user: " + requestingUser.getUserId());
         return Response.status(Status.FORBIDDEN).build();

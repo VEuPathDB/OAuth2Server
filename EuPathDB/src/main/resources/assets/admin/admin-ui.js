@@ -37,7 +37,7 @@ $(function() {
             loadSubscriptionPicker();
             break;
           case "new-combo.html":
-            //nothing to do
+            fillDateSelect();
             break;
           case "subscription.html":
             if (id)
@@ -72,7 +72,7 @@ function loadSubscriptionPicker(additionalCallback) {
 }
 
 function loadGroupPicker(additionalCallback) {
-  doGet("/oauth/groups?includeUnsubscribedGroups=true", groups => {
+  doGet("/oauth/groups?filter=all_groups", groups => {
     globalState.groupMeta = groups;
     refreshGroupSelect();
     if (additionalCallback) additionalCallback();
@@ -86,14 +86,14 @@ function sanitizeText(text) {
 function refreshSubscriptionSelect() {
   let showInactiveSubs = $("#inactiveSubscriptions")[0].checked;
   $("#subscriptionPicker").html(globalState.subscriptionMeta
-    .filter(sub => showInactiveSubs || sub.isActive)
+    .filter(sub => showInactiveSubs || sub.activeStatus == 'active')
     .map(sub => '<option value="' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + '</option>'));
 }
 
 function refreshGroupSelect() {
   let showInactiveGroups = $("#inactiveGroups")[0].checked;
   $("#groupPicker").html(globalState.groupMeta
-    .filter(group => showInactiveGroups || group.isActive)
+    .filter(group => showInactiveGroups || group.activeStatus == 'active')
     .map(group => '<option value="' + group.groupId + '">' + sanitizeText(group.groupName) + '</option>'));
 }
 
@@ -125,6 +125,7 @@ function initNewSubscriptionForm() {
   $("#title").text("Add New Subscription");
   $("#mode").val("new");
   useEditPanel();
+  fillDateSelect();
 }
 
 function loadSubscription(id) {
@@ -134,7 +135,7 @@ function loadSubscription(id) {
 
     // fill display area
     $("#subscriptionId").text(sub.subscriptionId);
-    $("#isActive").text(sub.isActive ? "yes" : "no");
+    $("#isActive").text(getIsActiveText(sub.activeStatus, sub.lastActiveYear));
     $("#groups").html(sub.groups.map(group =>
         '<li><a href="/oauth/assets/admin/group.html?id=' + group.groupId + '">' + group.groupId + ': ' + sanitizeText(group.displayName) + '</a></li>'
     ));
@@ -142,10 +143,9 @@ function loadSubscription(id) {
     // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
+    fillDateSelect();
     $("#displayNameInput").val(sub.displayName);
-    let selectedValue = sub.isActive ? "yes" : "no";
-    $('#isActiveInput option[value="' + selectedValue + '"]').prop('selected', true);
-    
+    $('#lastActiveYearInput option[value="' + sub.lastActiveYear + '"]').prop('selected', true);
   });
 }
 
@@ -154,8 +154,12 @@ function saveSubscription() {
   var isNew = $("#mode").val() == "new";
   var data = {
     "displayName": $("#displayNameInput").val(),
-    "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
+    "lastActiveYear": $("#lastActiveYearInput")[0].selectedOptions[0].value
   };
+  if (data.displayName == null || data.displayName.trim() == '') {
+    alert ("Subscription name cannot be empty.");
+    return;
+  }
   if (isNew) {
     doPost("/oauth/subscriptions", data, response => {
       visitSubscription(response.subscriptionId);
@@ -176,15 +180,29 @@ function initloadNewGroupForm() {
   loadSubscriptionPicker();
 }
 
+function userArrayToHtml(groupId, users, appendDeleteButton) {
+  return users.map(user =>
+    "<li>" +
+      user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")" +
+      (appendDeleteButton ? ' <input type="button" value="Remove From Group" onClick="removeUserFromGroup(' + groupId + ',' + user.userId + ')"/>' : '') +
+    "</li>"
+  );
+}
+
 function loadGroup(id) {
-  const userArrayToHtml = users => users.map(user => "<li>" + user.userId + ": " + sanitizeText(user.name) + " (" + sanitizeText(user.organization) + ")</li>");
+
   doGet("/oauth/groups/" + id, group => {
 
     // load subscriptions; once loaded, display this group's subscription name and select it in the drop-down
     loadSubscriptionPicker(() => {
+      // if group is not active, populate select with both active and inactive groups so this group can be selected
+      if (group.activeStatus != 'active') {
+        $('#inactiveSubscriptions')[0].checked = true;
+        refreshSubscriptionSelect();
+      }
       $('#subscriptionPicker option[value="' + group.subscriptionId + '"]').prop('selected', true);
       let sub = globalState.subscriptionMeta.filter(sub => sub.subscriptionId == group.subscriptionId)[0];
-      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (" + (sub.isActive ? "active" : "inactive") + ")");
+      $("#subscriptionName").html('<a href="/oauth/assets/admin/subscription.html?id=' + sub.subscriptionId + '">' + sanitizeText(sub.displayName) + "</a> (Active? " + getIsActiveText(sub.activeStatus, sub.lastActiveYear) + ")");
     });
 
     $("#title").text("Group: " + group.displayName);
@@ -193,14 +211,15 @@ function loadGroup(id) {
     // fill display area
     $("#groupId").text(group.groupId);
     $("#subscriptionToken").text(group.subscriptionToken);
-    $("#leads").html(userArrayToHtml(group.leadUsers));
-    $("#members").html(userArrayToHtml(group.members));
+    $("#leads").html(userArrayToHtml(group.groupId, group.leadUsers, false));
+    $("#members").html(userArrayToHtml(group.groupId, group.members, false));
 
       // fill form
     $("#mode").val("edit");
     $("#cancelButton").show();
     $("#displayNameInput").val(group.displayName);
     $("#userIds").val(group.groupLeadIds.join());
+    $("#membersForDelete").html(userArrayToHtml(group.groupId, group.members, true));
   });
 }
 
@@ -213,6 +232,10 @@ function saveGroup() {
     "groupLeadIds": getCleanUserIdsAsArray(),
     "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
   };
+  if (data.displayName == null || data.displayName.trim() == '') {
+    alert ("Group name cannot be empty.");
+    return;
+  }
   if (isNew) {
     doPost("/oauth/groups", data, response => {
       visitGroup(response.groupId);
@@ -226,6 +249,35 @@ function saveGroup() {
   }
 }
 
+const NEVER_SUBSCRIBED_VALUE = 0;
+const FIRST_YEAR = 2025;
+const CURRENT_YEAR = new Date().getFullYear();
+const LAST_YEAR = CURRENT_YEAR + 10;
+const NEVER_EXPIRES_VALUE = 9999;
+
+function fillDateSelect() {
+  $("#lastActiveYearInput").html(
+    '<option value="' + NEVER_SUBSCRIBED_VALUE + '">Never Subscribed</option>' +
+    Array.from({length: LAST_YEAR - FIRST_YEAR + 1 }, (_, i) => i + FIRST_YEAR)
+      .map(year => '<option value="' + year + '" ' + (year == CURRENT_YEAR ? 'selected' : '') + '>' + year + '</option>') +
+    '<option value="' + NEVER_EXPIRES_VALUE + '">Never Expires</option>'
+  );
+}
+
+function getIsActiveText(activeStatus, lastActiveYear) {
+  if (activeStatus == "never_subscribed")
+    return "No, never subscribed";
+  if (activeStatus == "active")
+    return (lastActiveYear == NEVER_EXPIRES_VALUE)
+      ? "Yes, never expires"
+      : "Yes, until the end of " + lastActiveYear;
+  if (activeStatus == "grace_period")
+    return "Yes, expired at the end of " + lastActiveYear + " but is still in the grace period";
+  else
+    // activeStatus == "expired"
+    return "No, expired at the end of " + lastActiveYear;
+}
+
 function fillGroupNameWithSubscriptionName() {
   $("#displayNameInput").val($("#subscriptionPicker option:selected").text());
 }
@@ -234,14 +286,23 @@ function saveCombo() {
   // first, save subscription
   var data = {
     "displayName": $("#subscriptionNameInput").val(),
-    "isActive": $("#isActiveInput")[0].selectedOptions[0].value == "yes"
+    "lastActiveYear": $("#lastActiveYearInput")[0].selectedOptions[0].value
   };
+  if (data.displayName == null || data.displayName.trim() == '') {
+    alert ("Subscription name cannot be empty.");
+    return;
+  }
+  var groupName = $("#groupNameInput").val();
+  if (groupName == null || groupName.trim() == '') {
+    alert ("Group name cannot be empty.");
+    return;
+  }
   doPost("/oauth/subscriptions", data, response => {
     // successfully created; save off subscription ID
     var subscriptionId = response.subscriptionId;
     var data = {
       "subscriptionId": subscriptionId,
-      "displayName": $("#groupNameInput").val(),
+      "displayName": groupName,
       "groupLeadIds": getCleanUserIdsAsArray(),
       "makeLeadsMembers": $("#makeLeadsMembers")[0].selectedOptions[0].value == "yes"
     };
@@ -270,8 +331,25 @@ function checkUserIds() {
 
 function assignUsersToGroup() {
   var groupId = $("#groupPicker")[0].selectedOptions[0].value;
-  var data = getCleanUserIdsAsArray();
-  doPost("/oauth/groups/" + groupId + "/add-members", data, response => {
+  var data = {
+    operation: "add",
+    userIds: getCleanUserIdsAsArray()
+  }
+  editGroupMembership(groupId, data);
+}
+
+function removeUserFromGroup(groupId, userId) {
+  if (confirm("Are you sure you want to remove this user?")) {
+    var data = {
+      operation: "remove",
+      userIds: [ userId ]
+    }
+    editGroupMembership(groupId, data);
+  }
+}
+
+function editGroupMembership(groupId, data) {
+  doPost("/oauth/groups/" + groupId + "/membership", data, response => {
     visitGroup(groupId);
   });
 }

@@ -244,7 +244,7 @@ public class OAuthRequestHandler {
     OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
     final String accessToken = oauthIssuerImpl.accessToken();
 
-    int expirationSecs = config.getBearerTokenExpirationSecs();
+    int expirationSecs = config.getGuestTokenExpirationSecs();
 
     OAuthTokenResponseBuilder responseBuilder =
         OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)
