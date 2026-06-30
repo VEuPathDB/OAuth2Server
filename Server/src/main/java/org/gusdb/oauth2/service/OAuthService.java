@@ -368,7 +368,6 @@ public class OAuthService {
   }
 
   private static String paramsToString(HttpServletRequest request) {
-    @SuppressWarnings("unchecked")
     Map<String, String[]> params = (Map<String, String[]>)request.getParameterMap();
     StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
     for (String key : params.keySet()) {
