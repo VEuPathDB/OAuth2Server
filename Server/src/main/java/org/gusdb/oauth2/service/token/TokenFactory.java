@@ -98,11 +98,10 @@ public class TokenFactory {
       .add(IdTokenFields.azp.name(), params.getClientId())
       .add(IdTokenFields.jti.name(), tokenId)
       .add(IdTokenFields.auth_time.name(), params.getCreationTime())
-      // FIXME!!! Temporarily set iat and exp to millis to address bug in JWT lib; spec calls for seconds
+      // Setting iat and exp to seconds per JWT spec.
       //    See NumericDate here: https://datatracker.ietf.org/doc/html/rfc7519#section-2
-      // This may be fixed in the major version of JJWT (the upgrade to which is overdue)
-      .add(IdTokenFields.iat.name(), timestamps.getCreationTimeSecs() * 1000)
-      .add(IdTokenFields.exp.name(), timestamps.getExpirationTimeSecs() * 1000);
+      .add(IdTokenFields.iat.name(), timestamps.getCreationTimeSecs())
+      .add(IdTokenFields.exp.name(), timestamps.getExpirationTimeSecs());
 
     // add nonce if client sent as part of original authentication request
     String nonce = params.getNonce();
