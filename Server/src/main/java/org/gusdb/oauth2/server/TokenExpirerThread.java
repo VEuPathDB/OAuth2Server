@@ -24,9 +24,9 @@ public class TokenExpirerThread implements Runnable {
     _executor.shutdown();
   }
 
-  private int _tokenExpirationSecs;
+  private long _tokenExpirationSecs;
 
-  public TokenExpirerThread(int tokenExpirationSecs) {
+  public TokenExpirerThread(long tokenExpirationSecs) {
     _tokenExpirationSecs = tokenExpirationSecs;
   }
 

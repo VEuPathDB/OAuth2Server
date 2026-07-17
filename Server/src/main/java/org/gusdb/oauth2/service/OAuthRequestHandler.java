@@ -50,7 +50,7 @@ public class OAuthRequestHandler {
 
   private static final Logger LOG = LogManager.getLogger(OAuthRequestHandler.class);
 
-  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String userId, int expirationSecs)
+  public static Response handleAuthorizationRequest(AuthzRequest oauthRequest, String userId, long expirationSecs)
       throws URISyntaxException, OAuthSystemException {
     OAuthIssuerImpl oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
 
@@ -82,7 +82,7 @@ public class OAuthRequestHandler {
 
   public static Response handleTokenRequest(OAuthTokenRequest oauthRequest,
       ClientValidator clientValidator, Authenticator authenticator,
-      ApplicationConfig config, TokenSigner tokenSigner, DataScope scope, int expirationSecs) throws OAuthSystemException {
+      ApplicationConfig config, TokenSigner tokenSigner, DataScope scope, long expirationSecs) throws OAuthSystemException {
     try {
       OAuthResponseFactory responses = new OAuthResponseFactory();
       OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
@@ -173,7 +173,7 @@ public class OAuthRequestHandler {
   }
 
   public static Response handleUserInfoRequest(OAuthAccessResourceRequest oauthRequest,
-      Authenticator authenticator, String issuer, int expirationSecs)
+      Authenticator authenticator, String issuer, long expirationSecs)
           throws OAuthSystemException {
     String accessToken = oauthRequest.getAccessToken();
     AccessTokenData tokenData = TokenStore.getTokenData(accessToken);
@@ -244,7 +244,7 @@ public class OAuthRequestHandler {
     OAuthIssuer oauthIssuerImpl = new OAuthIssuerImpl(new MD5Generator());
     final String accessToken = oauthIssuerImpl.accessToken();
 
-    int expirationSecs = config.getGuestTokenExpirationSecs();
+    long expirationSecs = config.getGuestTokenExpirationSecs();
 
     OAuthTokenResponseBuilder responseBuilder =
         OAuthASResponse.tokenResponse(HttpServletResponse.SC_OK)

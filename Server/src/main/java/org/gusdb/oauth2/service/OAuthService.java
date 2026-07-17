@@ -155,7 +155,7 @@ public class OAuthService {
 
         // add userId to session to save a lookup later if /auth endpoint is hit with a known client session
         session.setUserId(validUserId.get());
-        session.setMaxInactiveIntervalSecs(config.getOauthSessionExpirationSecs());
+        session.setMaxInactiveIntervalSecs((int)config.getOauthSessionExpirationSecs());
 
         AuthzRequest originalRequest = (formId == null ? null : session.clearFormId(formId));
         if (originalRequest == null) {
@@ -312,7 +312,7 @@ public class OAuthService {
       MultivaluedMap<String,String> formParams,
       TokenSigner signingStrategy,
       DataScope scope,
-      Function<ApplicationConfig,Integer> expirationLookup) throws OAuthSystemException {
+      Function<ApplicationConfig,Long> expirationLookup) throws OAuthSystemException {
     try {
       // for POST + URL-encoded form, must use custom HttpServletRequest with Jersey to read actual params
       HttpServletRequest request = new JerseyHttpRequestWrapper(_request, formParams);

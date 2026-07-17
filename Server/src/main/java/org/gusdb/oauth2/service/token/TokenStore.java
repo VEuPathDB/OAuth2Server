@@ -193,7 +193,7 @@ public class TokenStore {
         ACCESS_TOKEN_MAP.remove(data.tokenValue);
   }
 
-  public static synchronized void removeExpiredTokens(int expirationSeconds) {
+  public static synchronized void removeExpiredTokens(long expirationSeconds) {
     long currentDateSecs = new Date().getTime() / 1000;
     List<String> expiredCodes = new ArrayList<>();
     for (Entry<String, AuthCodeData> entry : AUTH_CODE_MAP.entrySet()) {
@@ -227,7 +227,7 @@ public class TokenStore {
     }
   }
 
-  private static boolean isExpired(long creationTimeSecs, long currentDateSecs, int expirationSeconds) {
+  private static boolean isExpired(long creationTimeSecs, long currentDateSecs, long expirationSeconds) {
     long ageMillis = currentDateSecs - creationTimeSecs;
     return (ageMillis > expirationSeconds);
   }

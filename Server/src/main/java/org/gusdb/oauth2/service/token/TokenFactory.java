@@ -27,7 +27,7 @@ public class TokenFactory {
   private static final Logger LOG = LogManager.getLogger(TokenFactory.class);
 
   public static JsonObject createTokenJson(Authenticator authenticator, String userId,
-      IdTokenParams tokenParams, String issuer, int expirationSecs, DataScope scope)
+      IdTokenParams tokenParams, String issuer, long expirationSecs, DataScope scope)
           throws OAuthSystemException {
     assert(scope != DataScope.PROFILE);
 
@@ -117,7 +117,7 @@ public class TokenFactory {
     return jsonBuilder;
   }
 
-  public static JsonObject createGuestTokenJson(Authenticator authenticator, String clientId, String issuer, int expirationSecs)
+  public static JsonObject createGuestTokenJson(Authenticator authenticator, String clientId, String issuer, long expirationSecs)
       throws OAuthProblemException {
 
     if (!authenticator.supportsGuests()) {

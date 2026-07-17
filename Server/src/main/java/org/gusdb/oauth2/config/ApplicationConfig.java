@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.json.Json;
@@ -79,10 +80,10 @@ public class ApplicationConfig extends SigningKeyStore {
   private static final String DEFAULT_LOGIN_FORM_PAGE = "login.html";
   private static final String DEFAULT_LOGIN_SUCCESS_PAGE = "success.html";
 
-  public static final int DEFAULT_TOKEN_EXPIRATION_SECS = 300; // 5 minutes
-  public static final int DEFAULT_GUEST_TOKEN_EXPIRATION_SECS = 432000; // 5 days
-  public static final int DEFAULT_BEARER_TOKEN_EXPIRATION_SECS = 5184000; // 60 days
-  public static final int DEFAULT_OAUTH_SESSION_EXPIRATION_SECS = 31536000; // 365 days
+  public static final long DEFAULT_TOKEN_EXPIRATION_SECS = 300; // 5 minutes
+  public static final long DEFAULT_GUEST_TOKEN_EXPIRATION_SECS = 432000; // 5 days
+  public static final long DEFAULT_BEARER_TOKEN_EXPIRATION_SECS = 5184000; // 60 days
+  public static final long DEFAULT_OAUTH_SESSION_EXPIRATION_SECS = 31536000; // 365 days
 
   private static enum JsonKey {
     issuer,
@@ -115,10 +116,10 @@ public class ApplicationConfig extends SigningKeyStore {
       boolean allowAnonymousLogin = json.getBoolean(JsonKey.allowAnonymousLogin.name(), ALLOW_ANONYMOUS_LOGIN_BY_DEFAULT);
       String loginFormPage = json.getString(JsonKey.loginFormPage.name(), DEFAULT_LOGIN_FORM_PAGE);
       String loginSuccessPage = json.getString(JsonKey.loginSuccessPage.name(), DEFAULT_LOGIN_SUCCESS_PAGE);
-      int tokenExpirationSecs = json.getInt(JsonKey.tokenExpirationSecs.name(), DEFAULT_TOKEN_EXPIRATION_SECS);
-      int guestTokenExpirationSecs = json.getInt(JsonKey.guestTokenExpirationSecs.name(), DEFAULT_GUEST_TOKEN_EXPIRATION_SECS);
-      int bearerTokenExpirationSecs = json.getInt(JsonKey.bearerTokenExpirationSecs.name(), DEFAULT_BEARER_TOKEN_EXPIRATION_SECS);
-      int oauthSessionExpirationSecs = json.getInt(JsonKey.oauthSessionExpirationSecs.name(), DEFAULT_OAUTH_SESSION_EXPIRATION_SECS);
+      long tokenExpirationSecs = getJsonLong(json, JsonKey.tokenExpirationSecs, DEFAULT_TOKEN_EXPIRATION_SECS);
+      long guestTokenExpirationSecs = getJsonLong(json, JsonKey.guestTokenExpirationSecs, DEFAULT_GUEST_TOKEN_EXPIRATION_SECS);
+      long bearerTokenExpirationSecs = getJsonLong(json, JsonKey.bearerTokenExpirationSecs, DEFAULT_BEARER_TOKEN_EXPIRATION_SECS);
+      long oauthSessionExpirationSecs = getJsonLong(json, JsonKey.oauthSessionExpirationSecs, DEFAULT_OAUTH_SESSION_EXPIRATION_SECS);
       validateResource(loginFormPage);
       validateResource(loginSuccessPage);
       JsonArray clientsJson = json.getJsonArray(JsonKey.allowedClients.name());
@@ -151,6 +152,12 @@ public class ApplicationConfig extends SigningKeyStore {
     }
   }
 
+  private static long getJsonLong(JsonObject json, JsonKey key, long defaultValue) {
+    return Optional.ofNullable(json.getJsonNumber(key.name()))
+        .map(num -> num.longValueExact())
+        .orElse(defaultValue);
+  }
+
   private static void validateResource(String resourcePath) throws InitializationException {
     StaticResource resource = new StaticResource(resourcePath);
     if (!resource.isValid()) {
@@ -163,10 +170,10 @@ public class ApplicationConfig extends SigningKeyStore {
   private final JsonObject _authClassConfig;
   private final String _loginFormPage;
   private final String _loginSuccessPage;
-  private final int _tokenExpirationSecs;
-  private final int _guestTokenExpirationSecs;
-  private final int _bearerTokenExpirationSecs;
-  private final int _oauthSessionExpirationSecs;
+  private final long _tokenExpirationSecs;
+  private final long _guestTokenExpirationSecs;
+  private final long _bearerTokenExpirationSecs;
+  private final long _oauthSessionExpirationSecs;
   private final boolean _anonymousLoginsAllowed;
   private final boolean _validateDomains;
   private final List<AllowedClient> _allowedClients;
@@ -175,7 +182,7 @@ public class ApplicationConfig extends SigningKeyStore {
   private final Set<String> _iframeAllowedSites;
 
   private ApplicationConfig(String issuer, String authClassName, JsonObject authClassConfig, String loginFormPage,
-      String loginSuccessPage, int tokenExpirationSecs, int guestTokenExpirationSecs, int bearerTokenExpirationSecs, int oauthSessionExpirationSecs, boolean anonymousLoginsAllowed,
+      String loginSuccessPage, long tokenExpirationSecs, long guestTokenExpirationSecs, long bearerTokenExpirationSecs, long oauthSessionExpirationSecs, boolean anonymousLoginsAllowed,
       boolean validateDomains, List<AllowedClient> allowedClients, String keyStoreFile, String keyStorePassPhrase) throws CryptoException, IOException {
     super(new KeyPairReader().readKeyPair(Paths.get(keyStoreFile), keyStorePassPhrase));
     _issuer = issuer;
@@ -232,19 +239,19 @@ public class ApplicationConfig extends SigningKeyStore {
     return _loginSuccessPage;
   }
 
-  public int getTokenExpirationSecs() {
+  public long getTokenExpirationSecs() {
     return _tokenExpirationSecs;
   }
 
-  public int getGuestTokenExpirationSecs() {
+  public long getGuestTokenExpirationSecs() {
     return _guestTokenExpirationSecs;
   }
 
-  public int getBearerTokenExpirationSecs() {
+  public long getBearerTokenExpirationSecs() {
     return _bearerTokenExpirationSecs;
   }
 
-  public int getOauthSessionExpirationSecs() {
+  public long getOauthSessionExpirationSecs() {
     return _oauthSessionExpirationSecs;
   }
 
