@@ -7,6 +7,8 @@ import java.util.Optional;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.gusdb.oauth2.exception.ConflictException;
 import org.gusdb.oauth2.exception.InvalidPropertiesException;
 import org.gusdb.oauth2.service.UserPropertiesRequest;
@@ -65,12 +67,16 @@ public interface Authenticator extends AutoCloseable {
 
   public static class TokenTimestamps {
 
+    private static final Logger LOG = LogManager.getLogger(TokenTimestamps.class);
+
     private final long _currentTimeMillis;
     private final long _expirationTimeMillis;
 
     public TokenTimestamps(int expirationSecs) {
       _currentTimeMillis = System.currentTimeMillis();
       _expirationTimeMillis = _currentTimeMillis + (expirationSecs * 1000);
+      LOG.info("Created token timestamps instance with expirationSecs = " + expirationSecs);
+      LOG.info("  CurrentTimeMillis = " + _currentTimeMillis + ", expirationTimeMillis = " + _expirationTimeMillis);
     }
 
     public long getCreationTimeSecs() { return _currentTimeMillis / 1000; }
