@@ -72,7 +72,7 @@ public class PaymentsManager extends AbstractDbManager {
     JsonObjectBuilder builder = Json.createObjectBuilder();
     for (Entry<String,String> property : PROPERTY_MAP.entrySet()) {
       String value = rs.getString(property.getValue());
-      if (!rs.wasNull()) value = "";
+      if (rs.wasNull()) value = "";
       builder.add(property.getKey(), value);
     }
     return builder.build();
