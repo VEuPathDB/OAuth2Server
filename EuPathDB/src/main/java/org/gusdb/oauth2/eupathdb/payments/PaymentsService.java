@@ -21,10 +21,11 @@ import org.gusdb.oauth2.eupathdb.AbstractService;
 import org.gusdb.oauth2.service.OAuthResponseFactory;
 import org.gusdb.oauth2.service.OAuthService;
 
-@Path("/payments")
+@Path("/")
 public class PaymentsService extends AbstractService {
 
   @GET
+  @Path("payments")
   @Produces(TSV_MEDIA_TYPE)
   public Response getAllPayments() {
     // must be a subscription admin to download payments
@@ -37,6 +38,7 @@ public class PaymentsService extends AbstractService {
   }
 
   @POST
+  @Path("payments")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response postPayment(String body) {
     try {
@@ -71,7 +73,7 @@ public class PaymentsService extends AbstractService {
   }
 
   @POST
-  @Path("{referenceNumber}")
+  @Path("payments/{referenceNumber}")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getPaymentByReferenceNumber(@PathParam("referenceNumber") String referenceNumber, String body) {
 
