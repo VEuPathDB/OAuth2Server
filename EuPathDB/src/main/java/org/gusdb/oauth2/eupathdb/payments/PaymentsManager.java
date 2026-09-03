@@ -71,7 +71,9 @@ public class PaymentsManager extends AbstractDbManager {
   private static JsonObject buildPaymentJson(ResultSet rs) throws SQLException {
     JsonObjectBuilder builder = Json.createObjectBuilder();
     for (Entry<String,String> property : PROPERTY_MAP.entrySet()) {
-      builder.add(property.getKey(), rs.getString(property.getValue()));
+      String value = rs.getString(property.getValue());
+      if (!rs.wasNull()) value = "";
+      builder.add(property.getKey(), value);
     }
     return builder.build();
   }
