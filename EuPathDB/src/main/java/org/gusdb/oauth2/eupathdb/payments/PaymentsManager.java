@@ -40,13 +40,13 @@ public class PaymentsManager extends AbstractDbManager {
       .put("amount", "amount")
       .put("firstName", "first_name")
       .put("lastName", "last_name")
+      .put("email", "email")
       .put("address1", "address1")
       .put("address2", "address2")
       .put("city", "city")
       .put("state", "state")
       .put("postalCode", "postal_code")
       .put("country", "country")
-      .put("email", "email")
       .toMap();
 
   private static final String INSERT_PAYMENT_SQL =
