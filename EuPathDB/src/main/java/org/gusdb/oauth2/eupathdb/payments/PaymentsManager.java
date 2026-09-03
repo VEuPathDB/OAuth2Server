@@ -38,6 +38,7 @@ public class PaymentsManager extends AbstractDbManager {
       .put("referenceNumber", "reference_number")
       .put("paymentDateTimeISO8601", "payment_date")
       .put("amount", "amount")
+      .put("currency", "currency")
       .put("firstName", "first_name")
       .put("lastName", "last_name")
       .put("email", "email")
