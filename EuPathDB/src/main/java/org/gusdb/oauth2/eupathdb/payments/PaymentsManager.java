@@ -103,7 +103,11 @@ public class PaymentsManager extends AbstractDbManager {
   public void insertPayment(JsonObject payment) {
     ParamBuilder params = new ParamBuilder();
     for (String propertyName : PROPERTY_MAP.keySet()) {
-      params.addString(payment.getString(propertyName, ""));
+      String value = payment.getString(propertyName, "");
+      if (value == null) {
+        throw new IllegalArgumentException("Required property '" + propertyName + "' is null.");
+      }
+      params.addString(value);
     }
     new SQLRunner(_ds, populateSchema(INSERT_PAYMENT_SQL), "insert-payment").executeStatement(params);
   }

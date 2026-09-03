@@ -67,7 +67,7 @@ public class PaymentsService extends AbstractService {
 
       return Response.noContent().build();
     }
-    catch(JsonParsingException e) {
+    catch(JsonParsingException | IllegalArgumentException e) {
       throw new BadRequestException(e.getMessage());
     }
   }
