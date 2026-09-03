@@ -446,7 +446,7 @@ public class OAuthService {
   public Response createAccount(String body) {
     try {
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
-      if (!isUserManagementClient(input)) {
+      if (!isUserManagementClient(input, _context)) {
         return new OAuthResponseFactory().buildInvalidClientResponse();
       }
 
@@ -476,7 +476,7 @@ public class OAuthService {
   public Response modifyAccount(String body) {
     try {
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
-      if (!isUserManagementClient(input)) {
+      if (!isUserManagementClient(input, _context)) {
         return new OAuthResponseFactory().buildInvalidClientResponse();
       }
       String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -522,7 +522,7 @@ public class OAuthService {
   public Response deleteUser(String body) {
     try {
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
-      if (!isUserManagementClient(input)) {
+      if (!isUserManagementClient(input, _context)) {
         return new OAuthResponseFactory().buildInvalidClientResponse();
       }
       String authHeader = _request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -574,7 +574,7 @@ public class OAuthService {
   public Response resetPassword(String body) {
     try {
       JsonObject input = Json.createReader(new StringReader(body)).readObject();
-      if (!isUserManagementClient(input)) {
+      if (!isUserManagementClient(input, _context)) {
         return new OAuthResponseFactory().buildInvalidClientResponse();
       }
       String loginName = input.getString("loginName");
@@ -597,9 +597,9 @@ public class OAuthService {
     }
   }
 
-  private boolean isUserManagementClient(JsonObject parentObject) {
+  public static boolean isUserManagementClient(JsonObject parentObject, ServletContext context) {
     try {
-      ClientValidator clientValidator = OAuthServlet.getClientValidator(_context);
+      ClientValidator clientValidator = OAuthServlet.getClientValidator(context);
       Entry<String,String> clientCreds = getClientCredentials(parentObject);
       return clientValidator.isValidProfileEditClient(clientCreds.getKey(), clientCreds.getValue());
     }
@@ -608,7 +608,7 @@ public class OAuthService {
     }
   }
 
-  private Entry<String, String> getClientCredentials(JsonObject parentObject) {
+  private static Entry<String, String> getClientCredentials(JsonObject parentObject) {
     JsonObject clientJson = parentObject.getJsonObject(OAuthClient.JSON_KEY_CREDENTIALS);
     return new SimpleEntry<>(
         clientJson.getString(OAuthClient.JSON_KEY_CLIENT_ID),
