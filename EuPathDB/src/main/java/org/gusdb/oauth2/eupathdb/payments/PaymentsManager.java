@@ -48,6 +48,7 @@ public class PaymentsManager extends AbstractDbManager {
       .put("state", "state")
       .put("postalCode", "postal_code")
       .put("country", "country")
+      .put("environment", "environment")
       .toMap();
 
   private static final String INSERT_PAYMENT_SQL =
@@ -106,7 +107,8 @@ public class PaymentsManager extends AbstractDbManager {
   public void insertPayment(JsonObject payment) {
     ParamBuilder params = new ParamBuilder();
     for (String propertyName : PROPERTY_MAP.keySet()) {
-      String value = payment.getString(propertyName, "");
+      // make sure the passed value is a string
+      String value = payment.getJsonString(propertyName).getString();
       if (value == null) {
         throw new IllegalArgumentException("Required property '" + propertyName + "' is null.");
       }
