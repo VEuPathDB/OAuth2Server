@@ -1,6 +1,5 @@
 package org.gusdb.oauth2.eupathdb.subscriptions;
 
-import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -8,45 +7,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.sql.DataSource;
 import javax.ws.rs.NotFoundException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gusdb.fgputil.Tuples.TwoTuple;
-import org.gusdb.fgputil.db.platform.DBPlatform;
 import org.gusdb.fgputil.db.runner.QueryFlags;
 import org.gusdb.fgputil.db.runner.SQLRunner;
 import org.gusdb.fgputil.db.runner.SQLRunnerException;
+import org.gusdb.oauth2.eupathdb.AbstractDbManager;
 import org.gusdb.oauth2.eupathdb.AccountDbInfo;
 import org.gusdb.oauth2.eupathdb.subscriptions.Group.GroupWithUsers;
 import org.gusdb.oauth2.eupathdb.subscriptions.Group.SimpleUser;
 import org.gusdb.oauth2.eupathdb.subscriptions.Subscription.SubscriptionWithGroups;
 
-public class SubscriptionManager {
+public class SubscriptionManager extends AbstractDbManager {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionManager.class);
 
   private static final String GROUP_USERS_SQL = BulkDataDumper.readResourceSql("sql/select-group-users.sql");
 
-  private static final String SCHEMA_MACRO = "$$accountschema$$";
-
-  private final DataSource _ds;
-  private final DBPlatform _platform;
-  private final String _schema;
-
-  public SubscriptionManager(AccountDbInfo accountDb) {
-    _ds = accountDb.DATASOURCE;
-    _platform = accountDb.DB.getPlatform();
-    _schema = accountDb.SCHEMA;
+  SubscriptionManager(AccountDbInfo accountDb) {
+    super(accountDb);
   }
 
   public List<Subscription> getSubscriptions() {
-    String sql = (
+    String sql = populateSchema(
         "select subscription_id, display_name, last_active_year " +
         "from " + SCHEMA_MACRO + "subscriptions s " +
         "order by display_name"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     return new SQLRunner(_ds, sql).executeQuery(
         new QueryFlags().setFetchSize(BulkDataDumper.FETCH_SIZE),
         rs -> {
@@ -64,10 +54,10 @@ public class SubscriptionManager {
 
   public void addSubscription(Subscription subscription) {
     LOG.info("Inserting new subscription: " + subscription.toJson().toString());
-    String sql = (
+    String sql = populateSchema(
         "insert into " + SCHEMA_MACRO + "subscriptions " +
         "(subscription_id, display_name, last_active_year) values (?, ?, ?)"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             subscription.getSubscriptionId(),
@@ -83,7 +73,7 @@ public class SubscriptionManager {
   }
 
   public SubscriptionWithGroups getSubscription(long subscriptionId) {
-    String sql = (
+    String sql = populateSchema(
         "select s.subscription_id, s.display_name, s.last_active_year, g.group_id, g.group_name, l.user_id " +
         "from " + SCHEMA_MACRO +"subscriptions s " +
         "left join " + SCHEMA_MACRO + "subscription_groups g " +
@@ -92,7 +82,7 @@ public class SubscriptionManager {
         "on l.group_id = g.group_id " +
         "where s.subscription_id = ? " +
         "order by group_id"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     Optional<SubscriptionWithGroups> result = new SQLRunner(_ds, sql).executeQuery(
         new Object[] { subscriptionId },
         new Integer[] { Types.BIGINT },
@@ -138,9 +128,9 @@ public class SubscriptionManager {
 
   public void updateSubscription(Subscription subscription) {
     LOG.info("Updating subscription: " + subscription.toJson().toString());
-    String sql = (
+    String sql = populateSchema(
         "update " + SCHEMA_MACRO + "subscriptions set display_name = ?, last_active_year = ? where subscription_id = ?"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     boolean updated = 0 < new SQLRunner(_ds, sql).executeUpdate(
         new Object[] {
             subscription.getDisplayName(),
@@ -162,10 +152,10 @@ public class SubscriptionManager {
     LOG.info("Inserting new group: " + group.toJson().toString());
 
     // 1. insert the group
-    String sql = (
+    String sql = populateSchema(
         "insert into " + SCHEMA_MACRO + "subscription_groups " +
         "(group_id, subscription_id, group_name, subscription_token) values (?, ?, ?, ?)"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             group.getGroupId(),
@@ -189,9 +179,9 @@ public class SubscriptionManager {
     LOG.info("Updating group: " + group.toJson().toString());
 
     // 1. update the group
-    String sql = (
+    String sql = populateSchema(
         "update " + SCHEMA_MACRO + "subscription_groups set subscription_id = ?, group_name = ? where group_id = ?"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     new SQLRunner(_ds, sql).executeStatement(
         new Object[] {
             group.getSubscriptionId(),
@@ -206,9 +196,9 @@ public class SubscriptionManager {
     );
 
     // 2. remove any existing group leads (rather than reconcile)
-    String removeSql = (
+    String removeSql = populateSchema(
         "delete from " + SCHEMA_MACRO + "subscription_group_leads where group_id = ?"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     new SQLRunner(_ds, removeSql).executeStatement(
         new Object[] { group.getGroupId() },
         new Integer[] { Types.BIGINT }
@@ -219,10 +209,10 @@ public class SubscriptionManager {
   }
 
   private void insertGroupLeads(Group group) {
-    String leadSql = (
+    String leadSql = populateSchema(
         "insert into " + SCHEMA_MACRO + "subscription_group_leads " +
         "(group_id, user_id) values (?, ?)"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     for (Long leadUserId : group.getGroupLeadIds()) {
       new SQLRunner(_ds, leadSql).executeStatement(
           new Object[] { group.getGroupId(), leadUserId },
@@ -234,14 +224,14 @@ public class SubscriptionManager {
   public GroupWithUsers getGroup(long groupId) {
 
     // 1. Fill in group
-    String groupSql = (
+    String groupSql = populateSchema(
         "select s.subscription_id, s.display_name, s.last_active_year, g.group_id, g.group_name, g.subscription_token, l.user_id " +
         "from " + SCHEMA_MACRO + "subscriptions s, " + SCHEMA_MACRO + "subscription_groups g " +
         "left join " + SCHEMA_MACRO + "subscription_group_leads l " +
         "on l.group_id = g.group_id " +
         "where s.subscription_id = g.subscription_id " +
         "and g.group_id = ?"
-    ).replace(SCHEMA_MACRO, _schema);
+    );
     TwoTuple<Group,String> group = new SQLRunner(_ds, groupSql).executeQuery(
         new Object[] { groupId },
         new Integer[] { Types.BIGINT },
@@ -270,9 +260,8 @@ public class SubscriptionManager {
     String leadIdsStr = leadIds.isEmpty() ? "-1" // need to put an integer here or in clause will fail
         : leadIds.stream().map(l -> String.valueOf(l)).collect(Collectors.joining(", "));
 
-    String sql = GROUP_USERS_SQL
-        .replace(SCHEMA_MACRO, _schema)
-        .replace("$$userids$$", leadIdsStr);
+    String sql = populateSchema(GROUP_USERS_SQL.replace("$$userids$$", leadIdsStr));
+
     return new SQLRunner(_ds, sql).executeQuery(
         new Object[] { group.getSecond() }, // subscription token
         new Integer[] { Types.VARCHAR },
@@ -300,21 +289,14 @@ public class SubscriptionManager {
     return nextIdFromSequence("subscription_groups");
   }
 
-  private long nextIdFromSequence(String tableName) {
-    try {
-      return _platform.getNextId(_ds, _schema, tableName);
-    }
-    catch (SQLException e) {
-      throw new RuntimeException("Could not retrieve next ID for table " + tableName);
-    }
-  }
-
   public void assignUsersToGroup(long groupId, List<Long> userIds) {
     for (long userId : userIds) {
       try {
         LOG.info("Trying to insert row to make " + userId + " a member of " + groupId);
-        String insertSql = "insert into " + _schema + "account_properties (user_id, key, value) " +
-            "values (" + userId + ", 'subscription_token', (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + "))";
+        String insertSql = populateSchema(
+            "insert into " + SCHEMA_MACRO + "account_properties (user_id, key, value) " +
+            "values (" + userId + ", 'subscription_token', " +
+            "  (select subscription_token from " + SCHEMA_MACRO + "subscription_groups where group_id = " + groupId + "))");
         int insertCount = new SQLRunner(_ds, insertSql).executeUpdate();
         if (insertCount != 1) throw new RuntimeException("insert subscription token statement executed successfully but inserted " + insertCount + " rows");
       }
@@ -322,9 +304,10 @@ public class SubscriptionManager {
         LOG.warn("Failed. Will try to update row to make " + userId + " a member of " + groupId);
         if (e.getCause() instanceof SQLIntegrityConstraintViolationException) {
           // user is already a member of a group; overwrite
-          String updateSql = "update " + _schema + "account_properties " +
-              "set value = (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + ") " +
-              "where user_id = " + userId + " and key = 'subscription_token'";
+          String updateSql = populateSchema(
+              "update " + SCHEMA_MACRO + "account_properties " +
+              "set value = (select subscription_token from " + SCHEMA_MACRO + "subscription_groups where group_id = " + groupId + ") " +
+              "where user_id = " + userId + " and key = 'subscription_token'");
           int updateCount = new SQLRunner(_ds, updateSql).executeUpdate();
           if (updateCount != 1) throw new RuntimeException("update subscription token statement executed successfully but updated " + updateCount + " rows");
         }
@@ -338,18 +321,19 @@ public class SubscriptionManager {
 
   public void removeUsersFromGroup(long groupId, List<Long> userIds) {
     for (long userId : userIds) {
-      String deleteSql =
-          "delete from " + _schema + "account_properties" +
+      String deleteSql = populateSchema(
+          "delete from " + SCHEMA_MACRO + "account_properties" +
           " where user_id = " + userId +
           " and key = 'subscription_token'" +
-          " and value = (select subscription_token from " + _schema + "subscription_groups where group_id = " + groupId + ")";
+          " and value = (select subscription_token from " + SCHEMA_MACRO + "subscription_groups where group_id = " + groupId + ")");
       boolean removed = new SQLRunner(_ds, deleteSql).executeUpdate() == 1;
       LOG.info("Removal of user " + userId + " from group " + groupId + (removed ? " succeeded" : " failed"));
     }
   }
 
   public List<GroupWithUsers> getGroupsByLead(long userId) {
-    String sql = "select group_id from " + _schema + "subscription_group_leads where user_id = " + userId;
+    String sql = populateSchema(
+        "select group_id from " + SCHEMA_MACRO + "subscription_group_leads where user_id = " + userId);
     return new SQLRunner(_ds, sql).executeQuery(rs -> {
       List<GroupWithUsers> groups = new ArrayList<>();
       while (rs.next()) {
