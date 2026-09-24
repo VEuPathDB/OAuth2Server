@@ -30,6 +30,9 @@ public class PaymentsManager extends AbstractDbManager {
   private static final String SELECT_ALL_PAYMENTS_SQL =
       "select * from " + SCHEMA_MACRO + "payments";
 
+  private static final String SELECT_ALL_PROD_PAYMENTS_SQL =
+      SELECT_ALL_PAYMENTS_SQL + " where environment = 'api.cybersource.com'";
+
   private static final String SELECT_PAYMENT_BY_REF_NUM =
       SELECT_ALL_PAYMENTS_SQL + " where reference_number = ?";
 
@@ -79,9 +82,10 @@ public class PaymentsManager extends AbstractDbManager {
     return builder.build();
   }
 
-  public void writeAllPaymentsAsTabular(OutputStream out) {
+  public void writePaymentsAsTabular(OutputStream out, boolean includeDevPayments) {
     try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out))) {
-      new SQLRunner(_ds, populateSchema(SELECT_ALL_PAYMENTS_SQL), "select-all-payments").executeQuery(rs -> {
+      String sqlBase = includeDevPayments ? SELECT_ALL_PAYMENTS_SQL : SELECT_ALL_PROD_PAYMENTS_SQL;
+      new SQLRunner(_ds, populateSchema(sqlBase), "select-payments").executeQuery(rs -> {
         try {
           writer.write(PROPERTY_MAP.keySet().stream().collect(Collectors.joining(FormatUtil.TAB)));
           writer.newLine();

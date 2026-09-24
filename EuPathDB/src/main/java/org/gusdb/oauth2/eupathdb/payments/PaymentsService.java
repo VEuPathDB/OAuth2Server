@@ -7,11 +7,13 @@ import javax.json.JsonObject;
 import javax.json.stream.JsonParsingException;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -27,13 +29,15 @@ public class PaymentsService extends AbstractService {
   @GET
   @Path("payments")
   @Produces(TSV_MEDIA_TYPE)
-  public Response getAllPayments() {
+  public Response getAllPayments(
+      @QueryParam("includeDevPayments") @DefaultValue("false") boolean includeDevPayments
+  ) {
     // must be a subscription admin to download payments
     assertAdmin();
 
     // get handle on DB, fetch payments and stream out in tabular format
     PaymentsManager db = new PaymentsManager(getAccountDb());
-    StreamingOutput tabularOutput = out -> db.writeAllPaymentsAsTabular(out);
+    StreamingOutput tabularOutput = out -> db.writePaymentsAsTabular(out, includeDevPayments);
     return Response.ok(tabularOutput).build();
   }
 
