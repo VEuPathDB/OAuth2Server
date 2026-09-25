@@ -24,13 +24,14 @@ $(function() {
   // check for admin access and redirect to login page if not admin
   $.ajax(prependWebapp("/check-admin"), {
     success: (body) => {
-      if (body == "no") {
+      if (body == "logged_out") {
+        // send user to login page
         let host = window.location.hostname;
         window.location.href = "https://" + host + prependWebapp("/authorize?") +
             "response_type=code&scope=openid email&state=12345&client_id=apiComponentSite&" +
             "redirect_uri=" + encodeURIComponent(window.location.href);
       }
-      else {
+      else if (body == "yes"){
         // show the page body (hidden until admin check)
         $("body").show();
 
@@ -61,6 +62,11 @@ $(function() {
           default:
             console.error("Unknown page: " + page);
         }
+      }
+      else { // body likely == "no", but show forbidden for any other value
+        $("body")
+          .html("<h2>Forbidden</h2><p>To try a different account, first <a href=\"../../logout\">log out</a>.<p>")
+          .show();
       }
     },
     error: ajaxErrorHandler

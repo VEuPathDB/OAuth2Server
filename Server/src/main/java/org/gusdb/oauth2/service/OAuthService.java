@@ -128,7 +128,12 @@ public class OAuthService {
   public Response checkAdmin() {
     Session session = new Session(_request.getSession());
     String userId = session.getUserId();
-    String responseText = userId == null || !OAuthServlet.getAuthenticator(_context).getAdminUserIds().contains(userId) ? "no" : "yes";
+    String responseText =
+        userId == null
+          ? "logged_out"
+          : OAuthServlet.getAuthenticator(_context).getAdminUserIds().contains(userId)
+            ? "yes"
+            : "no";
     return Response.ok(responseText).build();
   }
 
