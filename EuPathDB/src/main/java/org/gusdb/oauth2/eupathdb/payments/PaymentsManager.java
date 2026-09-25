@@ -116,6 +116,8 @@ public class PaymentsManager extends AbstractDbManager {
       if (value == null) {
         throw new IllegalArgumentException("Required property '" + propertyName + "' is null.");
       }
+      if (value.isBlank())
+        value = " "; // make non-null AND non-empty for Oracle :(
       params.addString(value);
     }
     new SQLRunner(_ds, populateSchema(INSERT_PAYMENT_SQL), "insert-payment").executeStatement(params);
