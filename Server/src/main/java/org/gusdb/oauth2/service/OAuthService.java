@@ -373,7 +373,7 @@ public class OAuthService {
   }
 
   private static String paramsToString(HttpServletRequest request) {
-    Map<String, String[]> params = (Map<String, String[]>)request.getParameterMap();
+    Map<String, String[]> params = request.getParameterMap();
     StringBuilder sb = new StringBuilder("{").append(System.lineSeparator());
     for (String key : params.keySet()) {
       String[] values = (key.equals("client_secret") ? new String[]{ "<blocked>" } : params.get(key));
